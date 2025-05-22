@@ -245,12 +245,11 @@ const Sidebar: React.FC = () => {
       <div className="flex-1 overflow-y-auto">
         <div className="p-4">
           <Link to="/dashboard" className="flex items-center mb-8">
-            <div className="bg-primary rounded-md p-1.5 mr-2">
-              <span className="text-white text-lg font-bold">P</span>
-            </div>
-            {isExpanded && (
-              <span className="text-primary font-bold text-xl">Pri0r1ty</span>
-            )}
+            <img 
+              src="https://asset.cloudinary.com/deyzbqzya/b7a19272076c0b0df077e6e2e8433547" 
+              alt="Logo"
+              className={`h-8 w-auto ${!isExpanded ? 'mx-auto' : 'mr-2'}`}
+            />
           </Link>
 
           <nav className="space-y-1">

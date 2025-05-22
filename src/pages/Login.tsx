@@ -43,11 +43,12 @@ const Login: React.FC = () => {
         {/* Logo and header */}
         <div className="text-center mb-10">
           <div className="flex justify-center mb-3">
-            <div className="bg-primary rounded-xl p-3 inline-flex items-center justify-center">
-              <span className="text-white text-2xl font-bold">P</span>
-            </div>
+            <img 
+              src="https://asset.cloudinary.com/deyzbqzya/b7a19272076c0b0df077e6e2e8433547" 
+              alt="Logo"
+              className="h-12 w-auto"
+            />
           </div>
-          <h2 className="text-3xl font-bold text-primary">Pri0r1ty</h2>
           <p className="mt-2 text-neutral-600">Business management powered by AI</p>
         </div>
 
@@ -137,7 +138,7 @@ const Login: React.FC = () => {
         </div>
         
         <div className="mt-6 text-center text-xs text-neutral-500">
-          <p>&copy; {new Date().getFullYear()} Pri0r1ty. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} All rights reserved.</p>
         </div>
       </div>
     </div>
