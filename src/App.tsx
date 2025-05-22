@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Data from './pages/Data';
 import RNSGenerator from './pages/RNSGenerator';
 import ImproveRNS from './pages/ImproveRNS';
 import AppLayout from './layouts/AppLayout';
@@ -18,6 +19,7 @@ function App() {
           {/* Protected routes */}
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/data" element={<Data />} />
             <Route path="/pr/rns/write" element={<RNSGenerator />} />
             <Route path="/pr/rns/improve" element={<ImproveRNS />} />
             {/* Add more routes as they're developed */}
@@ -29,7 +31,6 @@ function App() {
             <Route path="/settings" element={<div className="p-8">Settings page (coming soon)</div>} />
             <Route path="/finance" element={<div className="p-8">Financial Reports page (coming soon)</div>} />
             <Route path="/resources" element={<div className="p-8">Resources page (coming soon)</div>} />
-            <Route path="/data" element={<div className="p-8">Data Management page (coming soon)</div>} />
           </Route>
           
           {/* Redirect to login by default */}
