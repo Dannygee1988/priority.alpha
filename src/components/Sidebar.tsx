@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Share2,
   Megaphone,
@@ -136,6 +136,7 @@ const navigation = [
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedSubmenu, setExpandedSubmenu] = useState<string | null>(null);
   const [expandedNestedSubmenu, setExpandedNestedSubmenu] = useState<string | null>(null);
@@ -155,6 +156,12 @@ const Sidebar: React.FC = () => {
 
   const toggleNestedSubmenu = (name: string) => {
     setExpandedNestedSubmenu(expandedNestedSubmenu === name ? null : name);
+  };
+
+  const handleNavigation = (path: string, hasSubmenu: boolean) => {
+    if (!hasSubmenu) {
+      navigate(path);
+    }
   };
 
   const NavLink = ({ 
@@ -186,7 +193,13 @@ const Sidebar: React.FC = () => {
             ${isSubmenuItem && 'pl-6'}
             ${isNestedSubmenuItem && 'pl-9'}
           `}
-          onClick={() => hasSubmenu ? (isSubmenuItem ? toggleNestedSubmenu(item.name) : toggleSubmenu(item.name)) : null}
+          onClick={() => {
+            if (hasSubmenu) {
+              isSubmenuItem ? toggleNestedSubmenu(item.name) : toggleSubmenu(item.name);
+            } else {
+              handleNavigation(item.path, hasSubmenu);
+            }
+          }}
           title={!isExpanded ? item.name : undefined}
         >
           <item.icon size={20} className={isExpanded ? 'mr-3' : ''} />
