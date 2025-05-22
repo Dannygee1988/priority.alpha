@@ -13,33 +13,42 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, change, icon }) => {
   const isNegative = change && change < 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-5 border border-neutral-100 transition-all hover:shadow-md">
-      <div className="flex justify-between">
-        <div>
-          <p className="text-neutral-500 text-sm font-medium">{title}</p>
-          <h3 className="text-2xl font-bold text-neutral-800 mt-1">{value}</h3>
-        </div>
-        {icon && <div className="text-primary">{icon}</div>}
+    <div className="relative overflow-hidden bg-gradient-to-br from-primary to-primary-800 text-white rounded-2xl shadow-lg transform transition-all hover:scale-[1.02] hover:shadow-xl">
+      <div className="absolute top-0 right-0 w-32 h-32 transform translate-x-16 -translate-y-8">
+        <div className="absolute inset-0 bg-white opacity-10 rounded-full" />
       </div>
-
-      {change !== undefined && (
-        <div className="mt-2 flex items-center">
-          <span
-            className={`text-sm font-medium flex items-center ${
-              isPositive ? 'text-success-500' : isNegative ? 'text-error-500' : 'text-neutral-500'
-            }`}
-          >
-            {isPositive ? (
-              <ArrowUp size={16} className="mr-1" />
-            ) : isNegative ? (
-              <ArrowDown size={16} className="mr-1" />
-            ) : null}
-            {isPositive ? '+' : ''}
-            {change}%
-          </span>
-          <span className="ml-1 text-xs text-neutral-400">vs last period</span>
+      
+      <div className="relative p-6">
+        <div className="flex justify-between items-start mb-4">
+          <p className="text-white/80 font-medium">{title}</p>
+          {icon && <div className="text-white/90">{icon}</div>}
         </div>
-      )}
+
+        <div className="space-y-2">
+          <h3 className="text-3xl font-bold tracking-tight">
+            {value || '-'}
+          </h3>
+
+          {change !== undefined && (
+            <div className="flex items-center text-sm">
+              <span
+                className={`flex items-center font-medium ${
+                  isPositive ? 'text-green-300' : isNegative ? 'text-red-300' : 'text-white/70'
+                }`}
+              >
+                {isPositive ? (
+                  <ArrowUp size={16} className="mr-1" />
+                ) : isNegative ? (
+                  <ArrowDown size={16} className="mr-1" />
+                ) : null}
+                {isPositive ? '+' : ''}
+                {change}%
+              </span>
+              <span className="ml-1.5 text-white/60">vs last period</span>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
