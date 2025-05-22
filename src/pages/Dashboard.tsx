@@ -185,28 +185,28 @@ const Dashboard: React.FC = () => {
     {
       id: '1',
       title: 'Total Followers',
-      value: '0',
+      value: '',
       change: 0,
       icon: 'users'
     },
     {
       id: '2',
       title: 'Most Popular Platform',
-      value: 'No data',
+      value: '',
       change: 0,
       icon: 'share'
     },
     {
       id: '3',
       title: 'Community Score',
-      value: '0%',
+      value: '',
       change: 0,
       icon: 'star'
     },
     {
       id: '4',
       title: 'Hot Topic',
-      value: 'No data',
+      value: '',
       change: 0,
       icon: 'message-square'
     }
@@ -229,7 +229,7 @@ const Dashboard: React.FC = () => {
               {
                 id: '2',
                 title: 'Most Popular Platform',
-                value: metrics.most_popular_platform || 'No data',
+                value: metrics.most_popular_platform || '',
                 change: 0,
                 icon: 'share'
               },
@@ -243,7 +243,7 @@ const Dashboard: React.FC = () => {
               {
                 id: '4',
                 title: 'Hot Topic',
-                value: metrics.hot_topic || 'No data',
+                value: metrics.hot_topic || '',
                 change: 0,
                 icon: 'message-square'
               }
@@ -251,7 +251,6 @@ const Dashboard: React.FC = () => {
           }
         } catch (error) {
           console.error('Error loading social metrics:', error);
-          // Keep the default stats state on error
         }
       }
     };
