@@ -54,9 +54,6 @@ const ImproveRNS: React.FC = () => {
               <h2 className="text-lg font-semibold text-neutral-800 mb-4">Existing RNS Content</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-neutral-700 text-sm font-medium mb-1">
-                    Paste your RNS content here
-                  </label>
                   <textarea
                     className="w-full h-60 px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary resize-none"
                     placeholder="Paste the RNS content you want to improve..."
