@@ -244,11 +244,11 @@ const Sidebar: React.FC = () => {
     >
       <div className="flex-1 overflow-y-auto">
         <div className="p-4">
-          <Link to="/dashboard" className="flex items-center mb-8">
+          <Link to="/dashboard" className="flex items-center justify-center mb-8">
             <img 
               src="https://res.cloudinary.com/deyzbqzya/image/upload/v1747914532/Pri0r1ty_PRIMARY-Logo_Colour-Long-Pos-RGB_1_qhsx8u.png"
               alt="Logo"
-              className={`h-8 w-auto ${!isExpanded ? 'mx-auto' : 'mr-2'}`}
+              className={`h-24 w-auto ${!isExpanded ? 'mx-auto' : ''}`}
             />
           </Link>
 
