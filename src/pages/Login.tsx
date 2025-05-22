@@ -19,9 +19,7 @@ const Login: React.FC = () => {
   // Password validation (min 8 characters)
   const isPasswordValid = !password || password.length >= 8;
 
-  // Demo login hint
-  const demoLoginMessage = "For demo: use 'demo@priority.ai' and 'password123'";
-
+ 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     
@@ -48,7 +46,7 @@ const Login: React.FC = () => {
               className="h-36 w-auto"
             />
           </div>
-          <p className="mt-2 text-neutral-600">Business management powered by AI</p>
+         
         </div>
 
         {/* Login form */}
