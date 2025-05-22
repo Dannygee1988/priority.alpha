@@ -40,11 +40,10 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full animate-scale-up">
-        {/* Logo and header */}
         <div className="text-center mb-10">
           <div className="flex justify-center mb-3">
             <img 
-              src="https://asset.cloudinary.com/deyzbqzya/b7a19272076c0b0df077e6e2e8433547" 
+              src="https://res.cloudinary.com/deyzbqzya/image/upload/b7a19272076c0b0df077e6e2e8433547"
               alt="Logo"
               className="h-12 w-auto"
             />

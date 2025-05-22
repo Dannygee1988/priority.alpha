@@ -246,7 +246,7 @@ const Sidebar: React.FC = () => {
         <div className="p-4">
           <Link to="/dashboard" className="flex items-center mb-8">
             <img 
-              src="https://asset.cloudinary.com/deyzbqzya/b7a19272076c0b0df077e6e2e8433547" 
+              src="https://res.cloudinary.com/deyzbqzya/image/upload/b7a19272076c0b0df077e6e2e8433547"
               alt="Logo"
               className={`h-8 w-auto ${!isExpanded ? 'mx-auto' : 'mr-2'}`}
             />
