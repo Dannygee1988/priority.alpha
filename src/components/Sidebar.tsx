@@ -45,6 +45,7 @@ import {
   AlertCircle,
   PenLine,
   Database,
+  Sparkles,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
@@ -88,7 +89,8 @@ const prSubmenu = [
     icon: AlertCircle, 
     path: '/pr/rns',
     submenu: [
-      { name: 'Write new RNS', icon: PenLine, path: '/pr/rns/write' }
+      { name: 'Write new RNS', icon: PenLine, path: '/pr/rns/write' },
+      { name: 'Improve RNS', icon: Sparkles, path: '/pr/rns/improve' }
     ]
   },
 ];

@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import RNSGenerator from './pages/RNSGenerator';
+import ImproveRNS from './pages/ImproveRNS';
 import AppLayout from './layouts/AppLayout';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/pr/rns/write" element={<RNSGenerator />} />
+            <Route path="/pr/rns/improve" element={<ImproveRNS />} />
             {/* Add more routes as they're developed */}
             <Route path="/analytics" element={<div className="p-8">Analytics page (coming soon)</div>} />
             <Route path="/team" element={<div className="p-8">Team Management page (coming soon)</div>} />
