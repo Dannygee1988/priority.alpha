@@ -19,6 +19,7 @@ const Login: React.FC = () => {
   // Password validation (min 8 characters)
   const isPasswordValid = !password || password.length >= 8;
 
+  const demoLoginMessage = "Demo login is enabled. Use any email and password.";
  
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
