@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import RNSGenerator from './pages/RNSGenerator';
 import AppLayout from './layouts/AppLayout';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
           {/* Protected routes */}
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/pr/rns/write" element={<RNSGenerator />} />
             {/* Add more routes as they're developed */}
             <Route path="/analytics" element={<div className="p-8">Analytics page (coming soon)</div>} />
             <Route path="/team" element={<div className="p-8">Team Management page (coming soon)</div>} />
@@ -34,5 +36,3 @@ function App() {
     </AuthProvider>
   );
 }
-
-export default App;
