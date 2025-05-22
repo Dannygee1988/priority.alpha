@@ -3,19 +3,10 @@ import { Bell, User, LogOut, Settings, ChevronDown, Sun, Moon } from 'lucide-rea
 import Button from './Button';
 import { useAuth } from '../context/AuthContext';
 
-interface HeaderProps {
-  user: {
-    name: string;
-    email: string;
-    avatar: string;
-  } | null;
-  onLogout: () => void;
-}
-
-const Header: React.FC<HeaderProps> = ({ onLogout }) => {
+const Header: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const toggleUserMenu = () => {
     setShowUserMenu(!showUserMenu);
@@ -28,7 +19,13 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
 
   return (
     <header className="bg-white border-b border-neutral-200 sticky top-0 z-10">
-      <div className="h-16 px-6 flex items-center justify-end">
+      <div className="h-16 px-6 flex items-center justify-between">
+        <div className="flex items-center">
+          <h1 className="text-xl font-semibold text-neutral-800">
+            {window.location.pathname.split('/').pop()?.charAt(0).toUpperCase() + window.location.pathname.split('/').pop()?.slice(1) || 'Dashboard'}
+          </h1>
+        </div>
+        
         <div className="flex items-center space-x-4">
           <button 
             onClick={toggleDarkMode} 
@@ -100,7 +97,7 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
                     <button
                       onClick={() => {
                         setShowUserMenu(false);
-                        onLogout();
+                        logout();
                       }}
                       className="w-full text-left block px-4 py-2 text-sm text-error-600 hover:bg-neutral-50 flex items-center"
                     >
@@ -118,6 +115,6 @@ const Header: React.FC<HeaderProps> = ({ onLogout }) => {
       </div>
     </header>
   );
-}
+};
 
 export default Header;

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -11,30 +12,57 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user data for demo purposes
-const mockUser: User = {
-  id: '1',
-  name: 'Sarah Johnson',
-  email: 'sarah@priority.ai',
-  avatar: '',
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const checkAuth = () => {
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
+    // Check if user is logged in from Supabase session
+    const checkAuth = async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          throw sessionError;
+        }
+
+        if (session?.user) {
+          const { id, email, user_metadata } = session.user;
+          setUser({
+            id,
+            name: user_metadata?.full_name || email?.split('@')[0] || 'User',
+            email: email || '',
+            avatar: user_metadata?.avatar_url || ''
+          });
+        }
+      } catch (err) {
+        console.error('Auth check error:', err);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     checkAuth();
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const { id, email, user_metadata } = session.user;
+        setUser({
+          id,
+          name: user_metadata?.full_name || email?.split('@')[0] || 'User',
+          email: email || '',
+          avatar: user_metadata?.avatar_url || ''
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -42,26 +70,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     
     try {
-      // For demo purposes, we're simulating an API call with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Demo validation - in a real app, this would be handled by your auth provider
-      if (email === 'demo@priority.ai' && password === 'password123') {
-        setUser(mockUser);
-        localStorage.setItem('user', JSON.stringify(mockUser));
-      } else {
-        throw new Error('Invalid email or password');
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (signInError) {
+        throw signInError;
+      }
+
+      if (data.user) {
+        const { id, email, user_metadata } = data.user;
+        setUser({
+          id,
+          name: user_metadata?.full_name || email?.split('@')[0] || 'User',
+          email: email || '',
+          avatar: user_metadata?.avatar_url || ''
+        });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      setError(err instanceof Error ? err.message : 'Failed to sign in');
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) {
+        throw signOutError;
+      }
+      setUser(null);
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
 
   const contextValue: AuthContextType = {

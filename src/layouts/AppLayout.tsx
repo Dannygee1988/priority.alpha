@@ -5,7 +5,7 @@ import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 
 const AppLayout: React.FC = () => {
-  const { user, logout, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -23,7 +23,7 @@ const AppLayout: React.FC = () => {
     <div className="min-h-screen bg-neutral-50 flex">
       <Sidebar />
       <div className="flex-1 transition-all duration-300 ml-20 lg:ml-64">
-        <Header user={user} onLogout={logout} />
+        <Header />
         <main className="p-6">
           <div className="max-w-7xl mx-auto">
             <Outlet />
