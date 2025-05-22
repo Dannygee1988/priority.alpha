@@ -109,21 +109,23 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) =
   };
 
   return (
-    <div className="relative">
+    <div className="relative h-full">
       <Link 
         to={path}
         onClick={handleClick}
-        className="bg-white rounded-lg shadow-sm border border-neutral-100 p-5 hover:shadow-md transition-all group block"
+        className="bg-white rounded-lg shadow-sm border border-neutral-100 p-5 hover:shadow-md transition-all group block h-full"
       >
-        <div className="flex flex-col items-start h-full">
-          <div className="p-2 rounded-md bg-primary/5 text-primary mb-4">
+        <div className="flex flex-col h-full">
+          <div className="p-2 rounded-md bg-primary/5 text-primary mb-4 w-fit">
             {icon}
           </div>
           <h3 className="font-bold text-lg text-primary mb-2 group-hover:text-primary-700 transition-colors">
             {title}
           </h3>
-          <p className="text-neutral-600 text-sm">{description}</p>
-          <div className="mt-auto pt-4 text-primary text-sm font-medium flex items-center">
+          <p className="text-neutral-600 text-sm flex-grow">
+            {description}
+          </p>
+          <div className="mt-4 text-primary text-sm font-medium flex items-center">
             <span className="mr-1">Open</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
