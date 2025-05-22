@@ -9,7 +9,7 @@ export async function getSocialMetrics(companyId: string) {
 
   if (error) {
     console.error('Error fetching social metrics:', error);
-    return null;
+    throw error;
   }
 
   return data;
