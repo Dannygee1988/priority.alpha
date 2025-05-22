@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Share2,
   Megaphone,
@@ -16,41 +16,14 @@ import {
   Brain,
   UserPlus,
   Database,
+  Star,
+  MessageSquare,
 } from 'lucide-react';
 import { Stat, Tool } from '../types';
 import DashboardStatistics from '../components/DashboardStatistics';
 import ToolTile from '../components/ToolTile';
-
-const stats: Stat[] = [
-  {
-    id: '1',
-    title: 'Revenue',
-    value: '£0',
-    change: 0,
-    icon: 'pound',
-  },
-  {
-    id: '2',
-    title: 'Users',
-    value: '0',
-    change: 0,
-    icon: 'users',
-  },
-  {
-    id: '3',
-    title: 'Conversion Rate',
-    value: '0%',
-    change: 0,
-    icon: 'activity',
-  },
-  {
-    id: '4',
-    title: 'Growth',
-    value: '0%',
-    change: 0,
-    icon: 'trending-up',
-  },
-];
+import { useAuth } from '../context/AuthContext';
+import { getSocialMetrics } from '../lib/api';
 
 const tools: Tool[] = [
   {
@@ -207,6 +180,80 @@ const getToolIcon = (icon: string) => {
 };
 
 const Dashboard: React.FC = () => {
+  const { user } = useAuth();
+  const [stats, setStats] = useState<Stat[]>([
+    {
+      id: '1',
+      title: 'Total Followers',
+      value: '0',
+      change: 0,
+      icon: 'users'
+    },
+    {
+      id: '2',
+      title: 'Most Popular Platform',
+      value: 'Loading...',
+      change: 0,
+      icon: 'share'
+    },
+    {
+      id: '3',
+      title: 'Community Score',
+      value: '0%',
+      change: 0,
+      icon: 'star'
+    },
+    {
+      id: '4',
+      title: 'Hot Topic',
+      value: 'Loading...',
+      change: 0,
+      icon: 'message-square'
+    }
+  ]);
+
+  useEffect(() => {
+    const loadSocialMetrics = async () => {
+      if (user) {
+        const metrics = await getSocialMetrics(user.id);
+        if (metrics) {
+          setStats([
+            {
+              id: '1',
+              title: 'Total Followers',
+              value: metrics.total_followers.toLocaleString(),
+              change: 0,
+              icon: 'users'
+            },
+            {
+              id: '2',
+              title: 'Most Popular Platform',
+              value: metrics.most_popular_platform || 'None',
+              change: 0,
+              icon: 'share'
+            },
+            {
+              id: '3',
+              title: 'Community Score',
+              value: `${metrics.community_score}%`,
+              change: 0,
+              icon: 'star'
+            },
+            {
+              id: '4',
+              title: 'Hot Topic',
+              value: metrics.hot_topic || 'None',
+              change: 0,
+              icon: 'message-square'
+            }
+          ]);
+        }
+      }
+    };
+
+    loadSocialMetrics();
+  }, [user]);
+
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8 animate-fade-in">
       <div className="mb-6">
