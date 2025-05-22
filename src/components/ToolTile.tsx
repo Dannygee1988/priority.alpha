@@ -24,6 +24,7 @@ import {
   Newspaper,
   UserCircle,
   Shield,
+  AlertCircle,
 } from 'lucide-react';
 
 interface ToolTileProps {
@@ -68,11 +69,15 @@ const investorsOptions = [
   { name: 'Insiders', icon: Shield, path: '/investors/insiders' },
 ];
 
+const prOptions = [
+  { name: 'RNS', icon: AlertCircle, path: '/pr/rns' },
+];
+
 const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) => {
   const [showPopup, setShowPopup] = useState(false);
 
   const handleClick = (e: React.MouseEvent) => {
-    if (title === 'Social Media' || title === 'Tools' || title === 'Community' || title === 'Investors') {
+    if (title === 'Social Media' || title === 'Tools' || title === 'Community' || title === 'Investors' || title === 'Public Relations') {
       e.preventDefault();
       setShowPopup(!showPopup);
     }
@@ -83,6 +88,7 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) =
     if (title === 'Tools') return toolsOptions;
     if (title === 'Community') return communityOptions;
     if (title === 'Investors') return investorsOptions;
+    if (title === 'Public Relations') return prOptions;
     return [];
   };
 

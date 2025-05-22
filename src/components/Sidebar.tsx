@@ -42,6 +42,7 @@ import {
   UserCircle,
   Shield,
   UserPlus,
+  AlertCircle,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
@@ -79,6 +80,10 @@ const investorsSubmenu = [
   { name: 'Insiders', icon: Shield, path: '/investors/insiders' },
 ];
 
+const prSubmenu = [
+  { name: 'RNS', icon: AlertCircle, path: '/pr/rns' },
+];
+
 const navigation = [
   {
     name: 'Social Media',
@@ -93,7 +98,12 @@ const navigation = [
     path: '/investors',
     submenu: investorsSubmenu,
   },
-  { name: 'Public Relations', icon: Globe, path: '/pr' },
+  {
+    name: 'Public Relations',
+    icon: Globe,
+    path: '/pr',
+    submenu: prSubmenu,
+  },
   { name: 'Management', icon: LayoutDashboard, path: '/management' },
   { name: 'Finance', icon: PoundSterling, path: '/finance' },
   {
