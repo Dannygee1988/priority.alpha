@@ -4,6 +4,7 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 
 const RNSGenerator: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
   const [includeAdditional, setIncludeAdditional] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -12,6 +13,7 @@ const RNSGenerator: React.FC = () => {
     // Simulate API call
     setTimeout(() => {
       setIsGenerating(false);
+      setActiveTab('output');
     }, 2000);
   };
 
@@ -23,9 +25,33 @@ const RNSGenerator: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-        <div className="flex">
-          {/* Input Section */}
-          <div className="flex-1 p-6 border-r border-neutral-200">
+        {/* Tabs */}
+        <div className="flex border-b border-neutral-200">
+          <button
+            className={`flex-1 px-6 py-3 text-sm font-medium focus:outline-none ${
+              activeTab === 'input'
+                ? 'text-primary border-b-2 border-primary bg-primary/5'
+                : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
+            }`}
+            onClick={() => setActiveTab('input')}
+          >
+            Input
+          </button>
+          <button
+            className={`flex-1 px-6 py-3 text-sm font-medium focus:outline-none ${
+              activeTab === 'output'
+                ? 'text-primary border-b-2 border-primary bg-primary/5'
+                : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
+            }`}
+            onClick={() => setActiveTab('output')}
+          >
+            Output
+          </button>
+        </div>
+
+        {/* Input Section */}
+        <div className={activeTab === 'input' ? 'block' : 'hidden'}>
+          <div className="p-6">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-neutral-800 mb-4">Announcement Details</h2>
               <div className="space-y-4">
@@ -85,17 +111,31 @@ const RNSGenerator: React.FC = () => {
               Generate RNS Announcement
             </Button>
           </div>
+        </div>
 
-          {/* Output Section */}
-          <div className="flex-1 p-6 bg-neutral-50">
+        {/* Output Section */}
+        <div className={activeTab === 'output' ? 'block' : 'hidden'}>
+          <div className="p-6">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-neutral-800">Generated Announcement</h2>
               <p className="text-sm text-neutral-500">Your AI-generated RNS announcement will appear here</p>
             </div>
-            <div className="bg-white border border-neutral-200 rounded-lg p-4 h-[500px] overflow-y-auto">
+            <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 min-h-[500px]">
               <p className="text-neutral-500 text-sm italic">
                 Generated content will appear here...
               </p>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setActiveTab('input')}
+                className="mr-2"
+              >
+                Edit Input
+              </Button>
+              <Button>
+                Copy to Clipboard
+              </Button>
             </div>
           </div>
         </div>
