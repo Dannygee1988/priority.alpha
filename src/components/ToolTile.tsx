@@ -113,22 +113,24 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) =
       <Link 
         to={path}
         onClick={handleClick}
-        className="bg-white rounded-xl shadow-sm border border-neutral-100 p-6 transition-all group block h-full overflow-hidden relative"
+        className="bg-white rounded-xl shadow-sm border border-neutral-100 transition-all group block h-full relative"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
-        <div className="relative flex flex-col items-center text-center h-full">
-          <div className="p-4 rounded-xl bg-primary/5 text-primary mb-4 transform group-hover:scale-110 transition-transform duration-300">
+        <div className="relative flex flex-col items-center justify-center h-full p-6">
+          <div className="p-4 rounded-xl bg-primary/5 text-primary transform group-hover:scale-110 transition-transform duration-300">
             {icon}
           </div>
           
-          <h3 className="font-bold text-lg text-primary mb-2 group-hover:text-primary-700 transition-colors">
+          <h3 className="font-bold text-lg text-primary mt-4 group-hover:text-primary-700 transition-colors">
             {title}
           </h3>
           
-          <p className="text-neutral-600 text-sm absolute bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-sm translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-            {description}
-          </p>
+          <div className="absolute inset-0 flex items-center justify-center bg-white/95 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl">
+            <p className="text-neutral-600 text-sm px-4 text-center">
+              {description}
+            </p>
+          </div>
         </div>
       </Link>
 
