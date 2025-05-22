@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bell, User, LogOut, Settings, ChevronDown, Sun, Moon } from 'lucide-react';
 import Button from './Button';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
   user: {
@@ -11,9 +12,10 @@ interface HeaderProps {
   onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ onLogout }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const { user } = useAuth();
 
   const toggleUserMenu = () => {
     setShowUserMenu(!showUserMenu);
@@ -52,9 +54,17 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
                 onClick={toggleUserMenu}
                 className="flex items-center px-3 py-2 rounded-full hover:bg-primary/5 transition-colors"
               >
-                <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center">
-                  <span className="font-medium">{user.name.charAt(0)}</span>
-                </div>
+                {user.avatar ? (
+                  <img 
+                    src={user.avatar} 
+                    alt={user.name} 
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center">
+                    <span className="font-medium">{user.name.charAt(0)}</span>
+                  </div>
+                )}
                 <span className="ml-2 text-neutral-700 font-medium">{user.name}</span>
                 <ChevronDown 
                   size={16} 
