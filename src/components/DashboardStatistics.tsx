@@ -44,3 +44,5 @@ const DashboardStatistics: React.FC<DashboardStatisticsProps> = ({ stats }) => {
     </div>
   );
 };
+
+export default DashboardStatistics
