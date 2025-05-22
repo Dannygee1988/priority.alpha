@@ -1,0 +1,144 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  PenSquare,
+  MessageSquare,
+  Palette,
+  Hash,
+  TrendingUp,
+  CalendarDays,
+  Video,
+  Images,
+  Type,
+  BookOpen,
+  FileType2,
+  ScanLine,
+  FileSearch,
+  FileCog,
+  FileText,
+  FileSpreadsheet,
+  FileImage,
+  FileAudio,
+  FileVideo,
+  Printer,
+  Newspaper,
+  UserCircle,
+  Shield,
+} from 'lucide-react';
+
+interface ToolTileProps {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  path: string;
+}
+
+const socialMediaOptions = [
+  { name: 'Create New Post', icon: PenSquare, path: '/social-media/create' },
+  { name: 'Generate Captions', icon: MessageSquare, path: '/social-media/captions' },
+  { name: 'Create Graphics', icon: Palette, path: '/social-media/graphics' },
+  { name: 'Hashtag Suggestions', icon: Hash, path: '/social-media/hashtags' },
+  { name: 'Trending Tags', icon: TrendingUp, path: '/social-media/trending' },
+  { name: 'Content Calendar', icon: CalendarDays, path: '/social-media/calendar' },
+  { name: 'Video Scripts', icon: Video, path: '/social-media/scripts' },
+  { name: 'Carousel Posts', icon: Images, path: '/social-media/carousel' },
+  { name: 'Headlines & Hooks', icon: Type, path: '/social-media/headlines' },
+  { name: 'Story Content', icon: BookOpen, path: '/social-media/stories' },
+];
+
+const toolsOptions = [
+  { name: 'File Converter', icon: FileType2, path: '/tools/converter' },
+  { name: 'Business Card Scanner', icon: ScanLine, path: '/tools/card-scanner' },
+  { name: 'Document OCR', icon: FileSearch, path: '/tools/ocr' },
+  { name: 'File Compressor', icon: FileCog, path: '/tools/compressor' },
+  { name: 'PDF Tools', icon: FileText, path: '/tools/pdf' },
+  { name: 'Excel Tools', icon: FileSpreadsheet, path: '/tools/excel' },
+  { name: 'Image Editor', icon: FileImage, path: '/tools/image' },
+  { name: 'Audio Editor', icon: FileAudio, path: '/tools/audio' },
+  { name: 'Video Editor', icon: FileVideo, path: '/tools/video' },
+  { name: 'Print Templates', icon: Printer, path: '/tools/templates' },
+];
+
+const communityOptions = [
+  { name: 'Bulletin Board', icon: Newspaper, path: '/community/bulletin-board' },
+];
+
+const investorsOptions = [
+  { name: 'Shareholders', icon: UserCircle, path: '/investors/shareholders' },
+  { name: 'Insiders', icon: Shield, path: '/investors/insiders' },
+];
+
+const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) => {
+  const [showPopup, setShowPopup] = useState(false);
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (title === 'Social Media' || title === 'Tools' || title === 'Community' || title === 'Investors') {
+      e.preventDefault();
+      setShowPopup(!showPopup);
+    }
+  };
+
+  const getOptions = () => {
+    if (title === 'Social Media') return socialMediaOptions;
+    if (title === 'Tools') return toolsOptions;
+    if (title === 'Community') return communityOptions;
+    if (title === 'Investors') return investorsOptions;
+    return [];
+  };
+
+  return (
+    <div className="relative">
+      <Link 
+        to={path}
+        onClick={handleClick}
+        className="bg-white rounded-lg shadow-sm border border-neutral-100 p-5 hover:shadow-md transition-all group block"
+      >
+        <div className="flex flex-col items-start h-full">
+          <div className="p-2 rounded-md bg-primary/5 text-primary mb-4">
+            {icon}
+          </div>
+          <h3 className="font-bold text-lg text-primary mb-2 group-hover:text-primary-700 transition-colors">
+            {title}
+          </h3>
+          <p className="text-neutral-600 text-sm">{description}</p>
+          <div className="mt-auto pt-4 text-primary text-sm font-medium flex items-center">
+            <span className="mr-1">Open</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="transform transition-transform group-hover:translate-x-1"
+            >
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
+          </div>
+        </div>
+      </Link>
+
+      {showPopup && (getOptions().length > 0) && (
+        <div className="absolute z-50 left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 animate-fade-in">
+          {getOptions().map((option) => (
+            <Link
+              key={option.name}
+              to={option.path}
+              className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
+              onClick={() => setShowPopup(false)}
+            >
+              <option.icon size={18} className="mr-3" />
+              {option.name}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ToolTile;

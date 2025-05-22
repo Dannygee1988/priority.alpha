@@ -1,0 +1,38 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import AppLayout from './layouts/AppLayout';
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<Login />} />
+          
+          {/* Protected routes */}
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            {/* Add more routes as they're developed */}
+            <Route path="/analytics" element={<div className="p-8">Analytics page (coming soon)</div>} />
+            <Route path="/team" element={<div className="p-8">Team Management page (coming soon)</div>} />
+            <Route path="/projects" element={<div className="p-8">Projects page (coming soon)</div>} />
+            <Route path="/messages" element={<div className="p-8">Messaging page (coming soon)</div>} />
+            <Route path="/calendar" element={<div className="p-8">Calendar page (coming soon)</div>} />
+            <Route path="/settings" element={<div className="p-8">Settings page (coming soon)</div>} />
+            <Route path="/finance" element={<div className="p-8">Financial Reports page (coming soon)</div>} />
+            <Route path="/resources" element={<div className="p-8">Resources page (coming soon)</div>} />
+          </Route>
+          
+          {/* Redirect to login by default */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
+
+export default App;
