@@ -5,7 +5,6 @@ import Input from '../components/Input';
 
 const RNSGenerator: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
-  const [includeAdditional, setIncludeAdditional] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerate = () => {
@@ -84,21 +83,6 @@ const RNSGenerator: React.FC = () => {
                     Keywords to emphasize in the press release
                   </p>
                 </div>
-              </div>
-            </div>
-
-            <div className="flex items-center mb-6">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="additional-info"
-                  checked={includeAdditional}
-                  onChange={(e) => setIncludeAdditional(e.target.checked)}
-                  className="h-4 w-4 text-primary border-neutral-300 rounded focus:ring-primary"
-                />
-                <label htmlFor="additional-info" className="ml-2 block text-sm text-neutral-700">
-                  Include Additional Information
-                </label>
               </div>
             </div>
 
