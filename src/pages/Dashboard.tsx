@@ -223,7 +223,7 @@ const Dashboard: React.FC = () => {
         <p className="text-neutral-500 mb-4">Access your essential business management tools</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {tools.map((tool) => (
-            <div key={tool.id} className="h-[200px]">
+            <div key={tool.id} className="h-[180px]">
               <ToolTile
                 title={tool.name}
                 description={tool.description}
