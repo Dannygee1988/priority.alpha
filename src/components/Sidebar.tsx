@@ -44,6 +44,7 @@ import {
   UserPlus,
   AlertCircle,
   PenLine,
+  Database,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
@@ -123,6 +124,7 @@ const navigation = [
   { name: 'Analytics', icon: LineChart, path: '/analytics' },
   { name: 'Human Resources', icon: UserCog, path: '/hr' },
   { name: 'CRM', icon: UserPlus, path: '/crm' },
+  { name: 'Data', icon: Database, path: '/data' },
   {
     name: 'Tools',
     icon: Wrench,

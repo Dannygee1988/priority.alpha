@@ -15,6 +15,7 @@ import {
   Wrench,
   Brain,
   UserPlus,
+  Database,
 } from 'lucide-react';
 import { Stat, Tool } from '../types';
 import DashboardStatistics from '../components/DashboardStatistics';
@@ -124,34 +125,41 @@ const tools: Tool[] = [
   },
   {
     id: '11',
+    name: 'Data',
+    description: 'Data management and analytics',
+    icon: 'database',
+    path: '/data',
+  },
+  {
+    id: '12',
     name: 'Tools',
     description: 'Business efficiency and file management tools',
     icon: 'wrench',
     path: '/tools',
   },
   {
-    id: '12',
+    id: '13',
     name: 'Calendar',
     description: 'Schedule and manage appointments',
     icon: 'calendar',
     path: '/calendar',
   },
   {
-    id: '13',
+    id: '14',
     name: 'Inbox',
     description: 'Messages and communications hub',
     icon: 'inbox',
     path: '/inbox',
   },
   {
-    id: '14',
+    id: '15',
     name: 'Advisor',
     description: 'AI-powered business advice and insights',
     icon: 'brain',
     path: '/advisor',
   },
   {
-    id: '15',
+    id: '16',
     name: 'Settings',
     description: 'Configure application settings',
     icon: 'settings',
@@ -181,6 +189,8 @@ const getToolIcon = (icon: string) => {
       return <UserCog size={24} />;
     case 'user-plus':
       return <UserPlus size={24} />;
+    case 'database':
+      return <Database size={24} />;
     case 'wrench':
       return <Wrench size={24} />;
     case 'calendar':

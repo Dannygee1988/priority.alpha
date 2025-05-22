@@ -27,6 +27,7 @@ function App() {
             <Route path="/settings" element={<div className="p-8">Settings page (coming soon)</div>} />
             <Route path="/finance" element={<div className="p-8">Financial Reports page (coming soon)</div>} />
             <Route path="/resources" element={<div className="p-8">Resources page (coming soon)</div>} />
+            <Route path="/data" element={<div className="p-8">Data Management page (coming soon)</div>} />
           </Route>
           
           {/* Redirect to login by default */}
@@ -37,4 +38,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
