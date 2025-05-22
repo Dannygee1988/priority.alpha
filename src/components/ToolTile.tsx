@@ -26,6 +26,7 @@ import {
   Shield,
   AlertCircle,
   PenLine,
+  ChevronDown,
 } from 'lucide-react';
 
 interface ToolTileProps {
