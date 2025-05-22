@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, FilePdf, FileJson } from 'lucide-react';
+import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 
