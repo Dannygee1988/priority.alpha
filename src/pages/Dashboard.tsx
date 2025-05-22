@@ -262,7 +262,6 @@ const Dashboard: React.FC = () => {
     <div className="px-4 py-6 sm:px-6 lg:px-8 animate-fade-in">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-neutral-800">Dashboard</h1>
-        <p className="text-neutral-500">Welcome back to Pri0r1ty. Here's what's happening today.</p>
       </div>
 
       <div className="mb-8">
