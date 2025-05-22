@@ -43,6 +43,7 @@ import {
   Shield,
   UserPlus,
   AlertCircle,
+  PenLine,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
@@ -81,7 +82,14 @@ const investorsSubmenu = [
 ];
 
 const prSubmenu = [
-  { name: 'RNS', icon: AlertCircle, path: '/pr/rns' },
+  { 
+    name: 'RNS', 
+    icon: AlertCircle, 
+    path: '/pr/rns',
+    submenu: [
+      { name: 'Write new RNS', icon: PenLine, path: '/pr/rns/write' }
+    ]
+  },
 ];
 
 const navigation = [
@@ -130,33 +138,43 @@ const Sidebar: React.FC = () => {
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedSubmenu, setExpandedSubmenu] = useState<string | null>(null);
+  const [expandedNestedSubmenu, setExpandedNestedSubmenu] = useState<string | null>(null);
 
   const toggleSidebar = () => {
     setIsExpanded(!isExpanded);
     if (!isExpanded) {
       setExpandedSubmenu(null);
+      setExpandedNestedSubmenu(null);
     }
   };
 
   const toggleSubmenu = (name: string) => {
     setExpandedSubmenu(expandedSubmenu === name ? null : name);
+    setExpandedNestedSubmenu(null);
+  };
+
+  const toggleNestedSubmenu = (name: string) => {
+    setExpandedNestedSubmenu(expandedNestedSubmenu === name ? null : name);
   };
 
   const NavLink = ({ 
     item, 
-    isSubmenuItem = false 
+    isSubmenuItem = false,
+    isNestedSubmenuItem = false
   }: { 
     item: { 
       name: string; 
       icon: any; 
       path: string; 
-      submenu?: typeof socialMediaSubmenu;
+      submenu?: any[];
     };
     isSubmenuItem?: boolean;
+    isNestedSubmenuItem?: boolean;
   }) => {
     const isActive = location.pathname === item.path;
     const hasSubmenu = item.submenu && item.submenu.length > 0;
     const isSubmenuExpanded = expandedSubmenu === item.name;
+    const isNestedSubmenuExpanded = expandedNestedSubmenu === item.name;
 
     return (
       <div>
@@ -166,8 +184,9 @@ const Sidebar: React.FC = () => {
             ${isActive ? 'text-primary bg-primary/5' : 'text-neutral-600 hover:text-primary hover:bg-primary/5'}
             ${!isExpanded && 'justify-center'}
             ${isSubmenuItem && 'pl-6'}
+            ${isNestedSubmenuItem && 'pl-9'}
           `}
-          onClick={() => hasSubmenu ? toggleSubmenu(item.name) : null}
+          onClick={() => hasSubmenu ? (isSubmenuItem ? toggleNestedSubmenu(item.name) : toggleSubmenu(item.name)) : null}
           title={!isExpanded ? item.name : undefined}
         >
           <item.icon size={20} className={isExpanded ? 'mr-3' : ''} />
@@ -177,30 +196,22 @@ const Sidebar: React.FC = () => {
               {hasSubmenu && (
                 <ChevronDown
                   size={16}
-                  className={`transition-transform ${isSubmenuExpanded ? 'rotate-180' : ''}`}
+                  className={`transition-transform ${(isSubmenuExpanded || isNestedSubmenuExpanded) ? 'rotate-180' : ''}`}
                 />
               )}
             </>
           )}
         </div>
 
-        {isExpanded && hasSubmenu && isSubmenuExpanded && (
-          <div className="mt-1 ml-3 space-y-1">
+        {isExpanded && hasSubmenu && (isSubmenuExpanded || isNestedSubmenuExpanded) && (
+          <div className={`mt-1 ml-3 space-y-1 ${isNestedSubmenuItem ? 'pl-3' : ''}`}>
             {item.submenu?.map((subItem) => (
-              <Link
+              <NavLink
                 key={subItem.name}
-                to={subItem.path}
-                className={`
-                  flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
-                  ${location.pathname === subItem.path
-                    ? 'text-primary bg-primary/5'
-                    : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
-                  }
-                `}
-              >
-                <subItem.icon size={18} className="mr-3" />
-                {subItem.name}
-              </Link>
+                item={subItem}
+                isSubmenuItem={!isSubmenuItem}
+                isNestedSubmenuItem={isSubmenuItem}
+              />
             ))}
           </div>
         )}

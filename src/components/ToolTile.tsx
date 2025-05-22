@@ -25,6 +25,7 @@ import {
   UserCircle,
   Shield,
   AlertCircle,
+  PenLine,
 } from 'lucide-react';
 
 interface ToolTileProps {
@@ -70,17 +71,31 @@ const investorsOptions = [
 ];
 
 const prOptions = [
-  { name: 'RNS', icon: AlertCircle, path: '/pr/rns' },
+  { 
+    name: 'RNS', 
+    icon: AlertCircle, 
+    path: '/pr/rns',
+    submenu: [
+      { name: 'Write new RNS', icon: PenLine, path: '/pr/rns/write' }
+    ]
+  },
 ];
 
 const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) => {
   const [showPopup, setShowPopup] = useState(false);
+  const [showNestedPopup, setShowNestedPopup] = useState<string | null>(null);
 
   const handleClick = (e: React.MouseEvent) => {
     if (title === 'Social Media' || title === 'Tools' || title === 'Community' || title === 'Investors' || title === 'Public Relations') {
       e.preventDefault();
       setShowPopup(!showPopup);
     }
+  };
+
+  const handleNestedClick = (e: React.MouseEvent, itemName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowNestedPopup(showNestedPopup === itemName ? null : itemName);
   };
 
   const getOptions = () => {
@@ -131,15 +146,50 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) =
       {showPopup && (getOptions().length > 0) && (
         <div className="absolute z-50 left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 animate-fade-in">
           {getOptions().map((option) => (
-            <Link
-              key={option.name}
-              to={option.path}
-              className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
-              onClick={() => setShowPopup(false)}
-            >
-              <option.icon size={18} className="mr-3" />
-              {option.name}
-            </Link>
+            <div key={option.name}>
+              {option.submenu ? (
+                <div>
+                  <button
+                    onClick={(e) => handleNestedClick(e, option.name)}
+                    className="w-full flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
+                  >
+                    <option.icon size={18} className="mr-3" />
+                    <span className="flex-1">{option.name}</span>
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform ${showNestedPopup === option.name ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {showNestedPopup === option.name && (
+                    <div className="pl-8 bg-neutral-50">
+                      {option.submenu.map((subOption) => (
+                        <Link
+                          key={subOption.name}
+                          to={subOption.path}
+                          className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
+                          onClick={() => {
+                            setShowPopup(false);
+                            setShowNestedPopup(null);
+                          }}
+                        >
+                          <subOption.icon size={18} className="mr-3" />
+                          {subOption.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to={option.path}
+                  className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
+                  onClick={() => setShowPopup(false)}
+                >
+                  <option.icon size={18} className="mr-3" />
+                  {option.name}
+                </Link>
+              )}
+            </div>
           ))}
         </div>
       )}
