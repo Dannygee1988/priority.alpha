@@ -29,26 +29,6 @@ const AppLayout: React.FC = () => {
             <Outlet />
           </div>
         </main>
-        <footer className="bg-white border-t border-neutral-200 py-4">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <p className="text-sm text-neutral-500">
-                &copy; {new Date().getFullYear()} Pri0r1ty. All rights reserved.
-              </p>
-              <div className="mt-3 md:mt-0 flex space-x-4">
-                <a href="#" className="text-sm text-neutral-500 hover:text-primary">
-                  Privacy
-                </a>
-                <a href="#" className="text-sm text-neutral-500 hover:text-primary">
-                  Terms
-                </a>
-                <a href="#" className="text-sm text-neutral-500 hover:text-primary">
-                  Contact
-                </a>
-              </div>
-            </div>
-          </div>
-        </footer>
       </div>
     </div>
   );
