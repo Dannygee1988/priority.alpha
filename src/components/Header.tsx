@@ -26,13 +26,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
 
   return (
     <header className="bg-white border-b border-neutral-200 sticky top-0 z-10">
-      <div className="h-16 px-6 flex items-center justify-between">
-        <div className="flex items-center">
-          <h1 className="text-xl font-semibold text-neutral-800">
-            {window.location.pathname.split('/').pop()?.charAt(0).toUpperCase() + window.location.pathname.split('/').pop()?.slice(1) || 'Dashboard'}
-          </h1>
-        </div>
-        
+      <div className="h-16 px-6 flex items-center justify-end">
         <div className="flex items-center space-x-4">
           <button 
             onClick={toggleDarkMode} 
