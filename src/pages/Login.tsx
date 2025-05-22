@@ -43,7 +43,7 @@ const Login: React.FC = () => {
         <div className="text-center mb-10">
           <div className="flex justify-center mb-3">
             <img 
-              src="https://res.cloudinary.com/deyzbqzya/image/upload/b7a19272076c0b0df077e6e2e8433547"
+              src="https://res.cloudinary.com/deyzbqzya/image/upload/v1747914532/Pri0r1ty_PRIMARY-Logo_Colour-Long-Pos-RGB_1_qhsx8u.png"
               alt="Logo"
               className="h-12 w-auto"
             />
