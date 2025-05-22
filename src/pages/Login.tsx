@@ -41,11 +41,11 @@ const Login: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full animate-scale-up">
         <div className="text-center mb-10">
-          <div className="flex justify-center mb-3">
+          <div className="flex justify-center mb-6">
             <img 
               src="https://res.cloudinary.com/deyzbqzya/image/upload/v1747914532/Pri0r1ty_PRIMARY-Logo_Colour-Long-Pos-RGB_1_qhsx8u.png"
               alt="Logo"
-              className="h-12 w-auto"
+              className="h-36 w-auto"
             />
           </div>
           <p className="mt-2 text-neutral-600">Business management powered by AI</p>
