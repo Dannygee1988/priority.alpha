@@ -14,12 +14,13 @@ export async function getSocialMetrics(companyId: string) {
       updated_at
     `)
     .eq('company_id', companyId)
-    .single();
+    .order('created_at', { ascending: false })
+    .limit(1);
 
   if (error) {
     console.error('Error fetching social metrics:', error);
     throw error;
   }
 
-  return data;
+  return data?.[0] || null;
 }

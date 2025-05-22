@@ -192,7 +192,7 @@ const Dashboard: React.FC = () => {
     {
       id: '2',
       title: 'Most Popular Platform',
-      value: 'Loading...',
+      value: 'No data',
       change: 0,
       icon: 'share'
     },
@@ -206,7 +206,7 @@ const Dashboard: React.FC = () => {
     {
       id: '4',
       title: 'Hot Topic',
-      value: 'Loading...',
+      value: 'No data',
       change: 0,
       icon: 'message-square'
     }
@@ -215,38 +215,43 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const loadSocialMetrics = async () => {
       if (user) {
-        const metrics = await getSocialMetrics(user.id);
-        if (metrics) {
-          setStats([
-            {
-              id: '1',
-              title: 'Total Followers',
-              value: metrics.total_followers.toLocaleString(),
-              change: 0,
-              icon: 'users'
-            },
-            {
-              id: '2',
-              title: 'Most Popular Platform',
-              value: metrics.most_popular_platform || 'None',
-              change: 0,
-              icon: 'share'
-            },
-            {
-              id: '3',
-              title: 'Community Score',
-              value: `${metrics.community_score}%`,
-              change: 0,
-              icon: 'star'
-            },
-            {
-              id: '4',
-              title: 'Hot Topic',
-              value: metrics.hot_topic || 'None',
-              change: 0,
-              icon: 'message-square'
-            }
-          ]);
+        try {
+          const metrics = await getSocialMetrics(user.id);
+          if (metrics) {
+            setStats([
+              {
+                id: '1',
+                title: 'Total Followers',
+                value: metrics.total_followers.toLocaleString(),
+                change: 0,
+                icon: 'users'
+              },
+              {
+                id: '2',
+                title: 'Most Popular Platform',
+                value: metrics.most_popular_platform || 'No data',
+                change: 0,
+                icon: 'share'
+              },
+              {
+                id: '3',
+                title: 'Community Score',
+                value: `${metrics.community_score}%`,
+                change: 0,
+                icon: 'star'
+              },
+              {
+                id: '4',
+                title: 'Hot Topic',
+                value: metrics.hot_topic || 'No data',
+                change: 0,
+                icon: 'message-square'
+              }
+            ]);
+          }
+        } catch (error) {
+          console.error('Error loading social metrics:', error);
+          // Keep the default stats state on error
         }
       }
     };
