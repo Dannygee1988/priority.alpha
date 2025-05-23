@@ -1,60 +1,68 @@
-import React, { useState, useRef, ChangeEvent } from 'react';
+import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import { useAuth } from '../context/AuthContext';
+import { getDocuments, getDocumentStats, getUserCompany } from '../lib/api';
+
+interface DocumentStats {
+  totalSize: number;
+  totalTokens: number;
+  totalDocuments: number;
+}
 
 const Data: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'documents' | 'upload'>('documents');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [url, setUrl] = useState('');
   const [urls, setUrls] = useState<string[]>([]);
   const [extractingSitemap, setExtractingSitemap] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [stats, setStats] = useState<DocumentStats>({
+    totalSize: 0,
+    totalTokens: 0,
+    totalDocuments: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const documents = [
-    { 
-      name: 'company-handbook.pdf',
-      type: 'PDF',
-      size: '2.42 MB',
-      uploaded: 'May 15, 2023',
-      tokens: '12,500'
-    },
-    {
-      name: 'quarterly-report-q1.docx',
-      type: 'DOC',
-      size: '1.19 MB',
-      uploaded: 'Jun 2, 2023',
-      tokens: '8,200'
-    },
-    {
-      name: 'customer-feedback.csv',
-      type: 'CSV',
-      size: '800.78 KB',
-      uploaded: 'Jun 10, 2023',
-      tokens: '4,100'
-    },
-    {
-      name: 'product-specifications.txt',
-      type: 'TXT',
-      size: '341.8 KB',
-      uploaded: 'Jun 15, 2023',
-      tokens: '1,750'
-    }
-  ];
+  useEffect(() => {
+    const loadData = async () => {
+      if (user?.id) {
+        try {
+          const companyId = await getUserCompany(user.id);
+          
+          if (!companyId) {
+            console.warn('No company found for user');
+            setIsLoading(false);
+            return;
+          }
 
-  const getFileIcon = (type: string) => {
-    switch (type) {
-      case 'PDF':
-        return <FilePdf className="text-error-500" />;
-      case 'DOC':
-        return <FileText className="text-primary" />;
-      case 'CSV':
-        return <FileSpreadsheet className="text-success-500" />;
-      case 'JSON':
-        return <FileJson className="text-warning-500" />;
-      default:
-        return <FileText className="text-neutral-500" />;
-    }
+          const [docsData, statsData] = await Promise.all([
+            getDocuments(companyId),
+            getDocumentStats(companyId)
+          ]);
+
+          setDocuments(docsData);
+          setStats(statsData);
+        } catch (error) {
+          console.error('Error loading documents:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadData();
+  }, [user]);
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
@@ -76,14 +84,6 @@ const Data: React.FC = () => {
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const handleAddUrl = () => {
@@ -112,6 +112,22 @@ const Data: React.FC = () => {
     }, 2000);
   };
 
+  const getFileIcon = (type: string) => {
+    switch (type) {
+      case 'PDF':
+        return <FilePdf className="text-error-500" />;
+      case 'DOC':
+      case 'DOCX':
+        return <FileText className="text-primary" />;
+      case 'CSV':
+        return <FileSpreadsheet className="text-success-500" />;
+      case 'JSON':
+        return <FileJson className="text-warning-500" />;
+      default:
+        return <FileText className="text-neutral-500" />;
+    }
+  };
+
   return (
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
@@ -125,7 +141,9 @@ const Data: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-neutral-600 text-sm font-medium">Total Documents</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">-</h3>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
+                {stats.totalDocuments || '-'}
+              </h3>
             </div>
             <FileText className="text-primary" size={24} />
           </div>
@@ -135,7 +153,9 @@ const Data: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-neutral-600 text-sm font-medium">Storage Used</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">-</h3>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
+                {stats.totalSize ? formatFileSize(stats.totalSize) : '-'}
+              </h3>
             </div>
             <Database className="text-success-500" size={24} />
           </div>
@@ -145,7 +165,9 @@ const Data: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-neutral-600 text-sm font-medium">Total Tokens</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">-</h3>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
+                {stats.totalTokens ? stats.totalTokens.toLocaleString() : '-'}
+              </h3>
             </div>
             <Layers className="text-warning-500" size={24} />
           </div>
@@ -155,7 +177,9 @@ const Data: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-neutral-600 text-sm font-medium">Data Sources</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">-</h3>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
+                {documents.length || '-'}
+              </h3>
             </div>
             <Database className="text-accent" size={24} />
           </div>
@@ -210,44 +234,56 @@ const Data: React.FC = () => {
               </Button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-neutral-200">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Size</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Uploaded</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Tokens</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {documents.map((doc, index) => (
-                    <tr
-                      key={index}
-                      className="border-b border-neutral-100 hover:bg-neutral-50"
-                    >
-                      <td className="py-3 px-4">
-                        <div className="flex items-center">
-                          {getFileIcon(doc.type)}
-                          <span className="ml-2 text-sm text-neutral-700">{doc.name}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-neutral-600">{doc.type}</td>
-                      <td className="py-3 px-4 text-sm text-neutral-600">{doc.size}</td>
-                      <td className="py-3 px-4 text-sm text-neutral-600">{doc.uploaded}</td>
-                      <td className="py-3 px-4 text-sm text-neutral-600">{doc.tokens}</td>
-                      <td className="py-3 px-4">
-                        <button className="p-1 hover:bg-neutral-100 rounded-full">
-                          <MoreVertical size={16} className="text-neutral-400" />
-                        </button>
-                      </td>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : documents.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-neutral-200">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Name</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Size</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Uploaded</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Tokens</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {documents.map((doc) => (
+                      <tr
+                        key={doc.id}
+                        className="border-b border-neutral-100 hover:bg-neutral-50"
+                      >
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            {getFileIcon(doc.type)}
+                            <span className="ml-2 text-sm text-neutral-700">{doc.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-neutral-600">{doc.type}</td>
+                        <td className="py-3 px-4 text-sm text-neutral-600">{formatFileSize(doc.size)}</td>
+                        <td className="py-3 px-4 text-sm text-neutral-600">
+                          {new Date(doc.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-neutral-600">{doc.token_count?.toLocaleString() || '-'}</td>
+                        <td className="py-3 px-4">
+                          <button className="p-1 hover:bg-neutral-100 rounded-full">
+                            <MoreVertical size={16} className="text-neutral-400" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-neutral-500">No documents found</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -385,30 +421,6 @@ const Data: React.FC = () => {
                   </div>
                 )}
               </div>
-            </div>
-
-            <div className="mt-8">
-              <h4 className="text-sm font-medium text-neutral-900 mb-4">Tips for Better Results</h4>
-              <ul className="space-y-3">
-                <li className="flex items-center text-sm text-neutral-600">
-                  <span className="flex items-center justify-center w-5 h-5 bg-primary/10 text-primary rounded-full text-xs font-medium mr-2">
-                    1
-                  </span>
-                  Upload clean, well-formatted documents for better processing
-                </li>
-                <li className="flex items-center text-sm text-neutral-600">
-                  <span className="flex items-center justify-center w-5 h-5 bg-primary/10 text-primary rounded-full text-xs font-medium mr-2">
-                    2
-                  </span>
-                  Text-based PDFs work better than scanned documents
-                </li>
-                <li className="flex items-center text-sm text-neutral-600">
-                  <span className="flex items-center justify-center w-5 h-5 bg-primary/10 text-primary rounded-full text-xs font-medium mr-2">
-                    3
-                  </span>
-                  Organize related documents in batches for improved context
-                </li>
-              </ul>
             </div>
           </div>
         )}
