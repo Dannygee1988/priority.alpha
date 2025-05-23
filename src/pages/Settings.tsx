@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Lock, Globe, Twitter, Facebook, LinkedIn, Instagram, Mail, Building2, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { User, Lock, Globe, Twitter, Facebook, Linkedin as LinkedIn, Instagram, Mail, Building2, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 
