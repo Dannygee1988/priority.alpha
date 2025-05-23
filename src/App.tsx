@@ -9,6 +9,7 @@ import ImproveRNS from './pages/ImproveRNS';
 import PublishedRNS from './pages/PublishedRNS';
 import CRM from './pages/CRM';
 import Insiders from './pages/Insiders';
+import Settings from './pages/Settings';
 import AppLayout from './layouts/AppLayout';
 
 function App() {
@@ -28,13 +29,13 @@ function App() {
             <Route path="/pr/rns/improve" element={<ImproveRNS />} />
             <Route path="/pr/rns/published" element={<PublishedRNS />} />
             <Route path="/investors/insiders" element={<Insiders />} />
+            <Route path="/settings" element={<Settings />} />
             {/* Add more routes as they're developed */}
             <Route path="/analytics" element={<div className="p-8">Analytics page (coming soon)</div>} />
             <Route path="/team" element={<div className="p-8">Team Management page (coming soon)</div>} />
             <Route path="/projects" element={<div className="p-8">Projects page (coming soon)</div>} />
             <Route path="/messages" element={<div className="p-8">Messaging page (coming soon)</div>} />
             <Route path="/calendar" element={<div className="p-8">Calendar page (coming soon)</div>} />
-            <Route path="/settings" element={<div className="p-8">Settings page (coming soon)</div>} />
             <Route path="/finance" element={<div className="p-8">Financial Reports page (coming soon)</div>} />
             <Route path="/resources" element={<div className="p-8">Resources page (coming soon)</div>} />
           </Route>
