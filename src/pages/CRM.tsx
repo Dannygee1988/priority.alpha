@@ -309,19 +309,21 @@ const CRM: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Type
-                  </label>
-                  <select
-                    value={newCustomer.type}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, type: e.target.value as typeof typeOptions[number] })}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  >
-                    {typeOptions.map((type) => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Type
+                    </label>
+                    <select
+                      value={newCustomer.type}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, type: e.target.value as typeof typeOptions[number] })}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    >
+                      {typeOptions.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 
                 <div>
