@@ -18,10 +18,6 @@ import {
   Database,
   Star,
   MessageSquare,
-  Palette,
-  FileText,
-  BarChart3,
-  Target,
 } from 'lucide-react';
 import { Stat, Tool } from '../types';
 import DashboardStatistics from '../components/DashboardStatistics';
@@ -213,7 +209,7 @@ const Dashboard: React.FC = () => {
     {
       id: '1',
       title: 'Total Followers',
-      value: '0',
+      value: '-',
       change: 0,
       icon: 'users'
     },
@@ -227,7 +223,7 @@ const Dashboard: React.FC = () => {
     {
       id: '3',
       title: 'Community Score',
-      value: '0%',
+      value: '-',
       change: 0,
       icon: 'star'
     },
@@ -244,7 +240,6 @@ const Dashboard: React.FC = () => {
     const loadSocialMetrics = async () => {
       if (user?.id) {
         try {
-          // First get the company ID for the user
           const companyId = await getUserCompany(user.id);
           
           if (!companyId) {
@@ -252,7 +247,6 @@ const Dashboard: React.FC = () => {
             return;
           }
 
-          // Then get the social metrics for that company
           const metrics = await getSocialMetrics(companyId);
           
           if (metrics) {
@@ -260,7 +254,7 @@ const Dashboard: React.FC = () => {
               {
                 id: '1',
                 title: 'Total Followers',
-                value: metrics.total_followers.toLocaleString(),
+                value: metrics.total_followers ? metrics.total_followers.toLocaleString() : '-',
                 change: 0,
                 icon: 'users'
               },
@@ -274,7 +268,7 @@ const Dashboard: React.FC = () => {
               {
                 id: '3',
                 title: 'Community Score',
-                value: `${metrics.community_score}%`,
+                value: metrics.community_score ? `${metrics.community_score}%` : '-',
                 change: 0,
                 icon: 'star'
               },
@@ -289,7 +283,6 @@ const Dashboard: React.FC = () => {
           }
         } catch (error) {
           console.error('Error loading social metrics:', error);
-          // Keep the default values in case of error
         }
       }
     };
