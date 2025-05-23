@@ -14,7 +14,6 @@ interface Customer {
   company_name: string | null;
   job_title: string | null;
   status: 'prospect' | 'lead' | 'customer' | 'inactive';
-  source: string | null;
   last_contacted: string | null;
   created_at: string;
 }
@@ -33,7 +32,6 @@ const CRM: React.FC = () => {
     company_name: '',
     job_title: '',
     status: 'prospect' as const,
-    source: '',
     notes: ''
   });
   const [error, setError] = useState<string | null>(null);
@@ -89,14 +87,13 @@ const CRM: React.FC = () => {
         company_name: '',
         job_title: '',
         status: 'prospect',
-        source: '',
         notes: ''
       });
       
       loadCustomers();
     } catch (error) {
       console.error('Error adding customer:', error);
-      setError('Failed to add customer. Please try again.');
+      setError('Failed to add contact. Please try again.');
     }
   };
 
@@ -133,7 +130,7 @@ const CRM: React.FC = () => {
           <div className="flex justify-between items-center mb-6">
             <div className="flex-1 max-w-md">
               <Input
-                placeholder="Search customers..."
+                placeholder="Search contacts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 leftIcon={<Search size={18} />}
@@ -151,7 +148,7 @@ const CRM: React.FC = () => {
                 leftIcon={<Plus size={18} />}
                 onClick={() => setShowAddModal(true)}
               >
-                Add Customer
+                Add Contact
               </Button>
             </div>
           </div>
@@ -171,10 +168,9 @@ const CRM: React.FC = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-neutral-200">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Customer</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact Info</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Company</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Status</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Last Contacted</th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
                   </tr>
@@ -224,11 +220,6 @@ const CRM: React.FC = () => {
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(customer.status)}`}>
-                          {customer.status.charAt(0).toUpperCase() + customer.status.slice(1)}
-                        </span>
-                      </td>
                       <td className="py-3 px-4 text-sm text-neutral-600">
                         {customer.last_contacted
                           ? new Date(customer.last_contacted).toLocaleDateString()
@@ -246,18 +237,18 @@ const CRM: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-neutral-500">No customers found</p>
+              <p className="text-neutral-500">No contacts found</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Add Customer Modal */}
+      {/* Add Contact Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl my-8">
             <div className="p-8">
-              <h2 className="text-xl font-bold text-neutral-800 mb-6">Add New Customer</h2>
+              <h2 className="text-xl font-bold text-neutral-800 mb-6">Add New Contact</h2>
               
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-6">
@@ -306,30 +297,6 @@ const CRM: React.FC = () => {
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Status
-                    </label>
-                    <select
-                      value={newCustomer.status}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, status: e.target.value as any })}
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                    >
-                      <option value="prospect">Prospect</option>
-                      <option value="lead">Lead</option>
-                      <option value="customer">Customer</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                  </div>
-                  
-                  <Input
-                    label="Source"
-                    value={newCustomer.source}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, source: e.target.value })}
-                  />
-                </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Notes
@@ -338,7 +305,7 @@ const CRM: React.FC = () => {
                     value={newCustomer.notes}
                     onChange={(e) => setNewCustomer({ ...newCustomer, notes: e.target.value })}
                     className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary h-32 resize-none"
-                    placeholder="Add any additional notes about the customer..."
+                    placeholder="Add any additional notes about the contact..."
                   />
                 </div>
               </div>
@@ -355,7 +322,7 @@ const CRM: React.FC = () => {
                   onClick={handleAddCustomer}
                   size="lg"
                 >
-                  Add Customer
+                  Add Contact
                 </Button>
               </div>
             </div>
