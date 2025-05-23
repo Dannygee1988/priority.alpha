@@ -120,11 +120,6 @@ const CRM: React.FC = () => {
 
   return (
     <div className="px-4 py-8 animate-fade-in">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-neutral-800">Customer Relationship Management</h1>
-        <p className="text-neutral-500">Manage your customer relationships and track interactions</p>
-      </div>
-
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
