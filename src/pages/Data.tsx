@@ -329,18 +329,20 @@ const Data: React.FC = () => {
             <div className="mt-8">
               <h2 className="text-lg font-semibold text-neutral-800 mb-4">URL Training Data</h2>
               <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Enter URL to train from..."
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    leftIcon={<Globe size={18} />}
-                    fullWidth
-                  />
+                <div className="flex space-x-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Enter URL to train from..."
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      leftIcon={<Globe size={18} />}
+                      fullWidth
+                    />
+                  </div>
                   <Button
                     onClick={handleAddUrl}
-                    leftIcon={<Plus size={18} />}
                     disabled={!url}
+                    className="whitespace-nowrap h-[42px]"
                   >
                     Add URL
                   </Button>
