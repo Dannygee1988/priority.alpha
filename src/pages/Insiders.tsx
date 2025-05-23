@@ -3,9 +3,10 @@ import { Search, Filter, Plus, UserRound, Mail, Phone, Building2, MoreVertical }
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
-import { getCustomers, getUserCompany, addCustomer } from '../lib/api';
+import { getCustomers, getUserCompany } from '../lib/api';
+import { supabase } from '../lib/supabase';
 
-interface Insider {
+interface Contact {
   id: string;
   first_name: string;
   last_name: string;
@@ -16,31 +17,23 @@ interface Insider {
   type: string;
   last_contacted: string | null;
   created_at: string;
+  tags: string[];
 }
 
 const Insiders: React.FC = () => {
   const { user } = useAuth();
-  const [insiders, setInsiders] = useState<Insider[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [newInsider, setNewInsider] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    company_name: '',
-    job_title: '',
-    type: 'Staff' as const,
-    notes: ''
-  });
+  const [selectedContact, setSelectedContact] = useState<string | null>(null);
 
   useEffect(() => {
-    loadInsiders();
+    loadContacts();
   }, [user]);
 
-  const loadInsiders = async () => {
+  const loadContacts = async () => {
     if (!user?.id) return;
     
     try {
@@ -52,53 +45,45 @@ const Insiders: React.FC = () => {
       }
 
       const data = await getCustomers(companyId);
-      // Filter only insider contacts
-      const insiderContacts = data.filter(contact => contact.type === 'Staff' || contact.type === 'Advisor');
-      setInsiders(insiderContacts);
+      setContacts(data);
     } catch (error) {
-      console.error('Error loading insiders:', error);
-      setError('Failed to load insider list. Please try again later.');
+      console.error('Error loading contacts:', error);
+      setError('Failed to load contacts. Please try again later.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleAddInsider = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const companyId = await getUserCompany(user.id);
-      if (!companyId) {
-        setError('No company found for user');
-        return;
-      }
+    if (!selectedContact) {
+      setError('Please select a contact');
+      return;
+    }
 
-      await addCustomer({
-        company_id: companyId,
-        ...newInsider,
-        tags: ['insider'],
-        custom_fields: {}
-      });
+    try {
+      const contact = contacts.find(c => c.id === selectedContact);
+      if (!contact) return;
+
+      const newTags = [...(contact.tags || []), 'insider'];
+      
+      const { error: updateError } = await supabase
+        .from('crm_customers')
+        .update({ tags: newTags })
+        .eq('id', selectedContact);
+
+      if (updateError) throw updateError;
 
       setShowAddModal(false);
-      setNewInsider({
-        first_name: '',
-        last_name: '',
-        email: '',
-        phone: '',
-        company_name: '',
-        job_title: '',
-        type: 'Staff',
-        notes: ''
-      });
-      
-      loadInsiders();
+      setSelectedContact(null);
+      loadContacts();
     } catch (error) {
       console.error('Error adding insider:', error);
       setError('Failed to add insider. Please try again.');
     }
   };
 
+  const insiders = contacts.filter(contact => contact.tags?.includes('insider'));
+  
   const filteredInsiders = insiders.filter(insider =>
     `${insider.first_name} ${insider.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     insider.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -135,7 +120,7 @@ const Insiders: React.FC = () => {
                 leftIcon={<Plus size={18} />}
                 onClick={() => setShowAddModal(true)}
               >
-                Add Insider
+                Add to Insider List
               </Button>
             </div>
           </div>
@@ -236,93 +221,42 @@ const Insiders: React.FC = () => {
         </div>
       </div>
 
-      {/* Add Insider Modal */}
+      {/* Add to Insider List Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl my-8">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg my-8">
             <div className="p-8">
-              <h2 className="text-xl font-bold text-neutral-800 mb-6">Add New Insider</h2>
+              <h2 className="text-xl font-bold text-neutral-800 mb-6">Add to Insider List</h2>
               
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <Input
-                    label="First Name"
-                    value={newInsider.first_name}
-                    onChange={(e) => setNewInsider({ ...newInsider, first_name: e.target.value })}
-                    required
-                  />
-                  <Input
-                    label="Last Name"
-                    value={newInsider.last_name}
-                    onChange={(e) => setNewInsider({ ...newInsider, last_name: e.target.value })}
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-6">
-                  <Input
-                    label="Email"
-                    type="email"
-                    value={newInsider.email}
-                    onChange={(e) => setNewInsider({ ...newInsider, email: e.target.value })}
-                    required
-                  />
-                  
-                  <Input
-                    label="Phone"
-                    type="tel"
-                    value={newInsider.phone}
-                    onChange={(e) => setNewInsider({ ...newInsider, phone: e.target.value })}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-6">
-                  <Input
-                    label="Company Name"
-                    value={newInsider.company_name}
-                    onChange={(e) => setNewInsider({ ...newInsider, company_name: e.target.value })}
-                  />
-                  
-                  <Input
-                    label="Job Title"
-                    value={newInsider.job_title}
-                    onChange={(e) => setNewInsider({ ...newInsider, job_title: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Type
-                    </label>
-                    <select
-                      value={newInsider.type}
-                      onChange={(e) => setNewInsider({ ...newInsider, type: e.target.value as 'Staff' | 'Advisor' })}
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                    >
-                      <option value="Staff">Staff</option>
-                      <option value="Advisor">Advisor</option>
-                    </select>
-                  </div>
-                </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Notes
+                    Select Contact
                   </label>
-                  <textarea
-                    value={newInsider.notes}
-                    onChange={(e) => setNewInsider({ ...newInsider, notes: e.target.value })}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary h-32 resize-none"
-                    placeholder="Add any additional notes about the insider..."
-                  />
+                  <select
+                    value={selectedContact || ''}
+                    onChange={(e) => setSelectedContact(e.target.value)}
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="">Select a contact...</option>
+                    {contacts
+                      .filter(contact => !contact.tags?.includes('insider'))
+                      .map((contact) => (
+                        <option key={contact.id} value={contact.id}>
+                          {contact.first_name} {contact.last_name} - {contact.email}
+                        </option>
+                      ))}
+                  </select>
                 </div>
               </div>
 
               <div className="mt-8 flex justify-end space-x-3">
                 <Button
                   variant="outline"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setSelectedContact(null);
+                  }}
                   size="lg"
                 >
                   Cancel
@@ -330,8 +264,9 @@ const Insiders: React.FC = () => {
                 <Button
                   onClick={handleAddInsider}
                   size="lg"
+                  disabled={!selectedContact}
                 >
-                  Add Insider
+                  Add to Insider List
                 </Button>
               </div>
             </div>
