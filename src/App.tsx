@@ -8,6 +8,7 @@ import RNSGenerator from './pages/RNSGenerator';
 import ImproveRNS from './pages/ImproveRNS';
 import PublishedRNS from './pages/PublishedRNS';
 import CRM from './pages/CRM';
+import Insiders from './pages/Insiders';
 import AppLayout from './layouts/AppLayout';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
             <Route path="/pr/rns/write" element={<RNSGenerator />} />
             <Route path="/pr/rns/improve" element={<ImproveRNS />} />
             <Route path="/pr/rns/published" element={<PublishedRNS />} />
+            <Route path="/investors/insiders" element={<Insiders />} />
             {/* Add more routes as they're developed */}
             <Route path="/analytics" element={<div className="p-8">Analytics page (coming soon)</div>} />
             <Route path="/team" element={<div className="p-8">Team Management page (coming soon)</div>} />
