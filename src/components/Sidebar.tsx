@@ -46,6 +46,7 @@ import {
   Database,
   Sparkles,
   FileCheck,
+  UserPlus,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
