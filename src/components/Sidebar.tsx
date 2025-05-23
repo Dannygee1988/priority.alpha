@@ -41,11 +41,11 @@ import {
   Brain,
   UserCircle,
   Shield,
-  UserPlus,
   AlertCircle,
   PenLine,
   Database,
   Sparkles,
+  FileCheck,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
@@ -90,7 +90,8 @@ const prSubmenu = [
     path: '/pr/rns',
     submenu: [
       { name: 'Write new RNS', icon: PenLine, path: '/pr/rns/write' },
-      { name: 'Improve RNS', icon: Sparkles, path: '/pr/rns/improve' }
+      { name: 'Improve RNS', icon: Sparkles, path: '/pr/rns/improve' },
+      { name: 'Published RNS', icon: FileCheck, path: '/pr/rns/published' }
     ]
   },
 ];
