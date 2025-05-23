@@ -51,3 +51,50 @@ export async function getSocialMetrics(companyId: string) {
     throw new Error('Failed to fetch social metrics data. Please check your connection and try again.');
   }
 }
+
+export async function getDocuments(companyId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching documents:', error.message);
+      throw new Error(`Failed to fetch documents: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getDocuments:', error);
+    throw new Error('Failed to fetch documents. Please check your connection and try again.');
+  }
+}
+
+export async function getDocumentStats(companyId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('documents')
+      .select('size, token_count')
+      .eq('company_id', companyId);
+
+    if (error) {
+      console.error('Error fetching document stats:', error.message);
+      throw new Error(`Failed to fetch document stats: ${error.message}`);
+    }
+
+    const totalSize = data?.reduce((acc, doc) => acc + (doc.size || 0), 0) || 0;
+    const totalTokens = data?.reduce((acc, doc) => acc + (doc.token_count || 0), 0) || 0;
+    const totalDocuments = data?.length || 0;
+
+    return {
+      totalSize,
+      totalTokens,
+      totalDocuments
+    };
+  } catch (error) {
+    console.error('Error in getDocumentStats:', error);
+    throw new Error('Failed to fetch document stats. Please check your connection and try again.');
+  }
+}
