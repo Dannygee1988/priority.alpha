@@ -115,11 +115,6 @@ const Login: React.FC = () => {
                 Sign in
               </Button>
             </div>
-            
-            {/* Demo hint */}
-            <p className="text-xs text-center text-neutral-500 italic">
-              Demo login is enabled. Use any email and password.
-            </p>
           </form>
           
           <div className="mt-6 text-center">
