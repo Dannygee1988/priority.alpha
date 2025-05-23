@@ -7,6 +7,7 @@ import Data from './pages/Data';
 import RNSGenerator from './pages/RNSGenerator';
 import ImproveRNS from './pages/ImproveRNS';
 import PublishedRNS from './pages/PublishedRNS';
+import CRM from './pages/CRM';
 import AppLayout from './layouts/AppLayout';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/data" element={<Data />} />
+            <Route path="/crm" element={<CRM />} />
             <Route path="/pr/rns/write" element={<RNSGenerator />} />
             <Route path="/pr/rns/improve" element={<ImproveRNS />} />
             <Route path="/pr/rns/published" element={<PublishedRNS />} />
@@ -43,4 +45,4 @@ function App() {
   );
 }
 
-export default App
+export default App;

@@ -98,3 +98,56 @@ export async function getDocumentStats(companyId: string) {
     throw new Error('Failed to fetch document stats. Please check your connection and try again.');
   }
 }
+
+export async function getCustomers(companyId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('crm_customers')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching customers:', error.message);
+      throw new Error(`Failed to fetch customers: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getCustomers:', error);
+    throw new Error('Failed to fetch customers. Please check your connection and try again.');
+  }
+}
+
+export async function addCustomer(customerData: {
+  company_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  company_name?: string;
+  job_title?: string;
+  status: 'prospect' | 'lead' | 'customer' | 'inactive';
+  source?: string;
+  notes?: string;
+  tags?: string[];
+  custom_fields?: Record<string, any>;
+}) {
+  try {
+    const { data, error } = await supabase
+      .from('crm_customers')
+      .insert([customerData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding customer:', error.message);
+      throw new Error(`Failed to add customer: ${error.message}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in addCustomer:', error);
+    throw new Error('Failed to add customer. Please check your connection and try again.');
+  }
+}
