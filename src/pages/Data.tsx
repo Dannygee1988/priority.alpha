@@ -125,7 +125,7 @@ const Data: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-neutral-600 text-sm font-medium">Total Documents</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">7</h3>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">-</h3>
             </div>
             <FileText className="text-primary" size={24} />
           </div>
@@ -135,7 +135,7 @@ const Data: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-neutral-600 text-sm font-medium">Storage Used</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">10.45 MB</h3>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">-</h3>
             </div>
             <Database className="text-success-500" size={24} />
           </div>
@@ -145,7 +145,7 @@ const Data: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-neutral-600 text-sm font-medium">Total Tokens</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">56,500</h3>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">-</h3>
             </div>
             <Layers className="text-warning-500" size={24} />
           </div>
@@ -155,7 +155,7 @@ const Data: React.FC = () => {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-neutral-600 text-sm font-medium">Data Sources</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">3</h3>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">-</h3>
             </div>
             <Database className="text-accent" size={24} />
           </div>
