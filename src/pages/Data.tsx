@@ -1,11 +1,14 @@
 import React, { useState, useRef, ChangeEvent } from 'react';
-import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson } from 'lucide-react';
+import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 
 const Data: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'documents' | 'upload'>('documents');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [url, setUrl] = useState('');
+  const [urls, setUrls] = useState<string[]>([]);
+  const [extractingSitemap, setExtractingSitemap] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const documents = [
@@ -81,6 +84,32 @@ const Data: React.FC = () => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleAddUrl = () => {
+    if (url && !urls.includes(url)) {
+      setUrls([...urls, url]);
+      setUrl('');
+    }
+  };
+
+  const handleRemoveUrl = (urlToRemove: string) => {
+    setUrls(urls.filter(u => u !== urlToRemove));
+  };
+
+  const handleExtractSitemap = async () => {
+    setExtractingSitemap(true);
+    // Simulate sitemap extraction
+    setTimeout(() => {
+      setExtractingSitemap(false);
+      // Add example URLs from sitemap
+      setUrls([
+        ...urls,
+        'https://example.com/about',
+        'https://example.com/products',
+        'https://example.com/services',
+      ]);
+    }, 2000);
   };
 
   return (
@@ -225,6 +254,7 @@ const Data: React.FC = () => {
         {/* Upload Section */}
         {activeTab === 'upload' && (
           <div className="p-6">
+            {/* File Upload Section */}
             <div
               className={`border-2 border-dashed border-neutral-200 rounded-lg p-8 ${
                 selectedFiles.length > 0 ? 'bg-neutral-50' : ''
@@ -293,6 +323,66 @@ const Data: React.FC = () => {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* URL Training Section */}
+            <div className="mt-8">
+              <h2 className="text-lg font-semibold text-neutral-800 mb-4">URL Training Data</h2>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter URL to train from..."
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    leftIcon={<Globe size={18} />}
+                    fullWidth
+                  />
+                  <Button
+                    onClick={handleAddUrl}
+                    leftIcon={<Plus size={18} />}
+                    disabled={!url}
+                  >
+                    Add URL
+                  </Button>
+                </div>
+
+                {urls.length > 0 && (
+                  <div className="bg-neutral-50 rounded-lg border border-neutral-200 p-4">
+                    <div className="space-y-2">
+                      {urls.map((url, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between bg-white p-3 rounded-lg border border-neutral-200"
+                        >
+                          <div className="flex items-center">
+                            <Globe size={18} className="text-primary" />
+                            <span className="ml-2 text-sm text-neutral-700">{url}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveUrl(url)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 flex justify-between items-center">
+                      <Button
+                        variant="outline"
+                        onClick={handleExtractSitemap}
+                        isLoading={extractingSitemap}
+                      >
+                        Extract Sitemap
+                      </Button>
+                      <Button>
+                        Start Training
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="mt-8">
