@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, ChangeEvent } from 'react';
 import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 
 const Data: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'documents' | 'upload'>('documents');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const documents = [
     { 
@@ -50,6 +52,35 @@ const Data: React.FC = () => {
       default:
         return <FileText className="text-neutral-500" />;
     }
+  };
+
+  const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      setSelectedFiles(Array.from(files));
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const files = event.dataTransfer.files;
+    setSelectedFiles(Array.from(files));
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
@@ -194,24 +225,74 @@ const Data: React.FC = () => {
         {/* Upload Section */}
         {activeTab === 'upload' && (
           <div className="p-6">
-            <div className="border-2 border-dashed border-neutral-200 rounded-lg p-8">
-              <div className="text-center">
-                <Upload className="mx-auto h-12 w-12 text-neutral-400" />
-                <h3 className="mt-2 text-sm font-medium text-neutral-900">
-                  Drag & drop files here
-                </h3>
-                <p className="mt-1 text-sm text-neutral-500">
-                  or click to browse files
-                </p>
-                <p className="mt-2 text-xs text-neutral-500">
-                  Supported formats: PDF, TXT, DOC, DOCX, CSV, JSON
-                </p>
-                <div className="mt-6">
-                  <Button>
-                    Browse Files
-                  </Button>
+            <div
+              className={`border-2 border-dashed border-neutral-200 rounded-lg p-8 ${
+                selectedFiles.length > 0 ? 'bg-neutral-50' : ''
+              }`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+            >
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                className="hidden"
+                multiple
+                accept=".pdf,.txt,.doc,.docx,.csv,.json"
+              />
+              
+              {selectedFiles.length === 0 ? (
+                <div className="text-center">
+                  <Upload className="mx-auto h-12 w-12 text-neutral-400" />
+                  <h3 className="mt-2 text-sm font-medium text-neutral-900">
+                    Drag & drop files here
+                  </h3>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    or click to browse files
+                  </p>
+                  <p className="mt-2 text-xs text-neutral-500">
+                    Supported formats: PDF, TXT, DOC, DOCX, CSV, JSON
+                  </p>
+                  <div className="mt-6">
+                    <Button onClick={triggerFileInput}>
+                      Browse Files
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div>
+                  <h3 className="text-sm font-medium text-neutral-900 mb-4">
+                    Selected Files ({selectedFiles.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between bg-white p-3 rounded-lg border border-neutral-200"
+                      >
+                        <div className="flex items-center">
+                          {getFileIcon(file.type.split('/')[1].toUpperCase())}
+                          <span className="ml-2 text-sm text-neutral-700">{file.name}</span>
+                        </div>
+                        <span className="text-sm text-neutral-500">
+                          {formatFileSize(file.size)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex justify-end space-x-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setSelectedFiles([])}
+                    >
+                      Clear
+                    </Button>
+                    <Button>
+                      Upload Files
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-8">
