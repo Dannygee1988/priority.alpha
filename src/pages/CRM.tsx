@@ -254,13 +254,13 @@ const CRM: React.FC = () => {
 
       {/* Add Customer Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md my-8">
-            <div className="p-6 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-xl font-bold text-neutral-800 mb-4">Add New Customer</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl my-8">
+            <div className="p-8">
+              <h2 className="text-xl font-bold text-neutral-800 mb-6">Add New Customer</h2>
               
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
                   <Input
                     label="First Name"
                     value={newCustomer.first_name}
@@ -275,76 +275,85 @@ const CRM: React.FC = () => {
                   />
                 </div>
                 
-                <Input
-                  label="Email"
-                  type="email"
-                  value={newCustomer.email}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                  required
-                />
-                
-                <Input
-                  label="Phone"
-                  type="tel"
-                  value={newCustomer.phone}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                />
-                
-                <Input
-                  label="Company Name"
-                  value={newCustomer.company_name}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, company_name: e.target.value })}
-                />
-                
-                <Input
-                  label="Job Title"
-                  value={newCustomer.job_title}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, job_title: e.target.value })}
-                />
-                
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Status
-                  </label>
-                  <select
-                    value={newCustomer.status}
-                    onChange={(e) => setNewCustomer({ ...newCustomer, status: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  >
-                    <option value="prospect">Prospect</option>
-                    <option value="lead">Lead</option>
-                    <option value="customer">Customer</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-6">
+                  <Input
+                    label="Email"
+                    type="email"
+                    value={newCustomer.email}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                    required
+                  />
+                  
+                  <Input
+                    label="Phone"
+                    type="tel"
+                    value={newCustomer.phone}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                  />
                 </div>
                 
-                <Input
-                  label="Source"
-                  value={newCustomer.source}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, source: e.target.value })}
-                />
+                <div className="grid grid-cols-2 gap-6">
+                  <Input
+                    label="Company Name"
+                    value={newCustomer.company_name}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, company_name: e.target.value })}
+                  />
+                  
+                  <Input
+                    label="Job Title"
+                    value={newCustomer.job_title}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, job_title: e.target.value })}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={newCustomer.status}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, status: e.target.value as any })}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    >
+                      <option value="prospect">Prospect</option>
+                      <option value="lead">Lead</option>
+                      <option value="customer">Customer</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                  
+                  <Input
+                    label="Source"
+                    value={newCustomer.source}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, source: e.target.value })}
+                  />
+                </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Notes
                   </label>
                   <textarea
                     value={newCustomer.notes}
                     onChange={(e) => setNewCustomer({ ...newCustomer, notes: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary h-24 resize-none"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary h-32 resize-none"
+                    placeholder="Add any additional notes about the customer..."
                   />
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end space-x-2">
+              <div className="mt-8 flex justify-end space-x-3">
                 <Button
                   variant="outline"
                   onClick={() => setShowAddModal(false)}
+                  size="lg"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleAddCustomer}
+                  size="lg"
                 >
                   Add Customer
                 </Button>
