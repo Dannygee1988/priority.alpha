@@ -23,7 +23,7 @@ import { Stat, Tool } from '../types';
 import DashboardStatistics from '../components/DashboardStatistics';
 import ToolTile from '../components/ToolTile';
 import { useAuth } from '../context/AuthContext';
-import { getSocialMetrics } from '../lib/api';
+import { getSocialMetrics, getUserCompany } from '../lib/api';
 
 const tools: Tool[] = [
   {
@@ -185,28 +185,28 @@ const Dashboard: React.FC = () => {
     {
       id: '1',
       title: 'Total Followers',
-      value: '',
+      value: '0',
       change: 0,
       icon: 'users'
     },
     {
       id: '2',
       title: 'Most Popular Platform',
-      value: '',
+      value: '-',
       change: 0,
       icon: 'share'
     },
     {
       id: '3',
       title: 'Community Score',
-      value: '',
+      value: '0%',
       change: 0,
       icon: 'star'
     },
     {
       id: '4',
       title: 'Hot Topic',
-      value: '',
+      value: '-',
       change: 0,
       icon: 'message-square'
     }
@@ -214,9 +214,19 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     const loadSocialMetrics = async () => {
-      if (user) {
+      if (user?.id) {
         try {
-          const metrics = await getSocialMetrics(user.id);
+          // First get the company ID for the user
+          const companyId = await getUserCompany(user.id);
+          
+          if (!companyId) {
+            console.warn('No company found for user');
+            return;
+          }
+
+          // Then get the social metrics for that company
+          const metrics = await getSocialMetrics(companyId);
+          
           if (metrics) {
             setStats([
               {
@@ -229,7 +239,7 @@ const Dashboard: React.FC = () => {
               {
                 id: '2',
                 title: 'Most Popular Platform',
-                value: metrics.most_popular_platform || '',
+                value: metrics.most_popular_platform || '-',
                 change: 0,
                 icon: 'share'
               },
@@ -243,7 +253,7 @@ const Dashboard: React.FC = () => {
               {
                 id: '4',
                 title: 'Hot Topic',
-                value: metrics.hot_topic || '',
+                value: metrics.hot_topic || '-',
                 change: 0,
                 icon: 'message-square'
               }
@@ -251,6 +261,7 @@ const Dashboard: React.FC = () => {
           }
         } catch (error) {
           console.error('Error loading social metrics:', error);
+          // Keep the default values in case of error
         }
       }
     };
