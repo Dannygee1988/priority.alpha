@@ -18,6 +18,10 @@ import {
   Database,
   Star,
   MessageSquare,
+  Palette,
+  FileText,
+  BarChart3,
+  Target,
 } from 'lucide-react';
 import { Stat, Tool } from '../types';
 import DashboardStatistics from '../components/DashboardStatistics';
@@ -25,120 +29,144 @@ import ToolTile from '../components/ToolTile';
 import { useAuth } from '../context/AuthContext';
 import { getSocialMetrics, getUserCompany } from '../lib/api';
 
-const tools: Tool[] = [
-  {
-    id: '1',
-    name: 'Social Media',
-    description: 'Manage and analyse social media presence',
-    icon: 'share',
-    path: '/social-media',
+const toolCategories = {
+  design: {
+    title: "Design",
+    description: "Create and design your content",
+    tools: [
+      {
+        id: '1',
+        name: 'Social Media',
+        description: 'Manage and analyse social media presence',
+        icon: 'share',
+        path: '/social-media',
+      },
+      {
+        id: '2',
+        name: 'Marketing',
+        description: 'Plan and execute marketing campaigns',
+        icon: 'megaphone',
+        path: '/marketing',
+      },
+      {
+        id: '4',
+        name: 'Public Relations',
+        description: 'Manage public relations and communications',
+        icon: 'globe',
+        path: '/pr',
+      },
+      {
+        id: '12',
+        name: 'Tools',
+        description: 'Business efficiency and file management tools',
+        icon: 'wrench',
+        path: '/tools',
+      },
+    ]
   },
-  {
-    id: '2',
-    name: 'Marketing',
-    description: 'Plan and execute marketing campaigns',
-    icon: 'megaphone',
-    path: '/marketing',
+  organize: {
+    title: "Organise",
+    description: "Structure and organize your work",
+    tools: [
+      {
+        id: '13',
+        name: 'Calendar',
+        description: 'Schedule and manage appointments',
+        icon: 'calendar',
+        path: '/calendar',
+      },
+      {
+        id: '14',
+        name: 'Inbox',
+        description: 'Messages and communications hub',
+        icon: 'inbox',
+        path: '/inbox',
+      },
+      {
+        id: '11',
+        name: 'Data',
+        description: 'Data management and analytics',
+        icon: 'database',
+        path: '/data',
+      },
+      {
+        id: '16',
+        name: 'Settings',
+        description: 'Configure application settings',
+        icon: 'settings',
+        path: '/settings',
+      },
+    ]
   },
-  {
-    id: '3',
-    name: 'Investors',
-    description: 'Investor relations and management',
-    icon: 'users',
-    path: '/investors',
+  manage: {
+    title: "Manage",
+    description: "Manage your business operations",
+    tools: [
+      {
+        id: '5',
+        name: 'Management',
+        description: 'Business operations and management',
+        icon: 'layout',
+        path: '/management',
+      },
+      {
+        id: '6',
+        name: 'Finance',
+        description: 'Financial tracking and reporting',
+        icon: 'pound',
+        path: '/finance',
+      },
+      {
+        id: '9',
+        name: 'Human Resources',
+        description: 'Employee management and HR tools',
+        icon: 'user-cog',
+        path: '/hr',
+      },
+      {
+        id: '10',
+        name: 'CRM',
+        description: 'Customer relationship management',
+        icon: 'user-plus',
+        path: '/crm',
+      },
+    ]
   },
-  {
-    id: '4',
-    name: 'Public Relations',
-    description: 'Manage public relations and communications',
-    icon: 'globe',
-    path: '/pr',
-  },
-  {
-    id: '5',
-    name: 'Management',
-    description: 'Business operations and management',
-    icon: 'layout',
-    path: '/management',
-  },
-  {
-    id: '6',
-    name: 'Finance',
-    description: 'Financial tracking and reporting',
-    icon: 'pound',
-    path: '/finance',
-  },
-  {
-    id: '7',
-    name: 'Community',
-    description: 'Community engagement and management',
-    icon: 'users2',
-    path: '/community',
-  },
-  {
-    id: '8',
-    name: 'Analytics',
-    description: 'Business insights and analytics',
-    icon: 'chart',
-    path: '/analytics',
-  },
-  {
-    id: '9',
-    name: 'Human Resources',
-    description: 'Employee management and HR tools',
-    icon: 'user-cog',
-    path: '/hr',
-  },
-  {
-    id: '10',
-    name: 'CRM',
-    description: 'Customer relationship management',
-    icon: 'user-plus',
-    path: '/crm',
-  },
-  {
-    id: '11',
-    name: 'Data',
-    description: 'Data management and analytics',
-    icon: 'database',
-    path: '/data',
-  },
-  {
-    id: '12',
-    name: 'Tools',
-    description: 'Business efficiency and file management tools',
-    icon: 'wrench',
-    path: '/tools',
-  },
-  {
-    id: '13',
-    name: 'Calendar',
-    description: 'Schedule and manage appointments',
-    icon: 'calendar',
-    path: '/calendar',
-  },
-  {
-    id: '14',
-    name: 'Inbox',
-    description: 'Messages and communications hub',
-    icon: 'inbox',
-    path: '/inbox',
-  },
-  {
-    id: '15',
-    name: 'Advisor',
-    description: 'AI-powered business advice and insights',
-    icon: 'brain',
-    path: '/advisor',
-  },
-  {
-    id: '16',
-    name: 'Settings',
-    description: 'Configure application settings',
-    icon: 'settings',
-    path: '/settings',
-  },
-];
+  grow: {
+    title: "Grow",
+    description: "Grow and scale your business",
+    tools: [
+      {
+        id: '3',
+        name: 'Investors',
+        description: 'Investor relations and management',
+        icon: 'users',
+        path: '/investors',
+      },
+      {
+        id: '7',
+        name: 'Community',
+        description: 'Community engagement and management',
+        icon: 'users2',
+        path: '/community',
+      },
+      {
+        id: '8',
+        name: 'Analytics',
+        description: 'Business insights and analytics',
+        icon: 'chart',
+        path: '/analytics',
+      },
+      {
+        id: '15',
+        name: 'Advisor',
+        description: 'AI-powered business advice and insights',
+        icon: 'brain',
+        path: '/advisor',
+      },
+    ]
+  }
+};
 
 const getToolIcon = (icon: string) => {
   switch (icon) {
@@ -279,21 +307,27 @@ const Dashboard: React.FC = () => {
         <DashboardStatistics stats={stats} />
       </div>
 
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-neutral-800 mb-1">Business Tools</h2>
-        <p className="text-neutral-500 mb-4">Access your essential business management tools</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {tools.map((tool) => (
-            <div key={tool.id} className="h-[180px]">
-              <ToolTile
-                title={tool.name}
-                description={tool.description}
-                icon={getToolIcon(tool.icon)}
-                path={tool.path}
-              />
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {Object.entries(toolCategories).map(([key, category]) => (
+          <div key={key} className="space-y-4">
+            <div>
+              <h2 className="text-xl font-bold text-neutral-800">{category.title}</h2>
+              <p className="text-neutral-500 text-sm">{category.description}</p>
             </div>
-          ))}
-        </div>
+            <div className="space-y-4">
+              {category.tools.map((tool) => (
+                <div key={tool.id} className="h-[180px]">
+                  <ToolTile
+                    title={tool.name}
+                    description={tool.description}
+                    icon={getToolIcon(tool.icon)}
+                    path={tool.path}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
