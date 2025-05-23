@@ -13,7 +13,7 @@ interface Customer {
   phone: string | null;
   company_name: string | null;
   job_title: string | null;
-  status: 'prospect' | 'lead' | 'customer' | 'inactive';
+  type: 'Staff' | 'Customer' | 'Investor' | 'Lead' | 'Advisor' | 'Other';
   last_contacted: string | null;
   created_at: string;
 }
@@ -31,10 +31,19 @@ const CRM: React.FC = () => {
     phone: '',
     company_name: '',
     job_title: '',
-    status: 'prospect' as const,
+    type: 'Customer' as const,
     notes: ''
   });
   const [error, setError] = useState<string | null>(null);
+
+  const typeOptions = [
+    'Staff',
+    'Customer',
+    'Investor',
+    'Lead',
+    'Advisor',
+    'Other'
+  ] as const;
 
   useEffect(() => {
     loadCustomers();
@@ -86,7 +95,7 @@ const CRM: React.FC = () => {
         phone: '',
         company_name: '',
         job_title: '',
-        status: 'prospect',
+        type: 'Customer',
         notes: ''
       });
       
@@ -97,18 +106,20 @@ const CRM: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'prospect':
-        return 'bg-neutral-100 text-neutral-700';
-      case 'lead':
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'Staff':
         return 'bg-primary-50 text-primary-700';
-      case 'customer':
+      case 'Customer':
         return 'bg-success-50 text-success-700';
-      case 'inactive':
-        return 'bg-error-50 text-error-700';
-      default:
+      case 'Investor':
+        return 'bg-warning-50 text-warning-700';
+      case 'Lead':
+        return 'bg-accent-50 text-accent-700';
+      case 'Advisor':
         return 'bg-neutral-100 text-neutral-700';
+      default:
+        return 'bg-neutral-50 text-neutral-600';
     }
   };
 
@@ -166,6 +177,7 @@ const CRM: React.FC = () => {
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact Info</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Company</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Last Contacted</th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
                   </tr>
@@ -214,6 +226,11 @@ const CRM: React.FC = () => {
                             )}
                           </div>
                         )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(customer.type)}`}>
+                          {customer.type}
+                        </span>
                       </td>
                       <td className="py-3 px-4 text-sm text-neutral-600">
                         {customer.last_contacted
@@ -290,6 +307,21 @@ const CRM: React.FC = () => {
                     value={newCustomer.job_title}
                     onChange={(e) => setNewCustomer({ ...newCustomer, job_title: e.target.value })}
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Type
+                  </label>
+                  <select
+                    value={newCustomer.type}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, type: e.target.value as typeof typeOptions[number] })}
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  >
+                    {typeOptions.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div>

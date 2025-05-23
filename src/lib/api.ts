@@ -127,8 +127,7 @@ export async function addCustomer(customerData: {
   phone?: string;
   company_name?: string;
   job_title?: string;
-  status: 'prospect' | 'lead' | 'customer' | 'inactive';
-  source?: string;
+  type: 'Staff' | 'Customer' | 'Investor' | 'Lead' | 'Advisor' | 'Other';
   notes?: string;
   tags?: string[];
   custom_fields?: Record<string, any>;
