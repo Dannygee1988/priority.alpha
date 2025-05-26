@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wand2, Copy, CheckCircle } from 'lucide-react';
+import { Wand2, Copy, CheckCircle, PenLine } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,8 @@ const RNSGenerator: React.FC = () => {
   const [keywords, setKeywords] = useState('');
   const [assistantId, setAssistantId] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -54,7 +56,9 @@ const RNSGenerator: React.FC = () => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
-      setGeneratedContent('Sample generated content will appear here...');
+      const content = 'Sample generated content will appear here...';
+      setGeneratedContent(content);
+      setEditedContent(content);
       setActiveTab('output');
     } catch (err) {
       console.error('Error generating RNS:', err);
@@ -65,9 +69,15 @@ const RNSGenerator: React.FC = () => {
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(generatedContent);
+    const contentToCopy = isEditing ? editedContent : generatedContent;
+    navigator.clipboard.writeText(contentToCopy);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const handleSaveEdit = () => {
+    setGeneratedContent(editedContent);
+    setIsEditing(false);
   };
 
   return (
@@ -172,9 +182,17 @@ const RNSGenerator: React.FC = () => {
             </div>
             <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 min-h-[500px]">
               {generatedContent ? (
-                <div className="prose max-w-none">
-                  {generatedContent}
-                </div>
+                isEditing ? (
+                  <textarea
+                    value={editedContent}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    className="w-full h-[500px] bg-white border-0 focus:ring-0 resize-none"
+                  />
+                ) : (
+                  <div className="prose max-w-none">
+                    {generatedContent}
+                  </div>
+                )
               ) : (
                 <p className="text-neutral-500 text-sm italic">
                   Generated content will appear here...
@@ -182,18 +200,38 @@ const RNSGenerator: React.FC = () => {
               )}
             </div>
             <div className="mt-4 flex justify-end space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => setActiveTab('input')}
-              >
-                Edit Input
-              </Button>
-              <Button
-                onClick={handleCopy}
-                leftIcon={isCopied ? <CheckCircle size={18} /> : <Copy size={18} />}
-              >
-                {isCopied ? 'Copied!' : 'Copy to Clipboard'}
-              </Button>
+              {isEditing ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditedContent(generatedContent);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSaveEdit}>
+                    Save Changes
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditing(true)}
+                    leftIcon={<PenLine size={18} />}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    onClick={handleCopy}
+                    leftIcon={isCopied ? <CheckCircle size={18} /> : <Copy size={18} />}
+                  >
+                    {isCopied ? 'Copied!' : 'Copy to Clipboard'}
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
