@@ -17,6 +17,7 @@ const RNSGenerator: React.FC = () => {
   const [assistantId, setAssistantId] = useState<string | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAssistantId = async () => {
@@ -66,9 +67,15 @@ const RNSGenerator: React.FC = () => {
       }
 
       const data = await response.json();
-      setShowSuccessMessage(true);
-      setTimeout(() => setShowSuccessMessage(false), 5000);
-      setActiveTab('output');
+      
+      if (data.content) {
+        setGeneratedContent(data.content);
+        setShowSuccessMessage(true);
+        setTimeout(() => setShowSuccessMessage(false), 5000);
+        setActiveTab('output');
+      } else {
+        throw new Error('No content received from the server');
+      }
     } catch (err) {
       console.error('Error generating RNS:', err);
       setError('Failed to generate RNS. Please try again.');
@@ -203,22 +210,34 @@ const RNSGenerator: React.FC = () => {
           <div className="p-6">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-neutral-800">Generated Announcement</h2>
-              <p className="text-sm text-neutral-500">Your AI-generated RNS announcement will appear here</p>
+              <p className="text-sm text-neutral-500">Your AI-generated RNS announcement</p>
             </div>
             <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 min-h-[500px]">
-              <p className="text-neutral-500 text-sm italic">
-                Generated content will appear here...
-              </p>
+              {generatedContent ? (
+                <div className="prose max-w-none">
+                  {generatedContent}
+                </div>
+              ) : (
+                <p className="text-neutral-500 text-sm italic">
+                  Generated content will appear here...
+                </p>
+              )}
             </div>
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex justify-end space-x-2">
               <Button
                 variant="outline"
                 onClick={() => setActiveTab('input')}
-                className="mr-2"
               >
                 Edit Input
               </Button>
-              <Button>
+              <Button
+                onClick={() => {
+                  if (generatedContent) {
+                    navigator.clipboard.writeText(generatedContent);
+                  }
+                }}
+                disabled={!generatedContent}
+              >
                 Copy to Clipboard
               </Button>
             </div>
