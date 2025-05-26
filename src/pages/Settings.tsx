@@ -456,16 +456,16 @@ const Settings: React.FC = () => {
               <h2 className="text-xl font-bold text-neutral-800 mb-6">Connect Social Account</h2>
               
               {!selectedPlatform ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <h3 className="text-sm font-medium text-neutral-700 mb-3">Select Platform</h3>
                   {availablePlatforms.map((platform) => (
                     <button
                       key={platform.id}
                       onClick={() => setSelectedPlatform(platform.id)}
-                      className={`w-full flex items-center p-3 rounded-md transition-all ${platform.color} ${platform.hoverColor}`}
+                      className={`w-full flex items-center p-2 rounded-md transition-all ${platform.color} ${platform.hoverColor}`}
                     >
-                      <platform.icon className="w-5 h-5" />
-                      <span className="ml-3 font-medium text-sm">{platform.name}</span>
+                      <platform.icon size={16} />
+                      <span className="ml-3 text-sm">{platform.name}</span>
                       <ChevronRight className="ml-auto" size={16} />
                     </button>
                   ))}
@@ -475,11 +475,12 @@ const Settings: React.FC = () => {
                   <div className="flex items-center mb-6">
                     {selectedPlatform && (() => {
                       const platform = platforms.find(p => p.id === selectedPlatform);
-                      if (platform) {
-                        const Icon = platform.icon;
-                        return <Icon className={`${platform.color} w-6 h-6 mr-2`} />;
-                      }
-                      return null;
+                      if (!platform) return null;
+                      return (
+                        <div className={`w-8 h-8 rounded-md ${platform.color} flex items-center justify-center mr-3`}>
+                          <platform.icon size={16} />
+                        </div>
+                      );
                     })()}
                     <h3 className="text-lg font-medium">
                       {platforms.find(p => p.id === selectedPlatform)?.name}
