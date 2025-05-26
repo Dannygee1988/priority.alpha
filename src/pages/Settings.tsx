@@ -91,8 +91,13 @@ const Settings: React.FC = () => {
     if (!user?.id || userCount >= MAX_USERS) return;
     
     // Check if the current user has admin role
-    const userRole = user.user_metadata?.role;
-    if (userRole !== 'admin') {
+    const { data: currentUser, error: roleError } = await supabase
+      .from('user_companies')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (roleError || currentUser?.role !== 'admin') {
       setError('You do not have permission to add users. Only administrators can add new users.');
       return;
     }
@@ -108,7 +113,7 @@ const Settings: React.FC = () => {
 
       const password = generatePassword();
       
-      // Create new user using the client-side API instead of admin API
+      // Create new user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
         password: password,
@@ -122,17 +127,22 @@ const Settings: React.FC = () => {
 
       if (authError) throw authError;
 
-      // Add user to company
+      if (!authData.user?.id) {
+        throw new Error('Failed to create user');
+      }
+
+      // Add user to company with specified role
       const { error: linkError } = await supabase
         .from('user_companies')
         .insert({
-          user_id: authData.user?.id,
-          company_id: companyId
+          user_id: authData.user.id,
+          company_id: companyId,
+          role: newUser.role
         });
 
       if (linkError) throw linkError;
 
-      // Send email with credentials
+      // Send welcome email
       const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
         body: {
           email: newUser.email,
@@ -621,7 +631,7 @@ const Settings: React.FC = () => {
                   <div className="relative w-48">
                     <select
                       value={newUser.role}
-                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value as typeof newUser.role })}
                       className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none bg-white pr-8"
                     >
                       {roles.map((role) => (
