@@ -70,8 +70,18 @@ const RNSGenerator: React.FC = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.text();
-      setGeneratedContent(data);
+      const data = await response.json();
+      
+      // Extract the output content and clean it up
+      let content = data.output || data.content || '';
+      
+      // Remove everything after "END" if it exists
+      const endIndex = content.indexOf('---\n\nEND');
+      if (endIndex !== -1) {
+        content = content.substring(0, endIndex + 9); // Keep the END marker
+      }
+      
+      setGeneratedContent(content);
       setActiveTab('output');
     } catch (err) {
       console.error('Error generating RNS:', err);
@@ -91,27 +101,53 @@ const RNSGenerator: React.FC = () => {
     }
   };
 
+  // Enhanced markdown renderer for RNS content
   const renderMarkdown = (content: string) => {
-    const formattedContent = content
-      // Headers
-      .replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold text-neutral-800 mb-3 mt-6">$1</h3>')
-      .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold text-neutral-800 mb-4 mt-8">$1</h2>')
-      .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-neutral-800 mb-6 mt-8">$1</h1>')
-      // Bold and italic
-      .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold">$1</strong>')
-      .replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>')
-      // Lists
-      .replace(/^\s*[-*+]\s+(.+)$/gm, '<li class="ml-6 mb-2">• $1</li>')
-      .replace(/(<li[^>]*>.*<\/li>)\n(<li[^>]*>.*<\/li>)/g, '<ul class="mb-4">$1$2</ul>')
-      // Paragraphs
-      .replace(/^(?!<[uh])\s*([^\n]+)\s*$/gm, '<p class="mb-4 leading-relaxed">$1</p>')
-      // Clean up
-      .replace(/<\/ul>\s*<ul>/g, '')
-      .replace(/<p>\s*<\/p>/g, '')
-      .replace(/<p><li/g, '<li')
-      .replace(/<\/li><\/p>/g, '</li>');
-
-    return `<div class="space-y-4">${formattedContent}</div>`;
+    return content
+      // Handle RNS header formatting
+      .replace(/^RNS Number: (.+)$/gm, '<div class="text-sm text-neutral-600 mb-2"><strong>RNS Number:</strong> $1</div>')
+      .replace(/^([A-Z][A-Z\s&]+PLC)$/gm, '<h1 class="text-xl font-bold text-primary mb-2">$1</h1>')
+      
+      // Main headers
+      .replace(/^([A-Z\s:]+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
+      
+      // Subheaders
+      .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-neutral-800 mb-3 mt-5">$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-neutral-800 mb-6 mt-8">$1</h1>')
+      
+      // Bold and italic formatting
+      .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
+      .replace(/_\"([^"]+)\"_/g, '<em class="italic text-neutral-700">"$1"</em>')
+      
+      // Bullet points
+      .replace(/^- (.+)$/gm, '<li class="ml-6 mb-2 list-disc">$1</li>')
+      
+      // Horizontal rules
+      .replace(/^---$/gm, '<hr class="my-6 border-neutral-300">')
+      
+      // Contact information formatting
+      .replace(/^([A-Z][a-zA-Z\s&()]+)$/gm, '<div class="font-semibold text-neutral-800 mt-4 mb-1">$1</div>')
+      .replace(/^(\+\d{2}\s\(\d\)\s\d{2}\s\d{4}\s\d{4})$/gm, '<div class="text-neutral-600 mb-1">$1</div>')
+      .replace(/^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/gm, '<div class="text-primary hover:underline mb-1"><a href="mailto:$1">$1</a></div>')
+      .replace(/^(www\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/gm, '<div class="text-primary hover:underline mb-2"><a href="https://$1" target="_blank">$1</a></div>')
+      
+      // Convert line breaks to paragraphs
+      .split('\n\n')
+      .map(paragraph => {
+        if (paragraph.trim() === '') return '';
+        if (paragraph.includes('<h1>') || paragraph.includes('<h2>') || paragraph.includes('<hr>') || paragraph.includes('<div class="font-semibold">')) {
+          return paragraph;
+        }
+        return `<p class="mb-4 leading-relaxed">${paragraph}</p>`;
+      })
+      .join('')
+      
+      // Clean up empty paragraphs and fix nested elements
+      .replace(/<p class="mb-4 leading-relaxed"><\/p>/g, '')
+      .replace(/<p class="mb-4 leading-relaxed">(<h[1-6]|<hr|<div)/g, '$1')
+      .replace(/(<\/h[1-6]>|<\/hr>|<\/div>)<\/p>/g, '$1');
   };
 
   return (
@@ -231,7 +267,7 @@ const RNSGenerator: React.FC = () => {
               )}
             </div>
 
-            <div className="bg-white border border-neutral-200 rounded-lg p-8 min-h-[500px]">
+            <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-6 min-h-[500px]">
               {isGenerating ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
@@ -242,7 +278,7 @@ const RNSGenerator: React.FC = () => {
                 </div>
               ) : generatedContent ? (
                 <div 
-                  className="prose max-w-none text-neutral-700"
+                  className="prose prose-neutral max-w-none text-neutral-700 leading-relaxed"
                   dangerouslySetInnerHTML={{ 
                     __html: renderMarkdown(generatedContent) 
                   }}
