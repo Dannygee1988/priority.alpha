@@ -39,8 +39,11 @@ const Advisor: React.FC = () => {
   const [showSources, setShowSources] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [assistantId, setAssistantId] = useState<string | null>(null);
+  const [pendingMessageId, setPendingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const subscriptionRef = useRef<any>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadConversations();
@@ -56,6 +59,90 @@ const Advisor: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Real-time subscription for new messages
+  useEffect(() => {
+    if (!currentConversationId || !user?.id) {
+      // Clean up existing subscription if no conversation
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+      return;
+    }
+
+    // Clean up existing subscription before creating new one
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+    }
+
+    // Set up real-time subscription for new messages in current conversation
+    subscriptionRef.current = supabase
+      .channel(`conversation-${currentConversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'advisor_messages',
+          filter: `conversation_id=eq.${currentConversationId}`
+        },
+        (payload) => {
+          const newMessage = payload.new as any;
+          
+          // Only add assistant messages that we haven't already added
+          // and that are responses to our pending message
+          if (
+            newMessage.role === 'assistant' && 
+            !messages.find(m => m.id === newMessage.id) &&
+            newMessage.parent_id === pendingMessageId
+          ) {
+            const assistantMessage: Message = {
+              id: newMessage.id,
+              role: 'assistant',
+              content: newMessage.content,
+              timestamp: new Date(newMessage.created_at),
+              conversation_id: newMessage.conversation_id,
+              sources: newMessage.sources
+            };
+
+            setMessages(prev => [...prev, assistantMessage]);
+            setIsLoading(false);
+            setPendingMessageId(null);
+            
+            // Clear timeout since we got a response
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+              timeoutRef.current = null;
+            }
+
+            // Update conversations list to reflect new activity
+            loadConversations();
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup function
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+    };
+  }, [currentConversationId, user?.id, pendingMessageId, messages]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const loadAssistantId = async () => {
     if (!user?.id) return;
@@ -93,7 +180,16 @@ const Advisor: React.FC = () => {
 
       if (error) throw error;
 
-      const conversations = data.map(msg => ({
+      // Group by conversation_id and get the most recent message for each
+      const conversationMap = new Map();
+      data.forEach(msg => {
+        if (!conversationMap.has(msg.conversation_id) || 
+            new Date(msg.created_at) > new Date(conversationMap.get(msg.conversation_id).created_at)) {
+          conversationMap.set(msg.conversation_id, msg);
+        }
+      });
+
+      const conversations = Array.from(conversationMap.values()).map(msg => ({
         id: msg.conversation_id,
         created_at: msg.created_at,
         preview: msg.content.slice(0, 100) + (msg.content.length > 100 ? '...' : '')
@@ -143,6 +239,15 @@ const Advisor: React.FC = () => {
   const startNewConversation = () => {
     setCurrentConversationId(null);
     setMessages([]);
+    setPendingMessageId(null);
+    setIsLoading(false);
+    setError(null);
+    
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -156,10 +261,11 @@ const Advisor: React.FC = () => {
       setCurrentConversationId(conversationId);
     }
 
+    const userInput = input.trim();
     const newMessage: Message = {
       id: messageId,
       role: 'user',
-      content: input.trim(),
+      content: userInput,
       timestamp: new Date(),
       conversation_id: conversationId
     };
@@ -168,6 +274,7 @@ const Advisor: React.FC = () => {
     setInput('');
     setIsLoading(true);
     setError(null);
+    setPendingMessageId(messageId);
 
     try {
       const companyId = await getUserCompany(user.id);
@@ -182,19 +289,19 @@ const Advisor: React.FC = () => {
           id: messageId,
           company_id: companyId,
           role: 'user',
-          content: input.trim(),
+          content: userInput,
           conversation_id: conversationId,
           parent_id: messages.length > 0 ? messages[messages.length - 1].id : null
         });
 
-      // Send webhook and wait for response
-      const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
+      // Send webhook (fire and forget - response will come via real-time subscription)
+      const webhookPromise = fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          message: input.trim(),
+          message: userInput,
           company_id: companyId,
           message_id: messageId,
           conversation_id: conversationId,
@@ -202,42 +309,26 @@ const Advisor: React.FC = () => {
         })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response from assistant');
-      }
+      // Handle webhook errors without blocking the UI
+      webhookPromise.catch(err => {
+        console.error('Webhook error:', err);
+        setError('Failed to send message to assistant');
+        setIsLoading(false);
+        setPendingMessageId(null);
+      });
 
-      const data = await response.json();
-      
-      // Add assistant's response to messages
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: data.response || data.content || 'Sorry, I could not generate a response.',
-        timestamp: new Date(),
-        conversation_id: conversationId,
-        sources: data.sources
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-
-      // Save assistant message to database
-      await supabase
-        .from('advisor_messages')
-        .insert({
-          id: assistantMessage.id,
-          company_id: companyId,
-          role: 'assistant',
-          content: assistantMessage.content,
-          conversation_id: conversationId,
-          parent_id: messageId,
-          sources: assistantMessage.sources
-        });
+      // Set a timeout to stop loading if no response comes within 60 seconds
+      timeoutRef.current = setTimeout(() => {
+        setIsLoading(false);
+        setPendingMessageId(null);
+        setError('Response timeout - the assistant is taking longer than expected. Please try again.');
+      }, 60000); // 60 second timeout
 
     } catch (err) {
       console.error('Error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
       setIsLoading(false);
+      setPendingMessageId(null);
     }
   };
 
@@ -472,7 +563,10 @@ const Advisor: React.FC = () => {
                     <Bot size={18} />
                   </div>
                   <div className="bg-white border border-neutral-200 rounded-lg px-4 py-3">
-                    <Loader2 size={18} className="animate-spin text-neutral-400" />
+                    <div className="flex items-center space-x-2">
+                      <Loader2 size={18} className="animate-spin text-neutral-400" />
+                      <span className="text-sm text-neutral-500">Thinking...</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -485,8 +579,14 @@ const Advisor: React.FC = () => {
         {/* Input Container */}
         <div className="border-t border-neutral-200 p-4">
           {error && (
-            <div className="mb-4 p-3 bg-error-50 text-error-700 rounded-lg text-sm">
-              {error}
+            <div className="mb-4 p-3 bg-error-50 text-error-700 rounded-lg text-sm flex justify-between items-start">
+              <span>{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="text-error-500 hover:text-error-700 ml-2"
+              >
+                ×
+              </button>
             </div>
           )}
 
@@ -498,7 +598,8 @@ const Advisor: React.FC = () => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Type your message..."
-                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary resize-none h-[42px] max-h-32"
+                disabled={isLoading}
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary resize-none h-[42px] max-h-32 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   minHeight: '42px',
                   height: 'auto'
