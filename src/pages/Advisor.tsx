@@ -218,8 +218,8 @@ const Advisor: React.FC = () => {
           parent_id: messages.length > 0 ? messages[messages.length - 1].id : null
         });
 
-      // Send webhook
-      fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
+      // Send webhook and wait for response
+      const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -233,12 +233,44 @@ const Advisor: React.FC = () => {
         })
       });
 
-      // Don't wait for response
-      setIsLoading(false);
+      if (!response.ok) {
+        throw new Error('Failed to get response from assistant');
+      }
+
+      const data = await response.json();
+      
+      // Add assistant's response to messages
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: data.response || data.content || '',
+        timestamp: new Date(),
+        conversation_id: conversationId,
+        sources: data.sources
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+
+      // Save assistant message to database
+      await supabase
+        .from('advisor_messages')
+        .insert({
+          id: assistantMessage.id,
+          company_id: companyId,
+          role: 'assistant',
+          content: assistantMessage.content,
+          conversation_id: conversationId,
+          parent_id: messageId,
+          sources: assistantMessage.sources
+        });
+
+      // Refresh conversations list
+      loadConversations();
       
     } catch (err) {
       console.error('Error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
       setIsLoading(false);
     }
   };
