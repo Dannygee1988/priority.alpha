@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Search, Filter, Grid, List, Plus, Image as ImageIcon, MoreVertical } from 'lucide-react';
+import { Upload, Search, Filter, Grid, List, Plus, Image as ImageIcon, MoreVertical, X, Tag as TagIcon } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -20,8 +20,14 @@ const Gallery: React.FC = () => {
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [newTag, setNewTag] = useState('');
+  const [editedTags, setEditedTags] = useState<string[]>([]);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,12 +62,53 @@ const Gallery: React.FC = () => {
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (!bytes) return 'N/A';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  const handleImageClick = (image: GalleryImage) => {
+    setSelectedImage(image);
+    setEditedTitle(image.title);
+    setEditedTags(image.tags || []);
+    setShowEditModal(true);
+  };
+
+  const handleAddTag = () => {
+    if (newTag.trim() && !editedTags.includes(newTag.trim())) {
+      setEditedTags([...editedTags, newTag.trim()]);
+      setNewTag('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setEditedTags(editedTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleSave = async () => {
+    if (!selectedImage) return;
+
+    setIsSaving(true);
+    try {
+      const { error: updateError } = await supabase
+        .from('gallery_images')
+        .update({
+          title: editedTitle,
+          tags: editedTags
+        })
+        .eq('id', selectedImage.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setImages(images.map(img => 
+        img.id === selectedImage.id 
+          ? { ...img, title: editedTitle, tags: editedTags }
+          : img
+      ));
+
+      setShowEditModal(false);
+    } catch (err) {
+      console.error('Error updating image:', err);
+      setError('Failed to update image. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -139,7 +186,8 @@ const Gallery: React.FC = () => {
               {images.map((image) => (
                 <div
                   key={image.id}
-                  className="group relative bg-neutral-50 rounded-lg border border-neutral-200 overflow-hidden"
+                  className="group relative bg-neutral-50 rounded-lg border border-neutral-200 overflow-hidden cursor-pointer"
+                  onClick={() => handleImageClick(image)}
                 >
                   <div className="aspect-square">
                     <img
@@ -151,9 +199,15 @@ const Gallery: React.FC = () => {
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200" />
                   <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-200">
                     <h3 className="font-medium text-sm">{image.title}</h3>
-                    <p className="text-xs text-white/80">
-                      {new Date(image.created_at).toLocaleDateString()}
-                    </p>
+                    {image.tags && image.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {image.tags.map((tag, index) => (
+                          <span key={index} className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -174,7 +228,8 @@ const Gallery: React.FC = () => {
                   {images.map((image) => (
                     <tr
                       key={image.id}
-                      className="border-b border-neutral-100 hover:bg-neutral-50"
+                      className="border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer"
+                      onClick={() => handleImageClick(image)}
                     >
                       <td className="py-3 px-4">
                         <div className="h-12 w-12 rounded-lg overflow-hidden">
@@ -187,6 +242,15 @@ const Gallery: React.FC = () => {
                       </td>
                       <td className="py-3 px-4">
                         <span className="text-sm font-medium text-neutral-900">{image.title}</span>
+                        {image.tags && image.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {image.tags.map((tag, index) => (
+                              <span key={index} className="text-xs bg-neutral-100 px-2 py-0.5 rounded-full">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center">
@@ -200,7 +264,13 @@ const Gallery: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button className="p-1 hover:bg-neutral-100 rounded-full">
+                        <button 
+                          className="p-1 hover:bg-neutral-100 rounded-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleImageClick(image);
+                          }}
+                        >
                           <MoreVertical size={16} className="text-neutral-400" />
                         </button>
                       </td>
@@ -249,6 +319,110 @@ const Gallery: React.FC = () => {
                 </Button>
                 <Button>
                   Upload Files
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && selectedImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-bold text-neutral-800">Edit Image</h2>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <X size={20} className="text-neutral-500" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <div className="rounded-lg overflow-hidden mb-4">
+                    <img
+                      src={selectedImage.url}
+                      alt={selectedImage.title}
+                      className="w-full h-auto"
+                    />
+                  </div>
+                  <div className="text-sm text-neutral-500">
+                    <p>Uploaded on {new Date(selectedImage.created_at).toLocaleDateString()}</p>
+                    <p>Type: {selectedImage.type || 'Image'}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <Input
+                      label="Title"
+                      value={editedTitle}
+                      onChange={(e) => setEditedTitle(e.target.value)}
+                      fullWidth
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Tags
+                    </label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {editedTags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm bg-neutral-100"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            className="ml-1 hover:text-error-600"
+                            onClick={() => handleRemoveTag(tag)}
+                          >
+                            <X size={14} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex space-x-2">
+                      <Input
+                        placeholder="Add a tag..."
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTag();
+                          }
+                        }}
+                        leftIcon={<TagIcon size={18} />}
+                      />
+                      <Button
+                        onClick={handleAddTag}
+                        disabled={!newTag.trim()}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowEditModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  isLoading={isSaving}
+                >
+                  Save Changes
                 </Button>
               </div>
             </div>
