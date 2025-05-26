@@ -12,6 +12,7 @@ const Settings: React.FC = () => {
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [userCount, setUserCount] = useState(0);
+  const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newAccount, setNewAccount] = useState({
@@ -29,7 +30,7 @@ const Settings: React.FC = () => {
   const MAX_USERS = 5;
 
   useEffect(() => {
-    const loadUserCount = async () => {
+    const loadUsers = async () => {
       if (!user?.id) return;
 
       try {
@@ -40,22 +41,41 @@ const Settings: React.FC = () => {
           return;
         }
 
-        const { count, error: countError } = await supabase
+        // Get all users associated with the company
+        const { data: userData, error: userError } = await supabase
           .from('user_companies')
-          .select('*', { count: 'exact', head: true })
+          .select(`
+            user_id,
+            created_at,
+            auth.users (
+              email,
+              user_metadata
+            )
+          `)
           .eq('company_id', companyId);
 
-        if (countError) throw countError;
-        setUserCount(count || 0);
+        if (userError) throw userError;
+
+        const formattedUsers = userData?.map(u => ({
+          id: u.user_id,
+          firstName: u.auth.users?.user_metadata?.first_name || '',
+          lastName: u.auth.users?.user_metadata?.last_name || '',
+          email: u.auth.users?.email || '',
+          role: u.auth.users?.user_metadata?.role || 'user',
+          lastActive: u.created_at
+        })) || [];
+
+        setRegisteredUsers(formattedUsers);
+        setUserCount(formattedUsers.length);
       } catch (err) {
-        console.error('Error loading user count:', err);
-        setError('Failed to load user count');
+        console.error('Error loading users:', err);
+        setError('Failed to load users');
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadUserCount();
+    loadUsers();
   }, [user]);
 
   const platforms = [
@@ -77,25 +97,6 @@ const Settings: React.FC = () => {
       platform: 'linkedin',
       username: 'pri0r1ty-ai',
       connected: '2024-05-22'
-    }
-  ];
-
-  const users = [
-    {
-      id: '1',
-      firstName: 'David',
-      lastName: 'Gee',
-      email: 'dgee@pri0r1ty.com',
-      role: 'admin',
-      lastActive: '2024-05-22T10:30:00Z'
-    },
-    {
-      id: '2',
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      email: 'sjohnson@pri0r1ty.com',
-      role: 'user',
-      lastActive: '2024-05-22T09:15:00Z'
     }
   ];
 
@@ -297,7 +298,7 @@ const Settings: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {users.map((user) => (
+                      {registeredUsers.map((user) => (
                         <tr
                           key={user.id}
                           className="border-b border-neutral-100 hover:bg-neutral-50"
