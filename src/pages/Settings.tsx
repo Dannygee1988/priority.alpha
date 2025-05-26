@@ -21,6 +21,12 @@ const Settings: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('profile');
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
+  const [newAccount, setNewAccount] = useState({
+    username: '',
+    password: '',
+    apiKey: ''
+  });
 
   const platforms = [
     { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'text-blue-400' },
@@ -28,6 +34,10 @@ const Settings: React.FC = () => {
     { id: 'linkedin', name: 'LinkedIn', icon: LinkedIn, color: 'text-blue-700' },
     { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'text-pink-600' },
   ];
+
+  const availablePlatforms = platforms.filter(platform => 
+    !socialAccounts.some(account => account.platform === platform.id)
+  );
 
   useEffect(() => {
     loadSocialAccounts();
@@ -78,6 +88,44 @@ const Settings: React.FC = () => {
       setError('Failed to delete social account');
     } finally {
       setIsDeletingAccount(false);
+    }
+  };
+
+  const handleAddAccount = async () => {
+    if (!user?.id || !selectedPlatform) return;
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        setError('No company found for user');
+        return;
+      }
+
+      const credentials = {
+        password: newAccount.password,
+        ...(newAccount.apiKey ? { api_key: newAccount.apiKey } : {})
+      };
+
+      const { data, error } = await supabase
+        .from('social_accounts')
+        .insert({
+          company_id: companyId,
+          platform: selectedPlatform,
+          username: newAccount.username,
+          credentials
+        })
+        .select('id, platform, username, created_at')
+        .single();
+
+      if (error) throw error;
+
+      setSocialAccounts([data, ...socialAccounts]);
+      setShowAddAccountModal(false);
+      setSelectedPlatform(null);
+      setNewAccount({ username: '', password: '', apiKey: '' });
+    } catch (err) {
+      console.error('Error adding social account:', err);
+      setError('Failed to add social account');
     }
   };
 
@@ -375,6 +423,92 @@ const Settings: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Account Modal */}
+      {showAddAccountModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-neutral-800 mb-6">Connect Social Account</h2>
+              
+              {!selectedPlatform ? (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-neutral-700 mb-3">Select Platform</h3>
+                  {availablePlatforms.map((platform) => (
+                    <button
+                      key={platform.id}
+                      onClick={() => setSelectedPlatform(platform.id)}
+                      className="w-full flex items-center p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+                    >
+                      <platform.icon className={`${platform.color} w-6 h-6`} />
+                      <span className="ml-3 text-neutral-700 font-medium">{platform.name}</span>
+                      <ChevronRight className="ml-auto text-neutral-400" size={20} />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center mb-6">
+                    {platforms.find(p => p.id === selectedPlatform)?.icon && (
+                      <platforms.find(p => p.id === selectedPlatform)!.icon 
+                        className={`${platforms.find(p => p.id === selectedPlatform)?.color} w-6 h-6 mr-2`}
+                      />
+                    )}
+                    <h3 className="text-lg font-medium">
+                      {platforms.find(p => p.id === selectedPlatform)?.name}
+                    </h3>
+                  </div>
+
+                  <Input
+                    label="Username"
+                    value={newAccount.username}
+                    onChange={(e) => setNewAccount({ ...newAccount, username: e.target.value })}
+                    placeholder={`Enter your ${selectedPlatform} username`}
+                    required
+                  />
+
+                  <Input
+                    type="password"
+                    label="Password"
+                    value={newAccount.password}
+                    onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })}
+                    placeholder="Enter your password"
+                    required
+                  />
+
+                  <Input
+                    label="API Key (Optional)"
+                    value={newAccount.apiKey}
+                    onChange={(e) => setNewAccount({ ...newAccount, apiKey: e.target.value })}
+                    placeholder="Enter your API key if available"
+                  />
+                </div>
+              )}
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddAccountModal(false);
+                    setSelectedPlatform(null);
+                    setNewAccount({ username: '', password: '', apiKey: '' });
+                  }}
+                >
+                  Cancel
+                </Button>
+                {selectedPlatform && (
+                  <Button
+                    onClick={handleAddAccount}
+                    disabled={!newAccount.username || !newAccount.password}
+                  >
+                    Connect Account
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
