@@ -15,7 +15,6 @@ interface Message {
   content: string;
   timestamp: Date;
   conversation_id: string;
-  threadId?: string; // Add this for assistant messages
   sources?: {
     title: string;
     content: string;
@@ -98,14 +97,10 @@ const Advisor: React.FC = () => {
       const conversations = data.map(msg => ({
         id: msg.conversation_id,
         created_at: msg.created_at,
-        preview: msg.content.slice(0, 50) + (msg.content.length > 50 ? '...' : '')
+        preview: msg.content.slice(0, 100) + (msg.content.length > 100 ? '...' : '')
       }));
 
-      const uniqueConversations = conversations.filter((conv, index, self) =>
-        index === self.findIndex((c) => c.id === conv.id)
-      );
-
-      setConversations(uniqueConversations);
+      setConversations(conversations);
     } catch (err) {
       console.error('Error loading conversations:', err);
     }
@@ -127,13 +122,13 @@ const Advisor: React.FC = () => {
 
       if (error) throw error;
 
-      const formattedMessages: Message[] = data.map(msg => ({
+      const formattedMessages = data.map(msg => ({
         id: msg.id,
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
         timestamp: new Date(msg.created_at),
         conversation_id: msg.conversation_id,
-        sources: msg.sources || []
+        sources: msg.sources
       }));
 
       setMessages(formattedMessages);
@@ -142,141 +137,12 @@ const Advisor: React.FC = () => {
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading || !assistantId) return;
-
-    const conversationId = currentConversationId || crypto.randomUUID();
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: input.trim(),
-      timestamp: new Date(),
-      conversation_id: conversationId
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const companyId = await getUserCompany(user!.id);
-      if (!companyId) throw new Error('Company not found');
-
-      // Save user message to database
-      const { error: saveError } = await supabase
-        .from('advisor_messages')
-        .insert({
-          company_id: companyId,
-          conversation_id: conversationId,
-          role: 'user',
-          content: userMessage.content
-        });
-
-      if (saveError) throw saveError;
-
-      // Set current conversation if it's new
-      if (!currentConversationId) {
-        setCurrentConversationId(conversationId);
-        await loadConversations();
-      }
-
-      // Call the advisor API
-      console.log('Calling advisor API with:', {
-        message: userMessage.content,
-        assistantId,
-        conversationId
-      });
-
-      const response = await fetch('/api/advisor', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userMessage.content,
-          assistantId,
-          conversationId
-        }),
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error:', errorText);
-        throw new Error(`API request failed: ${response.status} - ${errorText}`);
-      }
-
-      // Parse the response
-      let responseData;
-      try {
-        responseData = await response.json();
-      } catch (parseError) {
-        console.error('Failed to parse response:', parseError);
-        throw new Error('Invalid response format from server');
-      }
-
-      console.log('Parsed response:', responseData);
-
-      // Validate response format
-      if (!responseData || typeof responseData !== 'object') {
-        throw new Error('Assistant returned an invalid response format');
-      }
-
-      // Handle the assistant's response - check for the output property first
-      const assistantContent = responseData.output || responseData.content || responseData.message || 'No response received';
-      
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: assistantContent,
-        timestamp: new Date(),
-        conversation_id: conversationId,
-        threadId: responseData.threadId, // Store threadId if needed for follow-ups
-        sources: responseData.sources || []
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-
-      // Save assistant message to database
-      const { error: assistantSaveError } = await supabase
-        .from('advisor_messages')
-        .insert({
-          company_id: companyId,
-          conversation_id: conversationId,
-          role: 'assistant',
-          content: assistantMessage.content,
-          sources: assistantMessage.sources
-        });
-
-      if (assistantSaveError) throw assistantSaveError;
-
-    } catch (err) {
-      console.error('Error in handleSubmit:', err);
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleNewConversation = () => {
-    setCurrentConversationId(null);
-    setMessages([]);
-    setError(null);
-  };
-
-  const handleDeleteConversation = async (conversationId: string) => {
+  const deleteConversation = async (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!user?.id || isDeletingConversation) return;
 
-    setIsDeletingConversation(true);
     try {
+      setIsDeletingConversation(true);
       const companyId = await getUserCompany(user.id);
       if (!companyId) return;
 
@@ -288,15 +154,99 @@ const Advisor: React.FC = () => {
 
       if (error) throw error;
 
+      setConversations(prev => prev.filter(conv => conv.id !== conversationId));
       if (currentConversationId === conversationId) {
-        handleNewConversation();
+        setCurrentConversationId(null);
+        setMessages([]);
       }
-
-      await loadConversations();
     } catch (err) {
       console.error('Error deleting conversation:', err);
+      setError('Failed to delete conversation');
     } finally {
       setIsDeletingConversation(false);
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const startNewConversation = () => {
+    setCurrentConversationId(null);
+    setMessages([]);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading || !user?.id) return;
+
+    const messageId = crypto.randomUUID();
+    const conversationId = currentConversationId || crypto.randomUUID();
+    
+    if (!currentConversationId) {
+      setCurrentConversationId(conversationId);
+    }
+
+    const newMessage: Message = {
+      id: messageId,
+      role: 'user',
+      content: input.trim(),
+      timestamp: new Date(),
+      conversation_id: conversationId
+    };
+
+    setMessages(prev => [...prev, newMessage]);
+    setInput('');
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      // Save user message to database
+      await supabase
+        .from('advisor_messages')
+        .insert({
+          id: messageId,
+          company_id: companyId,
+          role: 'user',
+          content: input.trim(),
+          conversation_id: conversationId,
+          parent_id: messages.length > 0 ? messages[messages.length - 1].id : null
+        });
+
+      // Send webhook
+      fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: input.trim(),
+          company_id: companyId,
+          message_id: messageId,
+          conversation_id: conversationId,
+          assistant_id: assistantId
+        })
+      });
+
+      // Don't wait for response
+      setIsLoading(false);
+      
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
     }
   };
 
@@ -306,281 +256,278 @@ const Advisor: React.FC = () => {
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
     } catch (err) {
-      console.error('Failed to copy text:', err);
+      console.error('Failed to copy:', err);
     }
   };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e as any);
-    }
-  };
-
-  if (!assistantId) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Assistant Not Configured</h3>
-          <p className="text-gray-600">
-            Please configure your company's assistant in the settings page.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="flex h-full bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
+    <div className="px-4 py-8 h-[calc(100vh-4rem)] flex animate-fade-in">
+      {/* Conversations Sidebar */}
+      <div className="w-80 mr-8 flex flex-col">
+        <div className="mb-4">
           <Button
-            onClick={handleNewConversation}
-            className="w-full flex items-center justify-center gap-2"
+            onClick={startNewConversation}
+            leftIcon={<Plus size={18} />}
+            fullWidth
           >
-            <Plus className="h-4 w-4" />
             New Conversation
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-2">
-            {conversations.map((conversation) => (
-              <div
-                key={conversation.id}
-                className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer mb-2 transition-colors ${
-                  currentConversationId === conversation.id
-                    ? 'bg-blue-50 border border-blue-200'
-                    : 'hover:bg-gray-50'
-                }`}
-                onClick={() => setCurrentConversationId(conversation.id)}
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <MessageSquare className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {conversation.preview}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(conversation.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
+        <div className="flex-1 overflow-y-auto bg-white rounded-lg shadow-sm border border-neutral-200">
+          {conversations.length > 0 ? (
+            <div className="divide-y divide-neutral-200">
+              {conversations.map((conversation) => (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteConversation(conversation.id);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-opacity"
-                  disabled={isDeletingConversation}
+                  key={conversation.id}
+                  onClick={() => setCurrentConversationId(conversation.id)}
+                  className={`w-full text-left p-4 hover:bg-neutral-50 transition-colors relative group ${
+                    currentConversationId === conversation.id ? 'bg-neutral-50' : ''
+                  }`}
                 >
-                  <X className="h-3 w-3 text-red-500" />
+                  <div className="flex items-start">
+                    <MessageSquare size={18} className="text-neutral-400 mt-1 mr-3" />
+                    <div>
+                      <p className="text-sm text-neutral-600 line-clamp-2">
+                        {conversation.preview}
+                      </p>
+                      <p className="text-xs text-neutral-400 mt-1">
+                        {new Date(conversation.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => deleteConversation(conversation.id, e)}
+                    className="absolute top-4 right-4 p-1 rounded-full hover:bg-neutral-200 opacity-0 group-hover:opacity-100 transition-opacity"
+                    disabled={isDeletingConversation}
+                  >
+                    <X size={14} className="text-neutral-500" />
+                  </button>
                 </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4 text-center text-neutral-500">
+              No conversations yet
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Messages */}
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
+        <div className="p-6 border-b border-neutral-200">
+          <h1 className="text-2xl font-bold text-neutral-800">Business Advisor</h1>
+          <p className="text-neutral-500">Get AI-powered insights and answers about your business</p>
+        </div>
+
+        {/* Messages Container */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-4xl mx-auto space-y-6">
-            {messages.length === 0 && !isLoading && (
-              <div className="text-center py-12">
-                <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Welcome to your AI Advisor
-                </h3>
-                <p className="text-gray-600">
-                  Ask questions about your company, industry insights, or get strategic advice.
+          {messages.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-center">
+              <div className="max-w-md">
+                <Bot size={48} className="mx-auto text-primary mb-4" />
+                <h2 className="text-lg font-semibold text-neutral-800 mb-2">
+                  How can I help you today?
+                </h2>
+                <p className="text-neutral-500">
+                  Ask me anything about your business data, documents, or general business advice.
                 </p>
               </div>
-            )}
-
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex gap-4 ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                {message.role === 'assistant' && (
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Bot className="h-4 w-4 text-blue-600" />
-                    </div>
-                  </div>
-                )}
-
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {messages.map((message) => (
                 <div
-                  className={`max-w-3xl ${
-                    message.role === 'user'
-                      ? 'bg-blue-600 text-white rounded-lg p-4'
-                      : 'bg-white rounded-lg border border-gray-200 p-4'
+                  key={message.id}
+                  className={`flex ${
+                    message.role === 'assistant' ? 'items-start' : 'items-start justify-end'
                   }`}
                 >
-                  {message.role === 'user' ? (
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                  ) : (
-                    <div className="prose prose-sm max-w-none">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          code({ node, inline, className, children, ...props }) {
-                            const match = /language-(\w+)/.exec(className || '');
-                            return !inline && match ? (
-                              <SyntaxHighlighter
-                                style={tomorrow}
-                                language={match[1]}
-                                PreTag="div"
-                                {...props}
-                              >
-                                {String(children).replace(/\n$/, '')}
-                              </SyntaxHighlighter>
-                            ) : (
-                              <code className={className} {...props}>
-                                {children}
-                              </code>
-                            );
-                          },
-                        }}
-                      >
-                        {message.content}
-                      </ReactMarkdown>
+                  {message.role === 'assistant' && (
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center mr-4 mt-1">
+                      <Bot size={18} />
                     </div>
                   )}
 
-                  {message.role === 'assistant' && (
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
-                      <div className="flex items-center gap-2">
-                        {message.sources && message.sources.length > 0 && (
-                          <button
-                            onClick={() =>
-                              setShowSources(
-                                showSources === message.id ? null : message.id
-                              )
-                            }
-                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  <div className={`flex flex-col max-w-3xl ${
+                    message.role === 'user' ? 'items-end' : 'items-start'
+                  }`}>
+                    <div
+                      className={`relative group rounded-lg px-4 py-3 ${
+                        message.role === 'assistant'
+                          ? 'bg-white border border-neutral-200'
+                          : 'bg-primary text-white'
+                      }`}
+                    >
+                      {message.role === 'assistant' ? (
+                        <div className="prose prose-neutral max-w-none">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              code({ node, inline, className, children, ...props }) {
+                                const match = /language-(\w+)/.exec(className || '');
+                                return !inline && match ? (
+                                  <div className="relative">
+                                    <div className="absolute right-2 top-2">
+                                      <button
+                                        onClick={() => copyToClipboard(String(children), message.id)}
+                                        className="p-1 hover:bg-neutral-700 rounded"
+                                      >
+                                        {copiedId === message.id ? (
+                                          <Check size={14} className="text-green-400" />
+                                        ) : (
+                                          <Copy size={14} className="text-neutral-400" />
+                                        )}
+                                      </button>
+                                    </div>
+                                    <SyntaxHighlighter
+                                      language={match[1]}
+                                      style={tomorrow}
+                                      customStyle={{
+                                        margin: 0,
+                                        padding: '1.5rem 1rem',
+                                        borderRadius: '0.5rem',
+                                      }}
+                                    >
+                                      {String(children).replace(/\n$/, '')}
+                                    </SyntaxHighlighter>
+                                  </div>
+                                ) : (
+                                  <code className={className} {...props}>
+                                    {children}
+                                  </code>
+                                );
+                              }
+                            }}
                           >
-                            {message.sources.length} sources
-                          </button>
-                        )}
-                      </div>
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      )}
+
+                      {/* Copy button */}
                       <button
                         onClick={() => copyToClipboard(message.content, message.id)}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className={`absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
+                          message.role === 'assistant'
+                            ? 'hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600'
+                            : 'hover:bg-primary-700 text-white/60 hover:text-white'
+                        }`}
                       >
                         {copiedId === message.id ? (
-                          <Check className="h-4 w-4 text-green-600" />
+                          <Check size={14} />
                         ) : (
-                          <Copy className="h-4 w-4" />
+                          <Copy size={14} />
                         )}
                       </button>
                     </div>
-                  )}
 
-                  {showSources === message.id && message.sources && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Sources:</h4>
-                      <div className="space-y-2">
-                        {message.sources.map((source, index) => (
-                          <div
-                            key={index}
-                            className="bg-gray-50 rounded p-3 text-sm"
-                          >
-                            <div className="font-medium text-gray-900 mb-1">
-                              {source.title}
-                            </div>
-                            <div className="text-gray-600 text-xs mb-2">
-                              Similarity: {(source.similarity * 100).toFixed(1)}%
-                            </div>
-                            <div className="text-gray-700">
-                              {source.content.slice(0, 200)}...
-                            </div>
+                    {/* Timestamp */}
+                    <div className={`text-xs text-neutral-400 mt-1 ${
+                      message.role === 'user' ? 'text-right' : ''
+                    }`}>
+                      {message.timestamp.toLocaleTimeString()}
+                    </div>
+
+                    {/* Sources */}
+                    {message.role === 'assistant' && message.sources && message.sources.length > 0 && (
+                      <div className="mt-2">
+                        <button
+                          onClick={() => setShowSources(showSources === message.id ? null : message.id)}
+                          className="text-sm text-primary hover:text-primary-700 flex items-center"
+                        >
+                          <AlertCircle size={14} className="mr-1" />
+                          {message.sources.length} source{message.sources.length !== 1 ? 's' : ''}
+                        </button>
+
+                        {showSources === message.id && (
+                          <div className="mt-2 space-y-2">
+                            {message.sources.map((source, index) => (
+                              <div
+                                key={index}
+                                className="text-sm border border-neutral-200 rounded-lg p-3 bg-neutral-50"
+                              >
+                                <div className="font-medium text-neutral-700 mb-1">
+                                  {source.title}
+                                </div>
+                                <div className="text-neutral-600">
+                                  {source.content}
+                                </div>
+                                <div className="text-xs text-neutral-400 mt-1">
+                                  {Math.round(source.similarity * 100)}% relevance
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
                       </div>
+                    )}
+                  </div>
+
+                  {message.role === 'user' && (
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center ml-4 mt-1">
+                      <User size={18} />
                     </div>
                   )}
                 </div>
+              ))}
 
-                {message.role === 'user' && (
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-gray-600" />
-                    </div>
+              {isLoading && (
+                <div className="flex items-start">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center mr-4">
+                    <Bot size={18} />
                   </div>
-                )}
-              </div>
-            ))}
-
-            {isLoading && (
-              <div className="flex gap-4 justify-start">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Bot className="h-4 w-4 text-blue-600" />
+                  <div className="bg-white border border-neutral-200 rounded-lg px-4 py-3">
+                    <Loader2 size={18} className="animate-spin text-neutral-400" />
                   </div>
                 </div>
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                    <span className="text-gray-600">Thinking...</span>
-                  </div>
-                </div>
-              </div>
-            )}
+              )}
 
-            {error && (
-              <div className="flex gap-4 justify-start">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                    <AlertCircle className="h-4 w-4 text-red-600" />
-                  </div>
-                </div>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="text-red-800">{error}</p>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
+              <div ref={messagesEndRef} />
+            </div>
+          )}
         </div>
 
-        {/* Input */}
-        <div className="border-t border-gray-200 bg-white p-4">
-          <div className="max-w-4xl mx-auto">
-            <form onSubmit={handleSubmit} className="flex gap-4">
-              <div className="flex-1">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask a question about your company or industry..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  rows={3}
-                  disabled={isLoading}
-                />
-              </div>
-              <Button
-                type="submit"
-                disabled={!input.trim() || isLoading}
-                className="px-6 flex items-center gap-2 self-end"
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-                Send
-              </Button>
-            </form>
-          </div>
+        {/* Input Container */}
+        <div className="border-t border-neutral-200 p-4">
+          {error && (
+            <div className="mb-4 p-3 bg-error-50 text-error-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="flex space-x-2">
+            <div className="flex-1">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message..."
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary resize-none h-[42px] max-h-32"
+                style={{
+                  minHeight: '42px',
+                  height: 'auto'
+                }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = `${Math.min(target.scrollHeight, 128)}px`;
+                }}
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={!input.trim() || isLoading}
+              isLoading={isLoading}
+              className="h-[42px]"
+            >
+              <Send size={18} />
+            </Button>
+          </form>
         </div>
       </div>
     </div>
