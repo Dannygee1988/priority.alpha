@@ -43,7 +43,13 @@ const RNSGenerator: React.FC = () => {
   }, [user]);
 
   const handleGenerate = async () => {
-    if (!
-    )
+    if (!subject || !description || !assistantId) {
+      setError('Please fill in all required fields');
+      return;
+    }
   }
+
+  return null; // Component JSX will be implemented later
 }
+
+export default RNSGenerator;
