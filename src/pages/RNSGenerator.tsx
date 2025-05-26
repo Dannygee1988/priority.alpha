@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wand2 } from 'lucide-react';
+import { Wand2, X } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,8 @@ const RNSGenerator: React.FC = () => {
   const [keywords, setKeywords] = useState('');
   const [notes, setNotes] = useState('');
   const [assistantId, setAssistantId] = useState<string | null>(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAssistantId = async () => {
@@ -42,27 +44,37 @@ const RNSGenerator: React.FC = () => {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setError(null);
 
-    // Fire webhook without waiting for response
-    fetch('https://pri0r1ty.app.n8n.cloud/webhook/25e0d499-6af1-4357-8c23-a1b43d7bedb8', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        subject,
-        description,
-        keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
-        notes,
-        assistant_id: assistantId
-      })
-    }).catch(console.error); // Log any errors but don't wait
+    try {
+      const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25e0d499-6af1-4357-8c23-a1b43d7bedb8', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subject,
+          description,
+          keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+          notes,
+          assistant_id: assistantId
+        })
+      });
 
-    // Simulate processing time
-    setTimeout(() => {
-      setIsGenerating(false);
+      if (!response.ok) {
+        throw new Error('Failed to generate RNS');
+      }
+
+      const data = await response.json();
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 5000);
       setActiveTab('output');
-    }, 2000);
+    } catch (err) {
+      console.error('Error generating RNS:', err);
+      setError('Failed to generate RNS. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -71,6 +83,26 @@ const RNSGenerator: React.FC = () => {
         <h1 className="text-2xl font-bold text-neutral-800">RNS Generator</h1>
         <p className="text-neutral-500">Create professional Regulatory News Service announcements with AI assistance</p>
       </div>
+
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="fixed top-4 right-4 bg-success-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-right flex items-center">
+          <span>RNS generated successfully!</span>
+          <button 
+            onClick={() => setShowSuccessMessage(false)}
+            className="ml-3 hover:text-white/80"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 bg-error-50 text-error-700 px-6 py-4 rounded-lg">
+          {error}
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
         {/* Tabs */}
