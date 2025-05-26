@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, MoreVertical, Search, Filter } from 'lucide-react';
+import { Eye, MoreVertical, Search, Filter, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Button from '../components/Button';
@@ -22,6 +22,8 @@ const RNSDrafts: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<RNSDocument | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -66,6 +68,32 @@ const RNSDrafts: React.FC = () => {
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  const handleViewDocument = (doc: RNSDocument) => {
+    setSelectedDocument(doc);
+    setShowViewModal(true);
+  };
+
+  const renderMarkdown = (content: string) => {
+    return content
+      .replace(/^RNS Number: (.+)$/gm, '<div class="text-sm text-neutral-600 mb-2"><strong>RNS Number:</strong> $1</div>')
+      .replace(/^([A-Z][A-Z\s&]+PLC)$/gm, '<h1 class="text-xl font-bold text-primary mb-2">$1</h1>')
+      .replace(/^([A-Z\s:]+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$2</h2>')
+      .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-neutral-800 mb-3 mt-5">$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-neutral-800 mb-6 mt-8">$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
+      .split('\n\n')
+      .map(paragraph => {
+        if (paragraph.trim() === '') return '';
+        if (paragraph.includes('<h1>') || paragraph.includes('<h2>') || paragraph.includes('<hr>')) {
+          return paragraph;
+        }
+        return `<p class="mb-4 leading-relaxed">${paragraph}</p>`;
+      })
+      .join('');
   };
 
   return (
@@ -137,7 +165,7 @@ const RNSDrafts: React.FC = () => {
                           variant="ghost"
                           size="sm"
                           leftIcon={<Eye size={16} />}
-                          onClick={() => navigate(`/pr/rns/view/${doc.id}`)}
+                          onClick={() => handleViewDocument(doc)}
                         >
                           View
                         </Button>
@@ -154,6 +182,49 @@ const RNSDrafts: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* View Modal */}
+      {showViewModal && selectedDocument && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-neutral-200 flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold text-neutral-800">{selectedDocument.title}</h2>
+                <p className="text-sm text-neutral-500">
+                  Last updated {formatDate(selectedDocument.updated_at)}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="p-1 hover:bg-neutral-100 rounded-full"
+              >
+                <X size={20} className="text-neutral-500" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1">
+              <div 
+                className="prose prose-neutral max-w-none"
+                dangerouslySetInnerHTML={{ 
+                  __html: renderMarkdown(selectedDocument.content) 
+                }}
+              />
+            </div>
+
+            <div className="p-6 border-t border-neutral-200 flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowViewModal(false)}
+              >
+                Close
+              </Button>
+              <Button>
+                Edit Draft
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
