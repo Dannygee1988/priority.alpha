@@ -93,7 +93,7 @@ const ImproveRNS: React.FC = () => {
                   <label className="block text-neutral-700 text-sm font-medium mb-3">
                     Improvement preferences
                   </label>
-                  <div className="space-y-3 max-w-[50%]">
+                  <div className="space-y-3 relative">
                     {improvementOptions.map((option) => (
                       <div
                         key={option.id}
@@ -106,7 +106,7 @@ const ImproveRNS: React.FC = () => {
                           />
                           <span className="ml-2 text-sm text-neutral-700">{option.title}</span>
                         </label>
-                        <div className="fixed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-neutral-800 text-white text-xs rounded-lg shadow-lg z-10 p-3 max-w-[300px] ml-4 left-[calc(50%+150px)]">
+                        <div className="absolute opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-neutral-800 text-white text-xs rounded-lg shadow-lg z-10 p-3 max-w-[300px] left-[calc(100%+12px)] top-1/2 -translate-y-1/2">
                           {option.description}
                           <div className="absolute left-[-6px] top-1/2 -translate-y-1/2 w-3 h-3 bg-neutral-800 transform rotate-45"></div>
                         </div>
