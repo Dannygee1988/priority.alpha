@@ -48,6 +48,7 @@ import {
   FileCheck,
   UserPlus,
   Image,
+  FileEdit,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
@@ -94,6 +95,7 @@ const prSubmenu = [
     submenu: [
       { name: 'Write new RNS', icon: PenLine, path: '/pr/rns/write' },
       { name: 'Improve RNS', icon: Sparkles, path: '/pr/rns/improve' },
+      { name: 'Drafts', icon: FileEdit, path: '/pr/rns/drafts' },
       { name: 'Published RNS', icon: FileCheck, path: '/pr/rns/published' }
     ]
   },
