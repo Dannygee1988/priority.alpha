@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wand2, X } from 'lucide-react';
+import { Wand2 } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -13,11 +13,7 @@ const RNSGenerator: React.FC = () => {
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [keywords, setKeywords] = useState('');
-  const [notes, setNotes] = useState('');
   const [assistantId, setAssistantId] = useState<string | null>(null);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAssistantId = async () => {
@@ -45,43 +41,26 @@ const RNSGenerator: React.FC = () => {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    setError(null);
 
-    try {
-      const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25e0d499-6af1-4357-8c23-a1b43d7bedb8', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          subject,
-          description,
-          keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
-          notes,
-          assistant_id: assistantId
-        })
-      });
+    // Fire webhook without waiting for response
+    fetch('https://pri0r1ty.app.n8n.cloud/webhook/25e0d499-6af1-4357-8c23-a1b43d7bedb8', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        subject,
+        description,
+        keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+        assistant_id: assistantId
+      })
+    }).catch(console.error); // Log any errors but don't wait
 
-      if (!response.ok) {
-        throw new Error('Failed to generate RNS');
-      }
-
-      const data = await response.json();
-      
-      if (data.content) {
-        setGeneratedContent(data.content);
-        setShowSuccessMessage(true);
-        setTimeout(() => setShowSuccessMessage(false), 5000);
-        setActiveTab('output');
-      } else {
-        throw new Error('No content received from the server');
-      }
-    } catch (err) {
-      console.error('Error generating RNS:', err);
-      setError('Failed to generate RNS. Please try again.');
-    } finally {
+    // Simulate processing time
+    setTimeout(() => {
       setIsGenerating(false);
-    }
+      setActiveTab('output');
+    }, 2000);
   };
 
   return (
@@ -90,26 +69,6 @@ const RNSGenerator: React.FC = () => {
         <h1 className="text-2xl font-bold text-neutral-800">RNS Generator</h1>
         <p className="text-neutral-500">Create professional Regulatory News Service announcements with AI assistance</p>
       </div>
-
-      {/* Success Message */}
-      {showSuccessMessage && (
-        <div className="fixed top-4 right-4 bg-success-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-right flex items-center">
-          <span>RNS generated successfully!</span>
-          <button 
-            onClick={() => setShowSuccessMessage(false)}
-            className="ml-3 hover:text-white/80"
-          >
-            <X size={18} />
-          </button>
-        </div>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-6 bg-error-50 text-error-700 px-6 py-4 rounded-lg">
-          {error}
-        </div>
-      )}
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
         {/* Tabs */}
@@ -177,20 +136,6 @@ const RNSGenerator: React.FC = () => {
                     Keywords to emphasize in the press release
                   </p>
                 </div>
-                <div>
-                  <label className="block text-neutral-700 text-sm font-medium mb-1">
-                    Additional Notes <span className="text-neutral-500">(optional)</span>
-                  </label>
-                  <textarea
-                    className="w-full h-32 px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary resize-none"
-                    placeholder="Add any additional notes or context for the AI..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                  <p className="mt-1 text-sm text-neutral-500">
-                    Any extra information or context that might help generate a better announcement
-                  </p>
-                </div>
               </div>
             </div>
 
@@ -210,34 +155,22 @@ const RNSGenerator: React.FC = () => {
           <div className="p-6">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-neutral-800">Generated Announcement</h2>
-              <p className="text-sm text-neutral-500">Your AI-generated RNS announcement</p>
+              <p className="text-sm text-neutral-500">Your AI-generated RNS announcement will appear here</p>
             </div>
             <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 min-h-[500px]">
-              {generatedContent ? (
-                <div className="prose max-w-none">
-                  {generatedContent}
-                </div>
-              ) : (
-                <p className="text-neutral-500 text-sm italic">
-                  Generated content will appear here...
-                </p>
-              )}
+              <p className="text-neutral-500 text-sm italic">
+                Generated content will appear here...
+              </p>
             </div>
-            <div className="mt-4 flex justify-end space-x-2">
+            <div className="mt-4 flex justify-end">
               <Button
                 variant="outline"
                 onClick={() => setActiveTab('input')}
+                className="mr-2"
               >
                 Edit Input
               </Button>
-              <Button
-                onClick={() => {
-                  if (generatedContent) {
-                    navigator.clipboard.writeText(generatedContent);
-                  }
-                }}
-                disabled={!generatedContent}
-              >
+              <Button>
                 Copy to Clipboard
               </Button>
             </div>
