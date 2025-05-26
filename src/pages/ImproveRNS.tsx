@@ -7,36 +7,12 @@ const ImproveRNS: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const improvementOptions = [
-    {
-      id: 'compliance',
-      title: 'Compliance & Regulatory',
-      description: 'Systematically review the draft against UK Listing Rules, FCA requirements, and Market Abuse Regulation standards. Cross-reference mandatory disclosure requirements with the company\'s sector and listing status. Identify any missing regulatory language or improperly categorized information. Strengthen risk warnings and forward-looking statement disclaimers where necessary.'
-    },
-    {
-      id: 'accuracy',
-      title: 'Content Quality & Accuracy',
-      description: 'Verify all factual statements against available company records and public information. Check mathematical calculations and ensure consistency across all numerical references. Validate proper use of legal entity names, subsidiary relationships, and technical terminology specific to the company\'s sector.'
-    },
-    {
-      id: 'communication',
-      title: 'Investor Communication',
-      description: 'Strengthen clarity and readability while preserving technical accuracy. Enhance the strategic context and business implications of announcements. Improve the executive summary and key highlights for maximum investor impact. Ensure messaging resonates with the intended stakeholder audience.'
-    },
-    {
-      id: 'presentation',
-      title: 'Professional Presentation',
-      description: 'Elevate the professional quality of language and structure. Optimize paragraph flow and logical progression. Strengthen headlines and executive quotes for authenticity and impact. Ensure consistency with the company\'s established communication voice and branding.'
-    },
-    {
-      id: 'formatting',
-      title: 'Technical Formatting',
-      description: 'Verify all structural elements conform to standard RNS requirements. Check contact information accuracy and completeness. Validate proper numbering, dating, and referencing throughout the document. Optimize table and data presentation for clarity and professional appearance.'
-    },
-    {
-      id: 'engagement',
-      title: 'Engagement & Impact',
-      description: 'Enhance investor appeal while maintaining full regulatory compliance. Amplify key messages for maximum impact without overstating facts. Improve timing relevance and materiality presentation. Optimize content for potential media coverage and broader stakeholder understanding.'
-    }
+    { id: 'compliance', title: 'Compliance & Regulatory' },
+    { id: 'accuracy', title: 'Content Quality & Accuracy' },
+    { id: 'communication', title: 'Investor Communication' },
+    { id: 'presentation', title: 'Professional Presentation' },
+    { id: 'formatting', title: 'Technical Formatting' },
+    { id: 'engagement', title: 'Engagement & Impact' }
   ];
 
   const handleGenerate = () => {
@@ -93,24 +69,15 @@ const ImproveRNS: React.FC = () => {
                   <label className="block text-neutral-700 text-sm font-medium mb-3">
                     Improvement preferences
                   </label>
-                  <div className="space-y-3 relative">
+                  <div className="space-y-3">
                     {improvementOptions.map((option) => (
-                      <div
-                        key={option.id}
-                        className="group relative flex items-center"
-                      >
-                        <label className="flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            className="form-checkbox text-primary rounded"
-                          />
-                          <span className="ml-2 text-sm text-neutral-700">{option.title}</span>
-                        </label>
-                        <div className="absolute opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-neutral-800 text-white text-xs rounded-lg shadow-lg z-10 p-3 max-w-[300px] left-[calc(100%+12px)] top-1/2 -translate-y-1/2">
-                          {option.description}
-                          <div className="absolute left-[-6px] top-1/2 -translate-y-1/2 w-3 h-3 bg-neutral-800 transform rotate-45"></div>
-                        </div>
-                      </div>
+                      <label key={option.id} className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="form-checkbox text-primary rounded"
+                        />
+                        <span className="ml-2 text-sm text-neutral-700">{option.title}</span>
+                      </label>
                     ))}
                   </div>
                 </div>
