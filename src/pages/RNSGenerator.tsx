@@ -55,8 +55,8 @@ const RNSGenerator: React.FC = () => {
               <h2 className="text-lg font-semibold text-neutral-800 mb-4">Announcement Details</h2>
               <div className="space-y-4">
                 <Input
-                  label="Title"
-                  placeholder="Enter the title of your announcement"
+                  label="SUbject"
+                  placeholder="Enter the subject of your announcement"
                   fullWidth
                 />
                 <div>
