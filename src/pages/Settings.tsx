@@ -12,7 +12,6 @@ const Settings: React.FC = () => {
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [userCount, setUserCount] = useState(0);
-  const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newAccount, setNewAccount] = useState({
@@ -30,7 +29,7 @@ const Settings: React.FC = () => {
   const MAX_USERS = 5;
 
   useEffect(() => {
-    const loadUsers = async () => {
+    const loadUserCount = async () => {
       if (!user?.id) return;
 
       try {
@@ -41,57 +40,22 @@ const Settings: React.FC = () => {
           return;
         }
 
-        // Get all user_companies entries for the company
-        const { data: userCompanies, error: userCompaniesError } = await supabase
+        const { count, error: countError } = await supabase
           .from('user_companies')
-          .select('user_id, created_at')
+          .select('*', { count: 'exact', head: true })
           .eq('company_id', companyId);
 
-        if (userCompaniesError) throw userCompaniesError;
-
-        if (!userCompanies?.length) {
-          setRegisteredUsers([]);
-          setUserCount(0);
-          setIsLoading(false);
-          return;
-        }
-
-        // Get user profiles from auth.users table instead of admin API
-        const { data: users, error: usersError } = await supabase
-          .from('auth.users')
-          .select('id, email, raw_user_meta_data')
-          .in('id', userCompanies.map(uc => uc.user_id));
-
-        if (usersError) throw usersError;
-
-        // Format users with their company association data
-        const formattedUsers = userCompanies
-          .map(uc => {
-            const authUser = users?.find(u => u.id === uc.user_id);
-            if (!authUser) return null;
-            
-            return {
-              id: uc.user_id,
-              firstName: authUser.raw_user_meta_data?.first_name || '',
-              lastName: authUser.raw_user_meta_data?.last_name || '',
-              email: authUser.email || '',
-              role: authUser.raw_user_meta_data?.role || 'user',
-              lastActive: uc.created_at
-            };
-          })
-          .filter(Boolean);
-
-        setRegisteredUsers(formattedUsers);
-        setUserCount(formattedUsers.length);
+        if (countError) throw countError;
+        setUserCount(count || 0);
       } catch (err) {
-        console.error('Error loading users:', err);
-        setError('Failed to load users. Please try again later.');
+        console.error('Error loading user count:', err);
+        setError('Failed to load user count');
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadUsers();
+    loadUserCount();
   }, [user]);
 
   const platforms = [
@@ -116,19 +80,36 @@ const Settings: React.FC = () => {
     }
   ];
 
+  const users = [
+    {
+      id: '1',
+      firstName: 'David',
+      lastName: 'Gee',
+      email: 'dgee@pri0r1ty.com',
+      role: 'admin',
+      lastActive: '2024-05-22T10:30:00Z'
+    },
+    {
+      id: '2',
+      firstName: 'Sarah',
+      lastName: 'Johnson',
+      email: 'sjohnson@pri0r1ty.com',
+      role: 'user',
+      lastActive: '2024-05-22T09:15:00Z'
+    }
+  ];
+
   const roles = [
     { id: 'admin', name: 'Administrator' },
     { id: 'user', name: 'User' },
     { id: 'viewer', name: 'Viewer' }
   ];
 
-  const isAdmin = user?.user_metadata?.role === 'admin';
-
   return (
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-neutral-800">Settings</h1>
-        <p className="text-sm text-neutral-500">Manage your account settings and preferences</p>
+        <p className="text-neutral-500">Manage your account settings and preferences</p>
       </div>
 
       <div className="grid grid-cols-12 gap-8">
@@ -158,19 +139,17 @@ const Settings: React.FC = () => {
                 <Lock size={18} className="mr-3" />
                 Security
               </button>
-              {isAdmin && (
-                <button
-                  onClick={() => setActiveTab('users')}
-                  className={`w-full flex items-center px-4 py-2 rounded-md text-sm font-medium ${
-                    activeTab === 'users'
-                      ? 'bg-primary text-white'
-                      : 'text-neutral-700 hover:bg-neutral-50'
-                  }`}
-                >
-                  <Users size={18} className="mr-3" />
-                  Users
-                </button>
-              )}
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`w-full flex items-center px-4 py-2 rounded-md text-sm font-medium ${
+                  activeTab === 'users'
+                    ? 'bg-primary text-white'
+                    : 'text-neutral-700 hover:bg-neutral-50'
+                }`}
+              >
+                <Users size={18} className="mr-3" />
+                Users
+              </button>
               <button
                 onClick={() => setActiveTab('connections')}
                 className={`w-full flex items-center px-4 py-2 rounded-md text-sm font-medium ${
@@ -208,11 +187,11 @@ const Settings: React.FC = () => {
                   <div className="grid grid-cols-2 gap-6">
                     <Input
                       label="First Name"
-                      defaultValue={user?.user_metadata?.first_name || ''}
+                      defaultValue="David"
                     />
                     <Input
                       label="Last Name"
-                      defaultValue={user?.user_metadata?.last_name || ''}
+                      defaultValue="Gee"
                     />
                   </div>
 
@@ -220,7 +199,7 @@ const Settings: React.FC = () => {
                     <Input
                       label="Email"
                       type="email"
-                      defaultValue={user?.email || ''}
+                      defaultValue="dgee@pri0r1ty.com"
                       leftIcon={<Mail size={18} />}
                     />
                     <Input
@@ -277,7 +256,7 @@ const Settings: React.FC = () => {
             )}
 
             {/* User Management */}
-            {activeTab === 'users' && isAdmin && (
+            {activeTab === 'users' && (
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div>
@@ -307,80 +286,61 @@ const Settings: React.FC = () => {
                   </div>
                 )}
 
-                {isLoading ? (
-                  <div className="text-center py-8 text-neutral-500">
-                    Loading users...
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-neutral-200">
-                          <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">User</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Role</th>
-                          <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Last Active</th>
-                          <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {registeredUsers.map((user) => (
-                          <tr
-                            key={user.id}
-                            className="border-b border-neutral-100 hover:bg-neutral-50"
-                          >
-                            <td className="py-3 px-4">
-                              <div className="flex items-center">
-                                <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                                  <User size={16} />
-                                </div>
-                                <div className="ml-3">
-                                  <div className="text-sm font-medium text-neutral-900">
-                                    {user.firstName} {user.lastName}
-                                  </div>
-                                  <div className="text-sm text-neutral-500">{user.email}</div>
-                                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-neutral-200">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">User</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Role</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Last Active</th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((user) => (
+                        <tr
+                          key={user.id}
+                          className="border-b border-neutral-100 hover:bg-neutral-50"
+                        >
+                          <td className="py-3 px-4">
+                            <div className="flex items-center">
+                              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                                <User size={16} />
                               </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                user.role === 'admin'
-                                  ? 'bg-primary-50 text-primary-700'
-                                  : 'bg-neutral-100 text-neutral-700'
-                              }`}>
-                                {user.role === 'admin' ? 'Administrator' : 'User'}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-sm text-neutral-600">
-                              {new Date(user.lastActive).toLocaleString()}
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-error-600 hover:text-error-700"
-                                leftIcon={<Trash2 size={16} />}
-                              >
-                                Remove
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Non-admin message for users tab */}
-            {activeTab === 'users' && !isAdmin && (
-              <div className="p-6">
-                <div className="text-center py-8">
-                  <Users size={48} className="mx-auto mb-4 text-neutral-400" />
-                  <h3 className="text-lg font-medium text-neutral-800 mb-2">Administrator Access Required</h3>
-                  <p className="text-neutral-600">
-                    You need administrator privileges to access user management features.
-                  </p>
+                              <div className="ml-3">
+                                <div className="text-sm font-medium text-neutral-900">
+                                  {user.firstName} {user.lastName}
+                                </div>
+                                <div className="text-sm text-neutral-500">{user.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              user.role === 'admin'
+                                ? 'bg-primary-50 text-primary-700'
+                                : 'bg-neutral-100 text-neutral-700'
+                            }`}>
+                              {user.role === 'admin' ? 'Administrator' : 'User'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-neutral-600">
+                            {new Date(user.lastActive).toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-error-600 hover:text-error-700"
+                              leftIcon={<Trash2 size={16} />}
+                            >
+                              Remove
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
