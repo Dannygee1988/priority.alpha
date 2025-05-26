@@ -234,24 +234,32 @@ const Advisor: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response from assistant');
+        throw new Error(`Failed to get response from assistant: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('Webhook response:', data); // Add this line for debugging
+      console.log('Webhook response:', data);
 
-      if (!data.response && !data.content) {
-        throw new Error('Invalid response from assistant');
+      // Check for error in the response
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Validate response content
+      const assistantContent = data.response || data.content;
+      if (!assistantContent || typeof assistantContent !== 'string') {
+        console.error('Invalid assistant response:', data);
+        throw new Error('Assistant returned an invalid response format');
       }
 
       // Add assistant's response to messages
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: data.response || data.content || '',
+        content: assistantContent,
         timestamp: new Date(),
         conversation_id: conversationId,
-        sources: data.sources
+        sources: Array.isArray(data.sources) ? data.sources : undefined
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -273,8 +281,11 @@ const Advisor: React.FC = () => {
       loadConversations();
       
     } catch (err) {
-      console.error('Error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error in handleSubmit:', err);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred while processing your request');
+      
+      // Remove the user's message if we couldn't get a response
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
     } finally {
       setIsLoading(false);
     }
