@@ -6,10 +6,27 @@ import Input from '../components/Input';
 const RNSGenerator: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [description, setDescription] = useState('');
+  const [keywords, setKeywords] = useState('');
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    // Simulate API call
+
+    // Fire webhook without waiting for response
+    fetch('https://pri0r1ty.app.n8n.cloud/webhook/25e0d499-6af1-4357-8c23-a1b43d7bedb8', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        subject,
+        description,
+        keywords: keywords.split(',').map(k => k.trim()).filter(Boolean)
+      })
+    }).catch(console.error); // Log any errors but don't wait
+
+    // Simulate processing time
     setTimeout(() => {
       setIsGenerating(false);
       setActiveTab('output');
@@ -57,6 +74,8 @@ const RNSGenerator: React.FC = () => {
                 <Input
                   label="Subject"
                   placeholder="Enter the subject of your announcement"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
                   fullWidth
                 />
                 <div>
@@ -66,6 +85,8 @@ const RNSGenerator: React.FC = () => {
                   <textarea
                     className="w-full h-40 px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary resize-none"
                     placeholder="Describe what you're announcing (product launch, partnership, milestone, etc.)"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                   />
                   <p className="mt-1 text-sm text-neutral-500">
                     Provide detailed information about your announcement for the press release
@@ -77,6 +98,8 @@ const RNSGenerator: React.FC = () => {
                   </label>
                   <Input
                     placeholder="Enter keywords separated by commas"
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
                     fullWidth
                   />
                   <p className="mt-1 text-sm text-neutral-500">
