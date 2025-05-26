@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Copy, Check, AlertCircle, MessageSquare, Plus } from 'lucide-react';
+import { Send, Bot, User, Loader2, Copy, Check, AlertCircle, MessageSquare, Plus, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -39,6 +39,7 @@ const Advisor: React.FC = () => {
   const [showSources, setShowSources] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [assistantId, setAssistantId] = useState<string | null>(null);
+  const [isDeletingConversation, setIsDeletingConversation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -133,6 +134,36 @@ const Advisor: React.FC = () => {
       setMessages(formattedMessages);
     } catch (err) {
       console.error('Error loading messages:', err);
+    }
+  };
+
+  const deleteConversation = async (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user?.id || isDeletingConversation) return;
+
+    try {
+      setIsDeletingConversation(true);
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      const { error } = await supabase
+        .from('advisor_messages')
+        .delete()
+        .eq('company_id', companyId)
+        .eq('conversation_id', conversationId);
+
+      if (error) throw error;
+
+      setConversations(prev => prev.filter(conv => conv.id !== conversationId));
+      if (currentConversationId === conversationId) {
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
+    } catch (err) {
+      console.error('Error deleting conversation:', err);
+      setError('Failed to delete conversation');
+    } finally {
+      setIsDeletingConversation(false);
     }
   };
 
@@ -250,7 +281,7 @@ const Advisor: React.FC = () => {
                 <button
                   key={conversation.id}
                   onClick={() => setCurrentConversationId(conversation.id)}
-                  className={`w-full text-left p-4 hover:bg-neutral-50 transition-colors ${
+                  className={`w-full text-left p-4 hover:bg-neutral-50 transition-colors relative group ${
                     currentConversationId === conversation.id ? 'bg-neutral-50' : ''
                   }`}
                 >
@@ -265,6 +296,13 @@ const Advisor: React.FC = () => {
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={(e) => deleteConversation(conversation.id, e)}
+                    className="absolute top-4 right-4 p-1 rounded-full hover:bg-neutral-200 opacity-0 group-hover:opacity-100 transition-opacity"
+                    disabled={isDeletingConversation}
+                  >
+                    <X size={14} className="text-neutral-500" />
+                  </button>
                 </button>
               ))}
             </div>
