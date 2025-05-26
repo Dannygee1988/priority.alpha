@@ -93,20 +93,20 @@ const ImproveRNS: React.FC = () => {
                   <label className="block text-neutral-700 text-sm font-medium mb-3">
                     Improvement preferences
                   </label>
-                  <div className="space-y-3">
+                  <div className="space-y-3 max-w-[50%]">
                     {improvementOptions.map((option) => (
                       <div
                         key={option.id}
                         className="group relative flex items-center"
                       >
-                        <label className="flex items-center">
+                        <label className="flex items-center cursor-pointer">
                           <input
                             type="checkbox"
                             className="form-checkbox text-primary rounded"
                           />
                           <span className="ml-2 text-sm text-neutral-700">{option.title}</span>
                         </label>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute left-full ml-2 top-1/2 -translate-y-1/2 w-80 p-3 bg-neutral-800 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="fixed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 bg-neutral-800 text-white text-xs rounded-lg shadow-lg z-10 p-3 max-w-[300px] ml-4 left-[calc(50%+150px)]">
                           {option.description}
                           <div className="absolute left-[-6px] top-1/2 -translate-y-1/2 w-3 h-3 bg-neutral-800 transform rotate-45"></div>
                         </div>
