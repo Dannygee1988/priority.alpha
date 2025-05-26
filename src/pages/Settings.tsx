@@ -41,29 +41,41 @@ const Settings: React.FC = () => {
           return;
         }
 
-        // Get all users associated with the company
-        const { data: userData, error: userError } = await supabase
+        // First, get all user_ids from user_companies
+        const { data: userCompanies, error: userCompaniesError } = await supabase
           .from('user_companies')
-          .select(`
-            user_id,
-            created_at,
-            auth_users (
-              email,
-              user_metadata
-            )
-          `)
+          .select('user_id, created_at')
           .eq('company_id', companyId);
 
-        if (userError) throw userError;
+        if (userCompaniesError) throw userCompaniesError;
 
-        const formattedUsers = userData?.map(u => ({
-          id: u.user_id,
-          firstName: u.auth_users?.user_metadata?.first_name || '',
-          lastName: u.auth_users?.user_metadata?.last_name || '',
-          email: u.auth_users?.email || '',
-          role: u.auth_users?.user_metadata?.role || 'user',
-          lastActive: u.created_at
-        })) || [];
+        if (!userCompanies?.length) {
+          setRegisteredUsers([]);
+          setUserCount(0);
+          setIsLoading(false);
+          return;
+        }
+
+        // Then, get user details from auth.users
+        const { data: authUsers, error: authUsersError } = await supabase
+          .from('auth.users')
+          .select('id, email, raw_user_meta_data')
+          .in('id', userCompanies.map(uc => uc.user_id));
+
+        if (authUsersError) throw authUsersError;
+
+        // Merge the data
+        const formattedUsers = userCompanies.map(uc => {
+          const authUser = authUsers?.find(au => au.id === uc.user_id);
+          return {
+            id: uc.user_id,
+            firstName: authUser?.raw_user_meta_data?.first_name || '',
+            lastName: authUser?.raw_user_meta_data?.last_name || '',
+            email: authUser?.email || '',
+            role: authUser?.raw_user_meta_data?.role || 'user',
+            lastActive: uc.created_at
+          };
+        });
 
         setRegisteredUsers(formattedUsers);
         setUserCount(formattedUsers.length);
