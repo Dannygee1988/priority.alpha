@@ -77,9 +77,18 @@ const RNSGenerator: React.FC = () => {
     } catch (error) {
       console.error('Error generating RNS:', error);
       setError(error instanceof Error ? error.message : 'Failed to generate RNS. Please try again.');
+      setActiveTab('input'); // Stay on input tab if there's an error
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Only allow switching to output tab if we have content
+  const handleTabChange = (tab: 'input' | 'output') => {
+    if (tab === 'output' && !generatedContent && !isGenerating) {
+      return; // Don't switch to output if no content and not generating
+    }
+    setActiveTab(tab);
   };
 
   return (
@@ -98,7 +107,7 @@ const RNSGenerator: React.FC = () => {
                 ? 'text-primary border-b-2 border-primary bg-primary/5'
                 : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
             }`}
-            onClick={() => setActiveTab('input')}
+            onClick={() => handleTabChange('input')}
           >
             Input
           </button>
@@ -107,8 +116,9 @@ const RNSGenerator: React.FC = () => {
               activeTab === 'output'
                 ? 'text-primary border-b-2 border-primary bg-primary/5'
                 : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
-            }`}
-            onClick={() => setActiveTab('output')}
+            } ${(!generatedContent && !isGenerating) ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={() => handleTabChange('output')}
+            disabled={!generatedContent && !isGenerating}
           >
             Output
           </button>
@@ -201,7 +211,7 @@ const RNSGenerator: React.FC = () => {
             <div className="mt-4 flex justify-end space-x-2">
               <Button
                 variant="outline"
-                onClick={() => setActiveTab('input')}
+                onClick={() => handleTabChange('input')}
               >
                 Edit Input
               </Button>
