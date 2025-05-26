@@ -47,7 +47,7 @@ const Settings: React.FC = () => {
           .select(`
             user_id,
             created_at,
-            auth.users (
+            auth_users (
               email,
               user_metadata
             )
@@ -58,10 +58,10 @@ const Settings: React.FC = () => {
 
         const formattedUsers = userData?.map(u => ({
           id: u.user_id,
-          firstName: u.auth.users?.user_metadata?.first_name || '',
-          lastName: u.auth.users?.user_metadata?.last_name || '',
-          email: u.auth.users?.email || '',
-          role: u.auth.users?.user_metadata?.role || 'user',
+          firstName: u.auth_users?.user_metadata?.first_name || '',
+          lastName: u.auth_users?.user_metadata?.last_name || '',
+          email: u.auth_users?.email || '',
+          role: u.auth_users?.user_metadata?.role || 'user',
           lastActive: u.created_at
         })) || [];
 
@@ -110,7 +110,7 @@ const Settings: React.FC = () => {
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-neutral-800">Settings</h1>
-        <p className="text-neutral-500">Manage your account settings and preferences</p>
+        <p className="text-sm text-neutral-500">Manage your account settings and preferences</p>
       </div>
 
       <div className="grid grid-cols-12 gap-8">
