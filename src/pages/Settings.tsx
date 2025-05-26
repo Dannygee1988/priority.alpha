@@ -14,12 +14,12 @@ interface SocialAccount {
 }
 
 const Settings: React.FC = () => {
-  const { user } = useAuth(); // Add this line to get the user from AuthContext
+  const { user } = useAuth();
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(true);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('connections');
+  const [activeTab, setActiveTab] = useState('profile');
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
 
   const platforms = [
@@ -82,83 +82,299 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div>
-      {/* Connected Accounts */}
-      {activeTab === 'connections' && (
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-lg font-semibold text-neutral-800">Connected Accounts</h2>
-              <p className="text-sm text-neutral-500">Manage your connected social media accounts</p>
+    <div className="px-4 py-8 animate-fade-in">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-neutral-800">Settings</h1>
+        <p className="text-neutral-500">Manage your account settings and preferences</p>
+      </div>
+
+      <div className="grid grid-cols-12 gap-8">
+        {/* Sidebar */}
+        <div className="col-span-3">
+          <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
+            <div className="p-4">
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`w-full flex items-center px-4 py-2 rounded-md text-sm font-medium ${
+                  activeTab === 'profile'
+                    ? 'bg-primary text-white'
+                    : 'text-neutral-700 hover:bg-neutral-50'
+                }`}
+              >
+                <User size={18} className="mr-3" />
+                Profile
+              </button>
+              <button
+                onClick={() => setActiveTab('security')}
+                className={`w-full flex items-center px-4 py-2 rounded-md text-sm font-medium ${
+                  activeTab === 'security'
+                    ? 'bg-primary text-white'
+                    : 'text-neutral-700 hover:bg-neutral-50'
+                }`}
+              >
+                <Lock size={18} className="mr-3" />
+                Security
+              </button>
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`w-full flex items-center px-4 py-2 rounded-md text-sm font-medium ${
+                  activeTab === 'users'
+                    ? 'bg-primary text-white'
+                    : 'text-neutral-700 hover:bg-neutral-50'
+                }`}
+              >
+                <Users size={18} className="mr-3" />
+                Users
+              </button>
+              <button
+                onClick={() => setActiveTab('connections')}
+                className={`w-full flex items-center px-4 py-2 rounded-md text-sm font-medium ${
+                  activeTab === 'connections'
+                    ? 'bg-primary text-white'
+                    : 'text-neutral-700 hover:bg-neutral-50'
+                }`}
+              >
+                <Globe size={18} className="mr-3" />
+                Connected Accounts
+              </button>
             </div>
-            <Button
-              leftIcon={<Plus size={18} />}
-              onClick={() => setShowAddAccountModal(true)}
-            >
-              Add Account
-            </Button>
           </div>
+        </div>
 
-          {error && (
-            <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
-              {error}
-            </div>
-          )}
-
-          {isLoadingAccounts ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : socialAccounts.length > 0 ? (
-            <div className="space-y-4">
-              {socialAccounts.map((account) => {
-                const platform = platforms.find(p => p.id === account.platform);
-                if (!platform) return null;
-
-                return (
-                  <div
-                    key={account.id}
-                    className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50"
-                  >
-                    <div className="flex items-center">
-                      <div className={`${platform.color}`}>
-                        <platform.icon size={24} />
-                      </div>
-                      <div className="ml-4">
-                        <h3 className="text-sm font-medium text-neutral-800">{platform.name}</h3>
-                        <p className="text-sm text-neutral-500">{account.username}</p>
-                      </div>
+        {/* Main Content */}
+        <div className="col-span-9">
+          <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
+            {/* Profile Settings */}
+            {activeTab === 'profile' && (
+              <div className="p-6">
+                <h2 className="text-lg font-semibold text-neutral-800 mb-6">Profile Settings</h2>
+                <div className="space-y-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="h-20 w-20 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                      <User size={32} />
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-neutral-500">
-                        Connected {new Date(account.created_at).toLocaleDateString()}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-error-600 hover:text-error-700"
-                        leftIcon={<Trash2 size={16} />}
-                        onClick={() => handleDeleteAccount(account.id)}
-                        isLoading={isDeletingAccount}
-                      >
-                        Remove
-                      </Button>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-neutral-800">Profile Photo</h3>
+                      <p className="text-sm text-neutral-500 mb-2">Update your profile picture</p>
+                      <Button variant="outline" size="sm">Change Photo</Button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-12 bg-neutral-50 rounded-lg border border-neutral-200">
-              <Globe className="mx-auto h-12 w-12 text-neutral-400 mb-4" />
-              <h3 className="text-sm font-medium text-neutral-900 mb-1">No accounts connected</h3>
-              <p className="text-sm text-neutral-500">
-                Connect your social media accounts to manage them from one place
-              </p>
-            </div>
-          )}
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <Input
+                      label="First Name"
+                      defaultValue={user?.name.split(' ')[0]}
+                    />
+                    <Input
+                      label="Last Name"
+                      defaultValue={user?.name.split(' ')[1]}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <Input
+                      label="Email"
+                      type="email"
+                      defaultValue={user?.email}
+                      leftIcon={<Mail size={18} />}
+                    />
+                    <Input
+                      label="Company"
+                      defaultValue="Pri0r1ty AI"
+                      leftIcon={<Building2 size={18} />}
+                      disabled
+                    />
+                  </div>
+
+                  <div>
+                    <Button>Save Changes</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Security Settings */}
+            {activeTab === 'security' && (
+              <div className="p-6">
+                <h2 className="text-lg font-semibold text-neutral-800 mb-6">Security Settings</h2>
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-sm font-medium text-neutral-800 mb-4">Change Password</h3>
+                    <div className="space-y-4">
+                      <Input
+                        type="password"
+                        label="Current Password"
+                        placeholder="Enter your current password"
+                      />
+                      <Input
+                        type="password"
+                        label="New Password"
+                        placeholder="Enter your new password"
+                      />
+                      <Input
+                        type="password"
+                        label="Confirm New Password"
+                        placeholder="Confirm your new password"
+                      />
+                      <Button>Update Password</Button>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-neutral-200">
+                    <h3 className="text-sm font-medium text-neutral-800 mb-4">Two-Factor Authentication</h3>
+                    <p className="text-sm text-neutral-500 mb-4">
+                      Add an extra layer of security to your account by enabling two-factor authentication.
+                    </p>
+                    <Button variant="outline">Enable 2FA</Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* User Management */}
+            {activeTab === 'users' && (
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-lg font-semibold text-neutral-800">User Management</h2>
+                    <p className="text-sm text-neutral-500">Manage users and their access levels</p>
+                  </div>
+                  <Button
+                    leftIcon={<UserPlus size={18} />}
+                  >
+                    Add User
+                  </Button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-neutral-200">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">User</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Role</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Last Active</th>
+                        <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-neutral-100 hover:bg-neutral-50">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                              <User size={16} />
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-neutral-900">
+                                {user?.name}
+                              </div>
+                              <div className="text-sm text-neutral-500">{user?.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700">
+                            Administrator
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-neutral-600">
+                          Just now
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-error-600 hover:text-error-700"
+                            leftIcon={<Trash2 size={16} />}
+                          >
+                            Remove
+                          </Button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Connected Accounts */}
+            {activeTab === 'connections' && (
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-lg font-semibold text-neutral-800">Connected Accounts</h2>
+                    <p className="text-sm text-neutral-500">Manage your connected social media accounts</p>
+                  </div>
+                  <Button
+                    leftIcon={<Plus size={18} />}
+                    onClick={() => setShowAddAccountModal(true)}
+                  >
+                    Add Account
+                  </Button>
+                </div>
+
+                {error && (
+                  <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
+                    {error}
+                  </div>
+                )}
+
+                {isLoadingAccounts ? (
+                  <div className="flex justify-center items-center h-32">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : socialAccounts.length > 0 ? (
+                  <div className="space-y-4">
+                    {socialAccounts.map((account) => {
+                      const platform = platforms.find(p => p.id === account.platform);
+                      if (!platform) return null;
+
+                      return (
+                        <div
+                          key={account.id}
+                          className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50"
+                        >
+                          <div className="flex items-center">
+                            <div className={`${platform.color}`}>
+                              <platform.icon size={24} />
+                            </div>
+                            <div className="ml-4">
+                              <h3 className="text-sm font-medium text-neutral-800">{platform.name}</h3>
+                              <p className="text-sm text-neutral-500">{account.username}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-neutral-500">
+                              Connected {new Date(account.created_at).toLocaleDateString()}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-error-600 hover:text-error-700"
+                              leftIcon={<Trash2 size={16} />}
+                              onClick={() => handleDeleteAccount(account.id)}
+                              isLoading={isDeletingAccount}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-neutral-50 rounded-lg border border-neutral-200">
+                    <Globe className="mx-auto h-12 w-12 text-neutral-400 mb-4" />
+                    <h3 className="text-sm font-medium text-neutral-900 mb-1">No accounts connected</h3>
+                    <p className="text-sm text-neutral-500">
+                      Connect your social media accounts to manage them from one place
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
