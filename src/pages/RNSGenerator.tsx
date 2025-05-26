@@ -43,112 +43,282 @@ const RNSGenerator: React.FC = () => {
   }, [user]);
 
   const handleGenerate = async () => {
-    if (!assistantId || !subject || !description) {
-      setError('Please provide all required information.');
+    if (!subject.trim() || !description.trim()) {
+      setError('Please fill in both subject and description fields.');
       return;
     }
 
-    setError(null);
     setIsGenerating(true);
-    // Rest of the generation logic will go here
-  }
+    setError(null);
+    setGeneratedContent('');
+
+    try {
+      const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25e0d499-6af1-4357-8c23-a1b43d7bedb8', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subject,
+          description,
+          keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+          assistant_id: assistantId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Extract the output content and clean it up
+      let content = data.output || data.content || '';
+      
+      // Remove everything after "END" if it exists
+      const endIndex = content.indexOf('---\n\nEND');
+      if (endIndex !== -1) {
+        content = content.substring(0, endIndex + 9); // Keep the END marker
+      }
+      
+      setGeneratedContent(content);
+      setActiveTab('output');
+    } catch (err) {
+      console.error('Error generating RNS:', err);
+      setError('Failed to generate RNS content. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCopyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedContent);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
+  };
+
+  // Enhanced markdown renderer for RNS content
+  const renderMarkdown = (content: string) => {
+    return content
+      // Handle RNS header formatting
+      .replace(/^RNS Number: (.+)$/gm, '<div class="text-sm text-neutral-600 mb-2"><strong>RNS Number:</strong> $1</div>')
+      .replace(/^([A-Z][A-Z\s&]+PLC)$/gm, '<h1 class="text-xl font-bold text-primary mb-2">$1</h1>')
+      
+      // Main headers
+      .replace(/^([A-Z\s:]+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
+      
+      // Subheaders
+      .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-neutral-800 mb-3 mt-5">$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-neutral-800 mb-6 mt-8">$1</h1>')
+      
+      // Bold and italic formatting
+      .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
+      .replace(/_\"([^"]+)\"_/g, '<em class="italic text-neutral-700">"$1"</em>')
+      
+      // Bullet points
+      .replace(/^- (.+)$/gm, '<li class="ml-6 mb-2 list-disc">$1</li>')
+      
+      // Horizontal rules
+      .replace(/^---$/gm, '<hr class="my-6 border-neutral-300">')
+      
+      // Contact information formatting
+      .replace(/^([A-Z][a-zA-Z\s&()]+)$/gm, '<div class="font-semibold text-neutral-800 mt-4 mb-1">$1</div>')
+      .replace(/^(\+\d{2}\s\(\d\)\s\d{2}\s\d{4}\s\d{4})$/gm, '<div class="text-neutral-600 mb-1">$1</div>')
+      .replace(/^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/gm, '<div class="text-primary hover:underline mb-1"><a href="mailto:$1">$1</a></div>')
+      .replace(/^(www\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/gm, '<div class="text-primary hover:underline mb-2"><a href="https://$1" target="_blank">$1</a></div>')
+      
+      // Convert line breaks to paragraphs
+      .split('\n\n')
+      .map(paragraph => {
+        if (paragraph.trim() === '') return '';
+        if (paragraph.includes('<h1>') || paragraph.includes('<h2>') || paragraph.includes('<hr>') || paragraph.includes('<div class="font-semibold">')) {
+          return paragraph;
+        }
+        return `<p class="mb-4 leading-relaxed">${paragraph}</p>`;
+      })
+      .join('')
+      
+      // Clean up empty paragraphs and fix nested elements
+      .replace(/<p class="mb-4 leading-relaxed"><\/p>/g, '')
+      .replace(/<p class="mb-4 leading-relaxed">(<h[1-6]|<hr|<div)/g, '$1')
+      .replace(/(<\/h[1-6]>|<\/hr>|<\/div>)<\/p>/g, '$1');
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex space-x-4 mb-6">
+    <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-neutral-800">RNS Generator</h1>
+        <p className="text-neutral-500">Create professional Regulatory News Service announcements with AI assistance</p>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
+        {/* Tabs */}
+        <div className="flex border-b border-neutral-200">
           <button
-            className={`px-4 py-2 rounded-md ${
+            className={`flex-1 px-6 py-3 text-sm font-medium focus:outline-none ${
               activeTab === 'input'
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 text-gray-600'
+                ? 'text-primary border-b-2 border-primary bg-primary/5'
+                : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
             }`}
             onClick={() => setActiveTab('input')}
           >
             Input
           </button>
           <button
-            className={`px-4 py-2 rounded-md ${
+            className={`flex-1 px-6 py-3 text-sm font-medium focus:outline-none ${
               activeTab === 'output'
-                ? 'bg-primary text-white'
-                : 'bg-gray-100 text-gray-600'
+                ? 'text-primary border-b-2 border-primary bg-primary/5'
+                : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
             }`}
             onClick={() => setActiveTab('output')}
+            disabled={!generatedContent && !isGenerating}
           >
             Output
           </button>
         </div>
 
-        {activeTab === 'input' ? (
-          <div className="space-y-4">
-            <Input
-              label="Subject"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Enter the subject of your RNS"
-              required
-            />
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full h-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Enter a detailed description"
-                required
-              />
+        {/* Input Section */}
+        <div className={activeTab === 'input' ? 'block' : 'hidden'}>
+          <div className="p-6">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-neutral-800 mb-4">Announcement Details</h2>
+              <div className="space-y-4">
+                <Input
+                  label="Subject"
+                  placeholder="Enter the subject of your announcement"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  fullWidth
+                  required
+                />
+                <div>
+                  <label className="block text-neutral-700 text-sm font-medium mb-1">
+                    Description <span className="text-error-500">*</span>
+                  </label>
+                  <textarea
+                    className="w-full h-40 px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary resize-none"
+                    placeholder="Describe what you're announcing (product launch, partnership, milestone, etc.)"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    required
+                  />
+                  <p className="mt-1 text-sm text-neutral-500">
+                    Provide detailed information about your announcement for the press release
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-neutral-700 text-sm font-medium mb-1">
+                    Keywords <span className="text-neutral-500">(optional)</span>
+                  </label>
+                  <Input
+                    placeholder="Enter keywords separated by commas"
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
+                    fullWidth
+                  />
+                  <p className="mt-1 text-sm text-neutral-500">
+                    Keywords to emphasize in the press release
+                  </p>
+                </div>
+              </div>
             </div>
-            <Input
-              label="Keywords (optional)"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              placeholder="Enter relevant keywords, separated by commas"
-            />
+
             {error && (
-              <div className="text-red-500 text-sm mt-2">{error}</div>
+              <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
+                {error}
+              </div>
             )}
+
             <Button
               onClick={handleGenerate}
-              disabled={isGenerating}
-              className="w-full"
+              isLoading={isGenerating}
+              leftIcon={<Wand2 size={18} />}
+              fullWidth
+              disabled={!subject.trim() || !description.trim()}
             >
-              {isGenerating ? (
-                'Generating...'
-              ) : (
-                <>
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  Generate RNS
-                </>
-              )}
+              {isGenerating ? 'Generating RNS Announcement...' : 'Generate RNS Announcement'}
             </Button>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="relative">
-              <textarea
-                value={generatedContent}
-                readOnly
-                className="w-full h-96 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(generatedContent);
-                  setIsCopied(true);
-                  setTimeout(() => setIsCopied(false), 2000);
-                }}
-                className="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700"
-              >
-                {isCopied ? (
-                  <CheckCircle className="w-5 h-5" />
-                ) : (
-                  <Copy className="w-5 h-5" />
-                )}
-              </button>
+        </div>
+
+        {/* Output Section */}
+        <div className={activeTab === 'output' ? 'block' : 'hidden'}>
+          <div className="p-6">
+            <div className="mb-4 flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-800">Generated Announcement</h2>
+                <p className="text-sm text-neutral-500">Your AI-generated RNS announcement</p>
+              </div>
+              {generatedContent && (
+                <Button
+                  onClick={handleCopyToClipboard}
+                  variant="outline"
+                  leftIcon={isCopied ? <CheckCircle size={18} /> : <Copy size={18} />}
+                  className={isCopied ? 'text-success-600 border-success-600' : ''}
+                >
+                  {isCopied ? 'Copied!' : 'Copy to Clipboard'}
+                </Button>
+              )}
             </div>
+
+            <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-6 min-h-[500px]">
+              {isGenerating ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-neutral-600">Generating your RNS announcement...</p>
+                    <p className="text-sm text-neutral-500 mt-2">This may take a few moments</p>
+                  </div>
+                </div>
+              ) : generatedContent ? (
+                <div 
+                  className="prose prose-neutral max-w-none text-neutral-700 leading-relaxed"
+                  dangerouslySetInnerHTML={{ 
+                    __html: renderMarkdown(generatedContent) 
+                  }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <p className="text-neutral-500 text-sm italic mb-4">
+                      Generated content will appear here...
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => setActiveTab('input')}
+                    >
+                      Go to Input
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {generatedContent && (
+              <div className="mt-4 flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setActiveTab('input')}
+                >
+                  Edit Input
+                </Button>
+                <Button
+                  onClick={handleGenerate}
+                  leftIcon={<Wand2 size={18} />}
+                  disabled={!subject.trim() || !description.trim()}
+                >
+                  Regenerate
+                </Button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
