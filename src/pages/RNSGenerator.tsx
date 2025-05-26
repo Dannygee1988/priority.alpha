@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Wand2 } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import { useSupabaseClient } from '@supabase/auth-helpers-react';
 
 const RNSGenerator: React.FC = () => {
+  const supabase = useSupabaseClient();
   const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
   const [isGenerating, setIsGenerating] = useState(false);
   const [subject, setSubject] = useState('');
@@ -22,24 +24,19 @@ const RNSGenerator: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25e0d499-6af1-4357-8c23-a1b43d7bedb8', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error: apiError } = await supabase.functions.invoke('generate-rns', {
+        body: {
           subject,
           description,
           keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
-        }),
+        },
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate RNS content');
+      if (apiError) {
+        throw new Error(apiError.message);
       }
 
-      const data = await response.json();
-      setGeneratedContent(data.content || '');
+      setGeneratedContent(data?.content || '');
       setActiveTab('output');
     } catch (err) {
       console.error('Error generating RNS:', err);
