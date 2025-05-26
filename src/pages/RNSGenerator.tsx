@@ -304,20 +304,6 @@ const RNSGenerator: React.FC = () => {
               )}
             </div>
 
-            {generatedContent && !isEditing && (
-              <div className="mt-6 flex justify-end">
-                <Button
-                  onClick={handleApprove}
-                  size="lg"
-                  leftIcon={isApproved ? <CheckCircle size={20} /> : <Check size={20} />}
-                  className={isApproved ? 'bg-success-600 hover:bg-success-700 text-white' : ''}
-                  disabled={isApproved}
-                >
-                  {isApproved ? 'Approved' : 'Approve'}
-                </Button>
-              </div>
-            )}
-
             <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-6 min-h-[500px]">
               {isGenerating ? (
                 <div className="flex items-center justify-center h-full">
@@ -375,7 +361,20 @@ const RNSGenerator: React.FC = () => {
               )}
             </div>
 
-
+            {/* Approve button moved to bottom */}
+            {generatedContent && !isEditing && (
+              <div className="mt-6">
+                <Button
+                  onClick={handleApprove}
+                  size="lg"
+                  leftIcon={isApproved ? <CheckCircle size={20} /> : <Check size={20} />}
+                  className={`w-full ${isApproved ? 'bg-success-600 hover:bg-success-700 text-white' : ''}`}
+                  disabled={isApproved}
+                >
+                  {isApproved ? 'Approved' : 'Approve'}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
