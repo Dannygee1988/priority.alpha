@@ -528,7 +528,7 @@ const Advisor: React.FC = () => {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
         <div className="p-6 border-b border-neutral-200">
-          <h1 className="text-2xl font-bold text-neutral-800">Business Advisor</h1>
+          <h1 className="text-2xl font-bold text-neutral-800">Advisor</h1>
           <p className="text-neutral-500">Get AI-powered insights and answers about your business</p>
         </div>
 
@@ -539,7 +539,7 @@ const Advisor: React.FC = () => {
               <div className="max-w-md">
                 <Bot size={48} className="mx-auto text-primary mb-4" />
                 <h2 className="text-lg font-semibold text-neutral-800 mb-2">
-                  How can I help you today?
+                  Ask Pri0r1ty Advisor anything
                 </h2>
                 <p className="text-neutral-500">
                   Ask me anything about your business data, documents, or general business advice.
