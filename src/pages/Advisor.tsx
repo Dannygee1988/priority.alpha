@@ -1,19 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Copy, Check, AlertCircle } from 'lucide-react';
+import { Send, Bot, User, Loader2, Copy, Check, AlertCircle, MessageSquare, Plus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import Button from '../components/Button';
-import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  conversation_id: string;
   sources?: {
     title: string;
     content: string;
@@ -21,9 +22,17 @@ interface Message {
   }[];
 }
 
+interface Conversation {
+  id: string;
+  created_at: string;
+  preview: string;
+}
+
 const Advisor: React.FC = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,11 +42,85 @@ const Advisor: React.FC = () => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    loadConversations();
+  }, [user]);
+
+  useEffect(() => {
+    if (currentConversationId) {
+      loadMessages(currentConversationId);
+    }
+  }, [currentConversationId]);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  const loadConversations = async () => {
+    if (!user?.id) return;
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      const { data, error } = await supabase
+        .from('advisor_messages')
+        .select('conversation_id, created_at, content')
+        .eq('company_id', companyId)
+        .eq('role', 'user')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const conversations = data.map(msg => ({
+        id: msg.conversation_id,
+        created_at: msg.created_at,
+        preview: msg.content.slice(0, 100) + (msg.content.length > 100 ? '...' : '')
+      }));
+
+      setConversations(conversations);
+    } catch (err) {
+      console.error('Error loading conversations:', err);
+    }
+  };
+
+  const loadMessages = async (conversationId: string) => {
+    if (!user?.id) return;
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      const { data, error } = await supabase
+        .from('advisor_messages')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const formattedMessages = data.map(msg => ({
+        id: msg.id,
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        timestamp: new Date(msg.created_at),
+        conversation_id: msg.conversation_id,
+        sources: msg.sources
+      }));
+
+      setMessages(formattedMessages);
+    } catch (err) {
+      console.error('Error loading messages:', err);
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const startNewConversation = () => {
+    setCurrentConversationId(null);
+    setMessages([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,11 +128,18 @@ const Advisor: React.FC = () => {
     if (!input.trim() || isLoading || !user?.id) return;
 
     const messageId = crypto.randomUUID();
+    const conversationId = currentConversationId || crypto.randomUUID();
+    
+    if (!currentConversationId) {
+      setCurrentConversationId(conversationId);
+    }
+
     const newMessage: Message = {
       id: messageId,
       role: 'user',
       content: input.trim(),
-      timestamp: new Date()
+      timestamp: new Date(),
+      conversation_id: conversationId
     };
 
     setMessages(prev => [...prev, newMessage]);
@@ -62,6 +152,18 @@ const Advisor: React.FC = () => {
       if (!companyId) {
         throw new Error('No company found');
       }
+
+      // Save user message to database
+      await supabase
+        .from('advisor_messages')
+        .insert({
+          id: messageId,
+          company_id: companyId,
+          role: 'user',
+          content: input.trim(),
+          conversation_id: conversationId,
+          parent_id: messages.length > 0 ? messages[messages.length - 1].id : null
+        });
 
       const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/advisor', {
         method: 'POST',
@@ -94,10 +196,25 @@ const Advisor: React.FC = () => {
         role: 'assistant',
         content: data.response,
         timestamp: new Date(),
+        conversation_id: conversationId,
         sources: data.sources
       };
 
+      // Save assistant message to database
+      await supabase
+        .from('advisor_messages')
+        .insert({
+          id: assistantMessage.id,
+          company_id: companyId,
+          role: 'assistant',
+          content: data.response,
+          conversation_id: conversationId,
+          parent_id: messageId,
+          sources: data.sources
+        });
+
       setMessages(prev => [...prev, assistantMessage]);
+      loadConversations(); // Refresh conversation list
     } catch (err) {
       console.error('Error getting response:', err);
       setError(err instanceof Error ? err.message : 'Failed to get response. Please try again.');
@@ -124,13 +241,59 @@ const Advisor: React.FC = () => {
   };
 
   return (
-    <div className="px-4 py-8 h-[calc(100vh-4rem)] flex flex-col animate-fade-in">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-neutral-800">Business Advisor</h1>
-        <p className="text-neutral-500">Get AI-powered insights and answers about your business</p>
+    <div className="px-4 py-8 h-[calc(100vh-4rem)] flex animate-fade-in">
+      {/* Conversations Sidebar */}
+      <div className="w-80 mr-8 flex flex-col">
+        <div className="mb-4">
+          <Button
+            onClick={startNewConversation}
+            leftIcon={<Plus size={18} />}
+            fullWidth
+          >
+            New Conversation
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto bg-white rounded-lg shadow-sm border border-neutral-200">
+          {conversations.length > 0 ? (
+            <div className="divide-y divide-neutral-200">
+              {conversations.map((conversation) => (
+                <button
+                  key={conversation.id}
+                  onClick={() => setCurrentConversationId(conversation.id)}
+                  className={`w-full text-left p-4 hover:bg-neutral-50 transition-colors ${
+                    currentConversationId === conversation.id ? 'bg-neutral-50' : ''
+                  }`}
+                >
+                  <div className="flex items-start">
+                    <MessageSquare size={18} className="text-neutral-400 mt-1 mr-3" />
+                    <div>
+                      <p className="text-sm text-neutral-600 line-clamp-2">
+                        {conversation.preview}
+                      </p>
+                      <p className="text-xs text-neutral-400 mt-1">
+                        {new Date(conversation.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4 text-center text-neutral-500">
+              No conversations yet
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
+        <div className="p-6 border-b border-neutral-200">
+          <h1 className="text-2xl font-bold text-neutral-800">Business Advisor</h1>
+          <p className="text-neutral-500">Get AI-powered insights and answers about your business</p>
+        </div>
+
         {/* Messages Container */}
         <div className="flex-1 overflow-y-auto p-6">
           {messages.length === 0 ? (
