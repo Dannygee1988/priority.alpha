@@ -9,32 +9,32 @@ const ImproveRNS: React.FC = () => {
   const improvementOptions = [
     {
       id: 'compliance',
-      title: 'Compliance & Regulatory Improvements',
+      title: 'Compliance & Regulatory',
       description: 'Systematically review the draft against UK Listing Rules, FCA requirements, and Market Abuse Regulation standards. Cross-reference mandatory disclosure requirements with the company\'s sector and listing status. Identify any missing regulatory language or improperly categorized information. Strengthen risk warnings and forward-looking statement disclaimers where necessary.'
     },
     {
       id: 'accuracy',
-      title: 'Content Quality & Accuracy Improvements',
+      title: 'Content Quality & Accuracy',
       description: 'Verify all factual statements against available company records and public information. Check mathematical calculations and ensure consistency across all numerical references. Validate proper use of legal entity names, subsidiary relationships, and technical terminology specific to the company\'s sector.'
     },
     {
       id: 'communication',
-      title: 'Investor Communication Improvements',
+      title: 'Investor Communication',
       description: 'Strengthen clarity and readability while preserving technical accuracy. Enhance the strategic context and business implications of announcements. Improve the executive summary and key highlights for maximum investor impact. Ensure messaging resonates with the intended stakeholder audience.'
     },
     {
       id: 'presentation',
-      title: 'Professional Presentation Improvements',
+      title: 'Professional Presentation',
       description: 'Elevate the professional quality of language and structure. Optimize paragraph flow and logical progression. Strengthen headlines and executive quotes for authenticity and impact. Ensure consistency with the company\'s established communication voice and branding.'
     },
     {
       id: 'formatting',
-      title: 'Technical Formatting Improvements',
+      title: 'Technical Formatting',
       description: 'Verify all structural elements conform to standard RNS requirements. Check contact information accuracy and completeness. Validate proper numbering, dating, and referencing throughout the document. Optimize table and data presentation for clarity and professional appearance.'
     },
     {
       id: 'engagement',
-      title: 'Engagement & Impact Improvements',
+      title: 'Engagement & Impact',
       description: 'Enhance investor appeal while maintaining full regulatory compliance. Amplify key messages for maximum impact without overstating facts. Improve timing relevance and materiality presentation. Optimize content for potential media coverage and broader stakeholder understanding.'
     }
   ];
