@@ -41,7 +41,7 @@ const Settings: React.FC = () => {
           return;
         }
 
-        // First, get all user_ids from user_companies
+        // Get all user_companies entries for the company
         const { data: userCompanies, error: userCompaniesError } = await supabase
           .from('user_companies')
           .select('user_id, created_at')
@@ -56,23 +56,26 @@ const Settings: React.FC = () => {
           return;
         }
 
-        // Get user details from Supabase auth admin API
-        const { data: { users: authUsers }, error: authUsersError } = await supabase.auth.admin.listUsers();
+        // Get user profiles from auth.users table instead of admin API
+        const { data: users, error: usersError } = await supabase
+          .from('auth.users')
+          .select('id, email, raw_user_meta_data')
+          .in('id', userCompanies.map(uc => uc.user_id));
 
-        if (authUsersError) throw authUsersError;
+        if (usersError) throw usersError;
 
-        // Filter and format users that belong to the company
+        // Format users with their company association data
         const formattedUsers = userCompanies
           .map(uc => {
-            const authUser = authUsers?.find(au => au.id === uc.user_id);
+            const authUser = users?.find(u => u.id === uc.user_id);
             if (!authUser) return null;
             
             return {
               id: uc.user_id,
-              firstName: authUser.user_metadata?.first_name || '',
-              lastName: authUser.user_metadata?.last_name || '',
+              firstName: authUser.raw_user_meta_data?.first_name || '',
+              lastName: authUser.raw_user_meta_data?.last_name || '',
               email: authUser.email || '',
-              role: authUser.user_metadata?.role || 'user',
+              role: authUser.raw_user_meta_data?.role || 'user',
               lastActive: uc.created_at
             };
           })
@@ -119,6 +122,8 @@ const Settings: React.FC = () => {
     { id: 'viewer', name: 'Viewer' }
   ];
 
+  const isAdmin = user?.user_metadata?.role === 'admin';
+
   return (
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
@@ -153,17 +158,19 @@ const Settings: React.FC = () => {
                 <Lock size={18} className="mr-3" />
                 Security
               </button>
-              <button
-                onClick={() => setActiveTab('users')}
-                className={`w-full flex items-center px-4 py-2 rounded-md text-sm font-medium ${
-                  activeTab === 'users'
-                    ? 'bg-primary text-white'
-                    : 'text-neutral-700 hover:bg-neutral-50'
-                }`}
-              >
-                <Users size={18} className="mr-3" />
-                Users
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setActiveTab('users')}
+                  className={`w-full flex items-center px-4 py-2 rounded-md text-sm font-medium ${
+                    activeTab === 'users'
+                      ? 'bg-primary text-white'
+                      : 'text-neutral-700 hover:bg-neutral-50'
+                  }`}
+                >
+                  <Users size={18} className="mr-3" />
+                  Users
+                </button>
+              )}
               <button
                 onClick={() => setActiveTab('connections')}
                 className={`w-full flex items-center px-4 py-2 rounded-md text-sm font-medium ${
@@ -201,11 +208,11 @@ const Settings: React.FC = () => {
                   <div className="grid grid-cols-2 gap-6">
                     <Input
                       label="First Name"
-                      defaultValue="David"
+                      defaultValue={user?.user_metadata?.first_name || ''}
                     />
                     <Input
                       label="Last Name"
-                      defaultValue="Gee"
+                      defaultValue={user?.user_metadata?.last_name || ''}
                     />
                   </div>
 
@@ -213,7 +220,7 @@ const Settings: React.FC = () => {
                     <Input
                       label="Email"
                       type="email"
-                      defaultValue="dgee@pri0r1ty.com"
+                      defaultValue={user?.email || ''}
                       leftIcon={<Mail size={18} />}
                     />
                     <Input
@@ -270,7 +277,7 @@ const Settings: React.FC = () => {
             )}
 
             {/* User Management */}
-            {activeTab === 'users' && (
+            {activeTab === 'users' && isAdmin && (
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div>
@@ -362,6 +369,19 @@ const Settings: React.FC = () => {
                     </table>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Non-admin message for users tab */}
+            {activeTab === 'users' && !isAdmin && (
+              <div className="p-6">
+                <div className="text-center py-8">
+                  <Users size={48} className="mx-auto mb-4 text-neutral-400" />
+                  <h3 className="text-lg font-medium text-neutral-800 mb-2">Administrator Access Required</h3>
+                  <p className="text-neutral-600">
+                    You need administrator privileges to access user management features.
+                  </p>
+                </div>
               </div>
             )}
 
