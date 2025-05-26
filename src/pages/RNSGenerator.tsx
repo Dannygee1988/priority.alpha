@@ -44,3 +44,6 @@ const RNSGenerator: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!
+    )
+  }
+}
