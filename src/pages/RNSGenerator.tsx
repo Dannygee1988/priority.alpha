@@ -6,14 +6,47 @@ import Input from '../components/Input';
 const RNSGenerator: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [description, setDescription] = useState('');
+  const [keywords, setKeywords] = useState('');
+  const [generatedContent, setGeneratedContent] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
+    if (!subject || !description) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
     setIsGenerating(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsGenerating(false);
+    setError(null);
+
+    try {
+      const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25e0d499-6af1-4357-8c23-a1b43d7bedb8', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subject,
+          description,
+          keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate RNS content');
+      }
+
+      const data = await response.json();
+      setGeneratedContent(data.content || '');
       setActiveTab('output');
-    }, 2000);
+    } catch (err) {
+      console.error('Error generating RNS:', err);
+      setError('Failed to generate RNS content. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -53,19 +86,32 @@ const RNSGenerator: React.FC = () => {
           <div className="p-6">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-neutral-800 mb-4">Announcement Details</h2>
+              
+              {error && (
+                <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
+                  {error}
+                </div>
+              )}
+
               <div className="space-y-4">
                 <Input
                   label="Subject"
                   placeholder="Enter the subject of your announcement"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
                   fullWidth
+                  required
                 />
                 <div>
                   <label className="block text-neutral-700 text-sm font-medium mb-1">
-                    Description
+                    Description <span className="text-error-500">*</span>
                   </label>
                   <textarea
                     className="w-full h-40 px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary resize-none"
                     placeholder="Describe what you're announcing (product launch, partnership, milestone, etc.)"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    required
                   />
                   <p className="mt-1 text-sm text-neutral-500">
                     Provide detailed information about your announcement for the press release
@@ -77,6 +123,8 @@ const RNSGenerator: React.FC = () => {
                   </label>
                   <Input
                     placeholder="Enter keywords separated by commas"
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
                     fullWidth
                   />
                   <p className="mt-1 text-sm text-neutral-500">
@@ -91,6 +139,7 @@ const RNSGenerator: React.FC = () => {
               isLoading={isGenerating}
               leftIcon={<Wand2 size={18} />}
               fullWidth
+              disabled={!subject || !description}
             >
               Generate RNS Announcement
             </Button>
@@ -102,22 +151,30 @@ const RNSGenerator: React.FC = () => {
           <div className="p-6">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-neutral-800">Generated Announcement</h2>
-              <p className="text-sm text-neutral-500">Your AI-generated RNS announcement will appear here</p>
+              <p className="text-sm text-neutral-500">Your AI-generated RNS announcement</p>
             </div>
             <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 min-h-[500px]">
-              <p className="text-neutral-500 text-sm italic">
-                Generated content will appear here...
-              </p>
+              {generatedContent ? (
+                <div className="prose max-w-none">
+                  {generatedContent}
+                </div>
+              ) : (
+                <p className="text-neutral-500 text-sm italic">
+                  Generated content will appear here...
+                </p>
+              )}
             </div>
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex justify-end space-x-3">
               <Button
                 variant="outline"
                 onClick={() => setActiveTab('input')}
-                className="mr-2"
               >
                 Edit Input
               </Button>
-              <Button>
+              <Button
+                onClick={() => navigator.clipboard.writeText(generatedContent)}
+                disabled={!generatedContent}
+              >
                 Copy to Clipboard
               </Button>
             </div>
