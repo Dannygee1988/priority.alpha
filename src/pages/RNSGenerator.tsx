@@ -362,7 +362,7 @@ const RNSGenerator: React.FC = () => {
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
                     <p className="text-neutral-500 text-sm italic mb-4">
-                      Generated content will appear here...
+                      Generated content will appear here ..
                     </p>
                     <Button
                       variant="outline"
