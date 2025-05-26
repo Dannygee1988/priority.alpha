@@ -29,10 +29,34 @@ const Settings: React.FC = () => {
   });
 
   const platforms = [
-    { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'text-blue-400' },
-    { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'text-blue-600' },
-    { id: 'linkedin', name: 'LinkedIn', icon: LinkedIn, color: 'text-blue-700' },
-    { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'text-pink-600' },
+    { 
+      id: 'twitter', 
+      name: 'Twitter', 
+      icon: Twitter, 
+      color: 'bg-[#1DA1F2] text-white',
+      hoverColor: 'hover:bg-[#1a94e4]'
+    },
+    { 
+      id: 'facebook', 
+      name: 'Facebook', 
+      icon: Facebook, 
+      color: 'bg-[#4267B2] text-white',
+      hoverColor: 'hover:bg-[#385796]'
+    },
+    { 
+      id: 'linkedin', 
+      name: 'LinkedIn', 
+      icon: LinkedIn, 
+      color: 'bg-[#0077B5] text-white',
+      hoverColor: 'hover:bg-[#006399]'
+    },
+    { 
+      id: 'instagram', 
+      name: 'Instagram', 
+      icon: Instagram, 
+      color: 'bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] text-white',
+      hoverColor: 'hover:opacity-90'
+    }
   ];
 
   const availablePlatforms = platforms.filter(platform => 
@@ -379,18 +403,18 @@ const Settings: React.FC = () => {
                       return (
                         <div
                           key={account.id}
-                          className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50"
+                          className="flex items-center justify-between p-4 bg-white rounded-lg border border-neutral-200 hover:border-neutral-300 transition-all"
                         >
                           <div className="flex items-center">
-                            <div className={`${platform.color}`}>
-                              <platform.icon size={24} />
+                            <div className={`w-10 h-10 rounded-lg ${platform.color} flex items-center justify-center transition-all`}>
+                              <platform.icon size={20} />
                             </div>
                             <div className="ml-4">
                               <h3 className="text-sm font-medium text-neutral-800">{platform.name}</h3>
-                              <p className="text-sm text-neutral-500">{account.username}</p>
+                              <p className="text-sm text-neutral-500">@{account.username}</p>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-4">
                             <span className="text-xs text-neutral-500">
                               Connected {new Date(account.created_at).toLocaleDateString()}
                             </span>
@@ -438,11 +462,11 @@ const Settings: React.FC = () => {
                     <button
                       key={platform.id}
                       onClick={() => setSelectedPlatform(platform.id)}
-                      className="w-full flex items-center p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+                      className={`w-full flex items-center p-4 rounded-lg transition-all ${platform.color} ${platform.hoverColor}`}
                     >
-                      <platform.icon className={`${platform.color} w-6 h-6`} />
-                      <span className="ml-3 text-neutral-700 font-medium">{platform.name}</span>
-                      <ChevronRight className="ml-auto text-neutral-400" size={20} />
+                      <platform.icon className="w-6 h-6" />
+                      <span className="ml-3 font-medium">{platform.name}</span>
+                      <ChevronRight className="ml-auto" size={20} />
                     </button>
                   ))}
                 </div>
