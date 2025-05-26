@@ -72,6 +72,13 @@ const Settings: React.FC = () => {
   const handleAddUser = async () => {
     if (!user?.id || userCount >= MAX_USERS) return;
     
+    // Check if the current user has admin role
+    const userRole = user.user_metadata?.role;
+    if (userRole !== 'admin') {
+      setError('You do not have permission to add users. Only administrators can add new users.');
+      return;
+    }
+    
     setIsCreatingUser(true);
     setError(null);
 
@@ -83,14 +90,15 @@ const Settings: React.FC = () => {
 
       const password = generatePassword();
       
-      // Create new user in Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Create new user using the client-side API instead of admin API
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUser.email,
         password: password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: `${newUser.firstName} ${newUser.lastName}`,
-          role: newUser.role
+        options: {
+          data: {
+            full_name: `${newUser.firstName} ${newUser.lastName}`,
+            role: newUser.role
+          }
         }
       });
 
@@ -100,7 +108,7 @@ const Settings: React.FC = () => {
       const { error: linkError } = await supabase
         .from('user_companies')
         .insert({
-          user_id: authData.user.id,
+          user_id: authData.user?.id,
           company_id: companyId
         });
 
@@ -358,7 +366,7 @@ const Settings: React.FC = () => {
                     <Button
                       leftIcon={<UserPlus size={18} />}
                       onClick={() => setShowAddUserModal(true)}
-                      disabled={userCount >= MAX_USERS}
+                      disabled={userCount >= MAX_USERS || user?.user_metadata?.role !== 'admin'}
                     >
                       Add User
                     </Button>
