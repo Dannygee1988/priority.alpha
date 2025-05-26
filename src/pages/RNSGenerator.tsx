@@ -91,20 +91,27 @@ const RNSGenerator: React.FC = () => {
     }
   };
 
-  // Simple markdown renderer for basic formatting
   const renderMarkdown = (content: string) => {
-    return content
-      .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold text-neutral-800 mb-3 mt-6">$1</h3>')
-      .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold text-neutral-800 mb-4 mt-8">$1</h2>')
-      .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold text-neutral-800 mb-6 mt-8">$1</h1>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
-      .replace(/^- (.+)$/gm, '<li class="ml-4">• $1</li>')
-      .replace(/\n\n/g, '</p><p class="mb-4">')
-      .replace(/^(.+)$/gm, '<p class="mb-4">$1</p>')
-      .replace(/<p class="mb-4"><\/p>/g, '')
-      .replace(/<p class="mb-4"><li/g, '<li')
+    const formattedContent = content
+      // Headers
+      .replace(/^### (.*$)/gm, '<h3 class="text-lg font-semibold text-neutral-800 mb-3 mt-6">$1</h3>')
+      .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold text-neutral-800 mb-4 mt-8">$1</h2>')
+      .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-neutral-800 mb-6 mt-8">$1</h1>')
+      // Bold and italic
+      .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold">$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>')
+      // Lists
+      .replace(/^\s*[-*+]\s+(.+)$/gm, '<li class="ml-6 mb-2">• $1</li>')
+      .replace(/(<li[^>]*>.*<\/li>)\n(<li[^>]*>.*<\/li>)/g, '<ul class="mb-4">$1$2</ul>')
+      // Paragraphs
+      .replace(/^(?!<[uh])\s*([^\n]+)\s*$/gm, '<p class="mb-4 leading-relaxed">$1</p>')
+      // Clean up
+      .replace(/<\/ul>\s*<ul>/g, '')
+      .replace(/<p>\s*<\/p>/g, '')
+      .replace(/<p><li/g, '<li')
       .replace(/<\/li><\/p>/g, '</li>');
+
+    return `<div class="space-y-4">${formattedContent}</div>`;
   };
 
   return (
@@ -224,7 +231,7 @@ const RNSGenerator: React.FC = () => {
               )}
             </div>
 
-            <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-6 min-h-[500px]">
+            <div className="bg-white border border-neutral-200 rounded-lg p-8 min-h-[500px]">
               {isGenerating ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
@@ -235,7 +242,7 @@ const RNSGenerator: React.FC = () => {
                 </div>
               ) : generatedContent ? (
                 <div 
-                  className="prose prose-neutral max-w-none text-neutral-700 leading-relaxed"
+                  className="prose max-w-none text-neutral-700"
                   dangerouslySetInnerHTML={{ 
                     __html: renderMarkdown(generatedContent) 
                   }}
