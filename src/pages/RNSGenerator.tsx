@@ -16,6 +16,7 @@ const RNSGenerator: React.FC = () => {
   const [keywords, setKeywords] = useState('');
   const [assistantId, setAssistantId] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAssistantId = async () => {
@@ -35,6 +36,7 @@ const RNSGenerator: React.FC = () => {
         setAssistantId(data?.assistant_id);
       } catch (err) {
         console.error('Error fetching assistant ID:', err);
+        setError('Failed to fetch assistant ID. Please try again.');
       }
     };
 
@@ -44,6 +46,7 @@ const RNSGenerator: React.FC = () => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     setGeneratedContent(null);
+    setError(null);
 
     try {
       const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25e0d499-6af1-4357-8c23-a1b43d7bedb8', {
@@ -64,11 +67,16 @@ const RNSGenerator: React.FC = () => {
       }
 
       const data = await response.json();
-      setGeneratedContent(data.content || 'No content received');
+      
+      if (!data.content) {
+        throw new Error('No content received from the server');
+      }
+
+      setGeneratedContent(data.content);
       setActiveTab('output');
     } catch (error) {
       console.error('Error generating RNS:', error);
-      setGeneratedContent('Failed to generate RNS. Please try again.');
+      setError(error instanceof Error ? error.message : 'Failed to generate RNS. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -109,6 +117,12 @@ const RNSGenerator: React.FC = () => {
         {/* Input Section */}
         <div className={activeTab === 'input' ? 'block' : 'hidden'}>
           <div className="p-6">
+            {error && (
+              <div className="mb-6 p-4 bg-error-50 text-error-700 rounded-md">
+                {error}
+              </div>
+            )}
+            
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-neutral-800 mb-4">Announcement Details</h2>
               <div className="space-y-4">
@@ -155,6 +169,7 @@ const RNSGenerator: React.FC = () => {
               isLoading={isGenerating}
               leftIcon={<Wand2 size={18} />}
               fullWidth
+              disabled={!subject.trim() || !description.trim()}
             >
               Generate RNS Announcement
             </Button>
@@ -179,7 +194,7 @@ const RNSGenerator: React.FC = () => {
                 </div>
               ) : (
                 <p className="text-neutral-500 text-sm italic">
-                  Generated content will appear here...
+                  No content generated yet. Please use the input form to generate an announcement.
                 </p>
               )}
             </div>
