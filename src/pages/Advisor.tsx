@@ -40,10 +40,17 @@ const Advisor: React.FC = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [assistantId, setAssistantId] = useState<string | null>(null);
   const [pendingMessageId, setPendingMessageId] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const subscriptionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debug helper function
+  const addDebugInfo = (info: string) => {
+    console.log('DEBUG:', info);
+    setDebugInfo(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${info}`]);
+  };
 
   useEffect(() => {
     loadConversations();
@@ -63,20 +70,21 @@ const Advisor: React.FC = () => {
   // Real-time subscription for new messages
   useEffect(() => {
     if (!currentConversationId || !user?.id) {
-      // Clean up existing subscription if no conversation
       if (subscriptionRef.current) {
+        addDebugInfo('Cleaning up subscription - no conversation');
         subscriptionRef.current.unsubscribe();
         subscriptionRef.current = null;
       }
       return;
     }
 
-    // Clean up existing subscription before creating new one
     if (subscriptionRef.current) {
+      addDebugInfo('Cleaning up existing subscription');
       subscriptionRef.current.unsubscribe();
     }
 
-    // Set up real-time subscription for new messages in current conversation
+    addDebugInfo(`Setting up subscription for conversation: ${currentConversationId}`);
+
     subscriptionRef.current = supabase
       .channel(`conversation-${currentConversationId}`)
       .on(
@@ -88,15 +96,15 @@ const Advisor: React.FC = () => {
           filter: `conversation_id=eq.${currentConversationId}`
         },
         (payload) => {
+          addDebugInfo(`Received real-time message: ${JSON.stringify(payload.new)}`);
           const newMessage = payload.new as any;
           
-          // Only add assistant messages that we haven't already added
-          // and that are responses to our pending message
           if (
             newMessage.role === 'assistant' && 
-            !messages.find(m => m.id === newMessage.id) &&
-            newMessage.parent_id === pendingMessageId
+            !messages.find(m => m.id === newMessage.id)
           ) {
+            addDebugInfo(`Adding assistant message with parent_id: ${newMessage.parent_id}, expecting: ${pendingMessageId}`);
+            
             const assistantMessage: Message = {
               id: newMessage.id,
               role: 'assistant',
@@ -110,29 +118,29 @@ const Advisor: React.FC = () => {
             setIsLoading(false);
             setPendingMessageId(null);
             
-            // Clear timeout since we got a response
             if (timeoutRef.current) {
               clearTimeout(timeoutRef.current);
               timeoutRef.current = null;
+              addDebugInfo('Cleared timeout - response received');
             }
 
-            // Update conversations list to reflect new activity
             loadConversations();
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        addDebugInfo(`Subscription status: ${status}`);
+      });
 
-    // Cleanup function
     return () => {
       if (subscriptionRef.current) {
+        addDebugInfo('Cleaning up subscription on unmount');
         subscriptionRef.current.unsubscribe();
         subscriptionRef.current = null;
       }
     };
-  }, [currentConversationId, user?.id, pendingMessageId, messages]);
+  }, [currentConversationId, user?.id, messages]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (subscriptionRef.current) {
@@ -159,8 +167,10 @@ const Advisor: React.FC = () => {
 
       if (error) throw error;
       setAssistantId(data?.assistant_id);
+      addDebugInfo(`Loaded assistant ID: ${data?.assistant_id}`);
     } catch (err) {
       console.error('Error loading assistant ID:', err);
+      addDebugInfo(`Error loading assistant ID: ${err}`);
     }
   };
 
@@ -180,7 +190,6 @@ const Advisor: React.FC = () => {
 
       if (error) throw error;
 
-      // Group by conversation_id and get the most recent message for each
       const conversationMap = new Map();
       data.forEach(msg => {
         if (!conversationMap.has(msg.conversation_id) || 
@@ -227,8 +236,10 @@ const Advisor: React.FC = () => {
       }));
 
       setMessages(formattedMessages);
+      addDebugInfo(`Loaded ${formattedMessages.length} messages`);
     } catch (err) {
       console.error('Error loading messages:', err);
+      addDebugInfo(`Error loading messages: ${err}`);
     }
   };
 
@@ -242,11 +253,63 @@ const Advisor: React.FC = () => {
     setPendingMessageId(null);
     setIsLoading(false);
     setError(null);
+    setDebugInfo([]);
     
-    // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
+    }
+  };
+
+  // Test function to manually check for responses
+  const checkForResponse = async () => {
+    if (!pendingMessageId || !currentConversationId || !user?.id) return;
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      addDebugInfo(`Manually checking for response to message: ${pendingMessageId}`);
+
+      const { data, error } = await supabase
+        .from('advisor_messages')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('conversation_id', currentConversationId)
+        .eq('role', 'assistant')
+        .eq('parent_id', pendingMessageId);
+
+      if (error) {
+        addDebugInfo(`Error checking for response: ${error.message}`);
+        return;
+      }
+
+      addDebugInfo(`Found ${data.length} assistant responses`);
+
+      if (data.length > 0) {
+        const assistantMessage = data[0];
+        const newMessage: Message = {
+          id: assistantMessage.id,
+          role: 'assistant',
+          content: assistantMessage.content,
+          timestamp: new Date(assistantMessage.created_at),
+          conversation_id: assistantMessage.conversation_id,
+          sources: assistantMessage.sources
+        };
+
+        setMessages(prev => [...prev, newMessage]);
+        setIsLoading(false);
+        setPendingMessageId(null);
+        
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        
+        addDebugInfo('Manually found and added response!');
+      }
+    } catch (err) {
+      addDebugInfo(`Error in manual check: ${err}`);
     }
   };
 
@@ -276,14 +339,18 @@ const Advisor: React.FC = () => {
     setError(null);
     setPendingMessageId(messageId);
 
+    addDebugInfo(`Sending message with ID: ${messageId}`);
+
     try {
       const companyId = await getUserCompany(user.id);
       if (!companyId) {
         throw new Error('No company found');
       }
 
+      addDebugInfo(`Company ID: ${companyId}`);
+
       // Save user message to database
-      await supabase
+      const { error: insertError } = await supabase
         .from('advisor_messages')
         .insert({
           id: messageId,
@@ -294,38 +361,55 @@ const Advisor: React.FC = () => {
           parent_id: messages.length > 0 ? messages[messages.length - 1].id : null
         });
 
-      // Send webhook (fire and forget - response will come via real-time subscription)
-      const webhookPromise = fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
+      if (insertError) {
+        addDebugInfo(`Error saving user message: ${insertError.message}`);
+        throw insertError;
+      }
+
+      addDebugInfo('User message saved successfully');
+
+      // Prepare webhook payload
+      const webhookPayload = {
+        message: userInput,
+        company_id: companyId,
+        message_id: messageId,
+        conversation_id: conversationId,
+        assistant_id: assistantId
+      };
+
+      addDebugInfo(`Webhook payload: ${JSON.stringify(webhookPayload)}`);
+
+      // Send webhook
+      const webhookResponse = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          message: userInput,
-          company_id: companyId,
-          message_id: messageId,
-          conversation_id: conversationId,
-          assistant_id: assistantId
-        })
+        body: JSON.stringify(webhookPayload)
       });
 
-      // Handle webhook errors without blocking the UI
-      webhookPromise.catch(err => {
-        console.error('Webhook error:', err);
-        setError('Failed to send message to assistant');
-        setIsLoading(false);
-        setPendingMessageId(null);
-      });
+      addDebugInfo(`Webhook response status: ${webhookResponse.status}`);
 
-      // Set a timeout to stop loading if no response comes within 60 seconds
+      if (!webhookResponse.ok) {
+        const errorText = await webhookResponse.text();
+        addDebugInfo(`Webhook error response: ${errorText}`);
+        throw new Error(`Webhook failed with status ${webhookResponse.status}: ${errorText}`);
+      }
+
+      const webhookData = await webhookResponse.json();
+      addDebugInfo(`Webhook response data: ${JSON.stringify(webhookData)}`);
+
+      // Set a timeout to stop loading if no response comes within 30 seconds for testing
       timeoutRef.current = setTimeout(() => {
+        addDebugInfo('Timeout reached - no response received');
         setIsLoading(false);
         setPendingMessageId(null);
         setError('Response timeout - the assistant is taking longer than expected. Please try again.');
-      }, 60000); // 60 second timeout
+      }, 30000); // 30 second timeout for debugging
 
     } catch (err) {
       console.error('Error:', err);
+      addDebugInfo(`Error in handleSubmit: ${err}`);
       setError(err instanceof Error ? err.message : 'An error occurred');
       setIsLoading(false);
       setPendingMessageId(null);
@@ -351,6 +435,29 @@ const Advisor: React.FC = () => {
 
   return (
     <div className="px-4 py-8 h-[calc(100vh-4rem)] flex animate-fade-in">
+      {/* Debug Panel */}
+      <div className="w-64 mr-4 bg-gray-100 p-3 rounded-lg text-xs">
+        <h3 className="font-bold mb-2">Debug Info:</h3>
+        <div className="space-y-1 max-h-40 overflow-y-auto">
+          {debugInfo.map((info, i) => (
+            <div key={i} className="text-gray-700">{info}</div>
+          ))}
+        </div>
+        {pendingMessageId && (
+          <button
+            onClick={checkForResponse}
+            className="mt-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+          >
+            Check for Response
+          </button>
+        )}
+        <div className="mt-2 text-xs">
+          <div>Pending: {pendingMessageId || 'None'}</div>
+          <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
+          <div>Conv ID: {currentConversationId || 'None'}</div>
+        </div>
+      </div>
+
       {/* Conversations Sidebar */}
       <div className="w-80 mr-8 flex flex-col">
         <div className="mb-4">
@@ -490,7 +597,6 @@ const Advisor: React.FC = () => {
                         <p className="whitespace-pre-wrap">{message.content}</p>
                       )}
 
-                      {/* Copy button */}
                       <button
                         onClick={() => copyToClipboard(message.content, message.id)}
                         className={`absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
@@ -507,14 +613,12 @@ const Advisor: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Timestamp */}
                     <div className={`text-xs text-neutral-400 mt-1 ${
                       message.role === 'user' ? 'text-right' : ''
                     }`}>
                       {message.timestamp.toLocaleTimeString()}
                     </div>
 
-                    {/* Sources */}
                     {message.role === 'assistant' && message.sources && message.sources.length > 0 && (
                       <div className="mt-2">
                         <button
