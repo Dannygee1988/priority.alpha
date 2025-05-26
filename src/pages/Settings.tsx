@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Lock, Globe, Twitter, Facebook, Linkedin as LinkedIn, Instagram, Mail, Building2, ChevronRight, Plus, Trash2, Users, UserPlus } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import { useAuth } from '../context/AuthContext';
+import { getUserCompany } from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 const Settings: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'connections' | 'users'>('profile');
   const [showAddAccountModal, setShowAddAccountModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [userCount, setUserCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newAccount, setNewAccount] = useState({
     platform: 'twitter',
     username: '',
@@ -18,6 +25,38 @@ const Settings: React.FC = () => {
     lastName: '',
     role: 'user'
   });
+
+  const MAX_USERS = 5;
+
+  useEffect(() => {
+    const loadUserCount = async () => {
+      if (!user?.id) return;
+
+      try {
+        const companyId = await getUserCompany(user.id);
+        if (!companyId) {
+          console.warn('No company found for user');
+          setIsLoading(false);
+          return;
+        }
+
+        const { count, error: countError } = await supabase
+          .from('user_companies')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', companyId);
+
+        if (countError) throw countError;
+        setUserCount(count || 0);
+      } catch (err) {
+        console.error('Error loading user count:', err);
+        setError('Failed to load user count');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUserCount();
+  }, [user]);
 
   const platforms = [
     { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'text-[#1DA1F2]' },
@@ -219,18 +258,33 @@ const Settings: React.FC = () => {
             {/* User Management */}
             {activeTab === 'users' && (
               <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex justify-between items-start mb-6">
                   <div>
                     <h2 className="text-lg font-semibold text-neutral-800">User Management</h2>
                     <p className="text-sm text-neutral-500">Manage users and their access levels</p>
                   </div>
-                  <Button
-                    leftIcon={<UserPlus size={18} />}
-                    onClick={() => setShowAddUserModal(true)}
-                  >
-                    Add User
-                  </Button>
+                  <div className="flex flex-col items-end">
+                    <div className="flex items-center mb-2">
+                      <span className="text-sm text-neutral-600 mr-2">Users:</span>
+                      <span className="font-medium text-lg">{userCount}</span>
+                      <span className="text-neutral-400 mx-1">/</span>
+                      <span className="text-neutral-600">{MAX_USERS}</span>
+                    </div>
+                    <Button
+                      leftIcon={<UserPlus size={18} />}
+                      onClick={() => setShowAddUserModal(true)}
+                      disabled={userCount >= MAX_USERS}
+                    >
+                      Add User
+                    </Button>
+                  </div>
                 </div>
+
+                {error && (
+                  <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
+                    {error}
+                  </div>
+                )}
 
                 <div className="overflow-x-auto">
                   <table className="w-full">
