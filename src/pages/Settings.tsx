@@ -406,7 +406,7 @@ const Settings: React.FC = () => {
                           className="flex items-center justify-between p-3 bg-white rounded-lg border border-neutral-200 hover:border-neutral-300 transition-all"
                         >
                           <div className="flex items-center">
-                            <div className={`w-8 h-8 rounded-md ${platform.color} flex items-center justify-center transition-all`}>
+                            <div className={`w-8 h-8 rounded-md ${platform.color} flex items-center justify-center`}>
                               <platform.icon size={16} />
                             </div>
                             <div className="ml-3">
@@ -462,7 +462,7 @@ const Settings: React.FC = () => {
                     <button
                       key={platform.id}
                       onClick={() => setSelectedPlatform(platform.id)}
-                      className={`w-full flex items-center p-2 rounded-md transition-all ${platform.color} ${platform.hoverColor}`}
+                      className={`max-w-[240px] mx-auto flex items-center p-2 rounded-md transition-all ${platform.color} ${platform.hoverColor}`}
                     >
                       <platform.icon size={16} />
                       <span className="ml-3 text-sm">{platform.name}</span>
