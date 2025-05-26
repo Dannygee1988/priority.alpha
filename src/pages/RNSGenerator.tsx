@@ -13,6 +13,7 @@ const RNSGenerator: React.FC = () => {
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [keywords, setKeywords] = useState('');
+  const [notes, setNotes] = useState('');
   const [assistantId, setAssistantId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,6 +53,7 @@ const RNSGenerator: React.FC = () => {
         subject,
         description,
         keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+        notes,
         assistant_id: assistantId
       })
     }).catch(console.error); // Log any errors but don't wait
@@ -134,6 +136,20 @@ const RNSGenerator: React.FC = () => {
                   />
                   <p className="mt-1 text-sm text-neutral-500">
                     Keywords to emphasize in the press release
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-neutral-700 text-sm font-medium mb-1">
+                    Additional Notes <span className="text-neutral-500">(optional)</span>
+                  </label>
+                  <textarea
+                    className="w-full h-32 px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary resize-none"
+                    placeholder="Add any additional notes or context for the AI..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                  <p className="mt-1 text-sm text-neutral-500">
+                    Any extra information or context that might help generate a better announcement
                   </p>
                 </div>
               </div>
