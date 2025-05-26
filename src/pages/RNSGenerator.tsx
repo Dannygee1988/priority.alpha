@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Wand2 } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { useSupabase } from '@supabase/auth-helpers-react';
 
 const RNSGenerator: React.FC = () => {
-  const supabase = useSupabaseClient();
+  const { supabaseClient: supabase } = useSupabase();
   const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
   const [isGenerating, setIsGenerating] = useState(false);
   const [subject, setSubject] = useState('');
