@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Search, Filter, Grid, List, Plus, Image as ImageIcon, MoreVertical, X, Tag as TagIcon } from 'lucide-react';
+import { Upload, Search, Filter, Grid, List, Plus, Image as ImageIcon, MoreVertical, X, Tag as TagIcon, Trash2 } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +21,7 @@ const Gallery: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [editedTitle, setEditedTitle] = useState('');
   const [newTag, setNewTag] = useState('');
@@ -28,6 +29,7 @@ const Gallery: React.FC = () => {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -108,6 +110,30 @@ const Gallery: React.FC = () => {
       setError('Failed to update image. Please try again.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedImage) return;
+
+    setIsDeleting(true);
+    try {
+      const { error: deleteError } = await supabase
+        .from('gallery_images')
+        .delete()
+        .eq('id', selectedImage.id);
+
+      if (deleteError) throw deleteError;
+
+      // Update local state
+      setImages(images.filter(img => img.id !== selectedImage.id));
+      setShowDeleteConfirm(false);
+      setShowEditModal(false);
+    } catch (err) {
+      console.error('Error deleting image:', err);
+      setError('Failed to delete image. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -408,6 +434,17 @@ const Gallery: React.FC = () => {
                       </Button>
                     </div>
                   </div>
+
+                  <div className="pt-4 border-t border-neutral-200">
+                    <Button
+                      variant="outline"
+                      className="text-error-600 hover:bg-error-50 hover:border-error-600"
+                      leftIcon={<Trash2 size={18} />}
+                      onClick={() => setShowDeleteConfirm(true)}
+                    >
+                      Delete Image
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -423,6 +460,36 @@ const Gallery: React.FC = () => {
                   isLoading={isSaving}
                 >
                   Save Changes
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-neutral-800 mb-4">Delete Image</h2>
+              <p className="text-neutral-600 mb-6">
+                Are you sure you want to delete this image? This action cannot be undone.
+              </p>
+
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-error-600 hover:bg-error-700"
+                  onClick={handleDelete}
+                  isLoading={isDeleting}
+                >
+                  Delete
                 </Button>
               </div>
             </div>
