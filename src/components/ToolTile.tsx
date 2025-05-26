@@ -28,6 +28,9 @@ import {
   PenLine,
   ChevronDown,
   Image,
+  FileEdit,
+  Sparkles,
+  FileCheck,
 } from 'lucide-react';
 
 interface ToolTileProps {
@@ -79,7 +82,10 @@ const prOptions = [
     icon: AlertCircle, 
     path: '/pr/rns',
     submenu: [
-      { name: 'Write new RNS', icon: PenLine, path: '/pr/rns/write' }
+      { name: 'Write new RNS', icon: PenLine, path: '/pr/rns/write' },
+      { name: 'Improve RNS', icon: Sparkles, path: '/pr/rns/improve' },
+      { name: 'Drafts', icon: FileEdit, path: '/pr/rns/drafts' },
+      { name: 'Published RNS', icon: FileCheck, path: '/pr/rns/published' }
     ]
   },
 ];
