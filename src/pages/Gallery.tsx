@@ -1,12 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, Search, Filter, Grid, List, Plus, Image as ImageIcon, MoreVertical } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import { getUserCompany } from '../lib/api';
+
+interface GalleryImage {
+  id: string;
+  url: string;
+  title: string;
+  description: string | null;
+  type: string | null;
+  tags: string[];
+  created_at: string;
+}
 
 const Gallery: React.FC = () => {
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [images, setImages] = useState<any[]>([]);
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadImages();
+  }, [user]);
+
+  const loadImages = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        console.warn('No company found for user');
+        setIsLoading(false);
+        return;
+      }
+
+      const { data, error: fetchError } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+
+      setImages(data || []);
+    } catch (err) {
+      console.error('Error loading images:', err);
+      setError('Failed to load images. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (!bytes) return 'N/A';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  };
 
   return (
     <div className="px-4 py-8 animate-fade-in">
@@ -63,29 +119,41 @@ const Gallery: React.FC = () => {
             </div>
           </div>
 
-          {images.length === 0 ? (
+          {error && (
+            <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
+              {error}
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : images.length === 0 ? (
             <div className="text-center py-12">
               <ImageIcon size={48} className="mx-auto text-neutral-300 mb-4" />
               <p className="text-neutral-500">No images uploaded yet</p>
             </div>
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {images.map((item) => (
+              {images.map((image) => (
                 <div
-                  key={item.id}
+                  key={image.id}
                   className="group relative bg-neutral-50 rounded-lg border border-neutral-200 overflow-hidden"
                 >
                   <div className="aspect-square">
                     <img
-                      src={item.url}
-                      alt={item.title}
+                      src={image.url}
+                      alt={image.title}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200" />
                   <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-200">
-                    <h3 className="font-medium text-sm">{item.title}</h3>
-                    <p className="text-xs text-white/80">{item.created}</p>
+                    <h3 className="font-medium text-sm">{image.title}</h3>
+                    <p className="text-xs text-white/80">
+                      {new Date(image.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -98,40 +166,38 @@ const Gallery: React.FC = () => {
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Media</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Title</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Size</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Created</th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {images.map((item) => (
+                  {images.map((image) => (
                     <tr
-                      key={item.id}
+                      key={image.id}
                       className="border-b border-neutral-100 hover:bg-neutral-50"
                     >
                       <td className="py-3 px-4">
                         <div className="h-12 w-12 rounded-lg overflow-hidden">
                           <img
-                            src={item.url}
-                            alt={item.title}
+                            src={image.url}
+                            alt={image.title}
                             className="w-full h-full object-cover"
                           />
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="text-sm font-medium text-neutral-900">{item.title}</span>
+                        <span className="text-sm font-medium text-neutral-900">{image.title}</span>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center">
                           <ImageIcon size={16} className="text-neutral-400 mr-2" />
-                          <span className="text-sm text-neutral-600">{item.type}</span>
+                          <span className="text-sm text-neutral-600">{image.type || 'Image'}</span>
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="text-sm text-neutral-600">{item.size}</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-sm text-neutral-600">{item.created}</span>
+                        <span className="text-sm text-neutral-600">
+                          {new Date(image.created_at).toLocaleDateString()}
+                        </span>
                       </td>
                       <td className="py-3 px-4 text-right">
                         <button className="p-1 hover:bg-neutral-100 rounded-full">
