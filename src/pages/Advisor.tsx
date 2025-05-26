@@ -165,60 +165,26 @@ const Advisor: React.FC = () => {
           parent_id: messages.length > 0 ? messages[messages.length - 1].id : null
         });
 
-      const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/advisor', {
+      // Send webhook
+      fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Origin': window.location.origin,
+          'Content-Type': 'application/json'
         },
-        mode: 'cors',
-        credentials: 'omit',
         body: JSON.stringify({
           message: input.trim(),
           company_id: companyId,
-          history: messages.map(m => ({
-            role: m.role,
-            content: m.content
-          }))
+          message_id: messageId,
+          conversation_id: conversationId
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Server error: ${response.status} - ${errorData}`);
-      }
-
-      const data = await response.json();
+      // Don't wait for response
+      setIsLoading(false);
       
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: data.response,
-        timestamp: new Date(),
-        conversation_id: conversationId,
-        sources: data.sources
-      };
-
-      // Save assistant message to database
-      await supabase
-        .from('advisor_messages')
-        .insert({
-          id: assistantMessage.id,
-          company_id: companyId,
-          role: 'assistant',
-          content: data.response,
-          conversation_id: conversationId,
-          parent_id: messageId,
-          sources: data.sources
-        });
-
-      setMessages(prev => [...prev, assistantMessage]);
-      loadConversations(); // Refresh conversation list
     } catch (err) {
-      console.error('Error getting response:', err);
-      setError(err instanceof Error ? err.message : 'Failed to get response. Please try again.');
-    } finally {
+      console.error('Error:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
       setIsLoading(false);
     }
   };
