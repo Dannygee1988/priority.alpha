@@ -399,13 +399,62 @@ const Advisor: React.FC = () => {
       const webhookData = await webhookResponse.json();
       addDebugInfo(`Webhook response data: ${JSON.stringify(webhookData)}`);
 
-      // Set a timeout to stop loading if no response comes within 30 seconds for testing
-      timeoutRef.current = setTimeout(() => {
-        addDebugInfo('Timeout reached - no response received');
+      // Check if we got an immediate response
+      if (webhookData && Array.isArray(webhookData) && webhookData[0]?.output) {
+        addDebugInfo('Processing immediate webhook response');
+        
+        const assistantMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: webhookData[0].output,
+          timestamp: new Date(),
+          conversation_id: conversationId,
+          sources: webhookData[0].sources || undefined
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
         setIsLoading(false);
         setPendingMessageId(null);
-        setError('Response timeout - the assistant is taking longer than expected. Please try again.');
-      }, 30000); // 30 second timeout for debugging
+
+        // Clear timeout since we got a response
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+
+        // Save assistant message to database
+        try {
+          await supabase
+            .from('advisor_messages')
+            .insert({
+              id: assistantMessage.id,
+              company_id: companyId,
+              role: 'assistant',
+              content: assistantMessage.content,
+              conversation_id: conversationId,
+              parent_id: messageId,
+              sources: assistantMessage.sources
+            });
+          addDebugInfo('Assistant response saved to database');
+        } catch (dbError) {
+          addDebugInfo(`Error saving to database: ${dbError}`);
+          console.error('Database save error:', dbError);
+        }
+
+        // Update conversations list
+        loadConversations();
+      } else {
+        // No immediate response, wait for real-time update
+        addDebugInfo('No immediate response, waiting for real-time update');
+        
+        // Set a timeout to stop loading if no response comes within 30 seconds for testing
+        timeoutRef.current = setTimeout(() => {
+          addDebugInfo('Timeout reached - no response received');
+          setIsLoading(false);
+          setPendingMessageId(null);
+          setError('Response timeout - the assistant is taking longer than expected. Please try again.');
+        }, 30000); // 30 second timeout for debugging
+      }
 
     } catch (err) {
       console.error('Error:', err);
