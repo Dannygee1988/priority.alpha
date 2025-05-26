@@ -395,7 +395,7 @@ const Settings: React.FC = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
                 ) : socialAccounts.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {socialAccounts.map((account) => {
                       const platform = platforms.find(p => p.id === account.platform);
                       if (!platform) return null;
@@ -403,32 +403,24 @@ const Settings: React.FC = () => {
                       return (
                         <div
                           key={account.id}
-                          className="flex items-center justify-between p-3 bg-white rounded-lg border border-neutral-200 hover:border-neutral-300 transition-all"
+                          className="flex items-center justify-between p-3 bg-white rounded-lg border border-neutral-200"
                         >
                           <div className="flex items-center">
                             <div className={`w-8 h-8 rounded-md ${platform.color} flex items-center justify-center`}>
                               <platform.icon size={16} />
                             </div>
-                            <div className="ml-3">
-                              <h3 className="text-sm font-medium text-neutral-800">{platform.name}</h3>
-                              <p className="text-xs text-neutral-500">@{account.username}</p>
-                            </div>
+                            <span className="ml-3 font-medium">{platform.name}</span>
                           </div>
-                          <div className="flex items-center space-x-4">
-                            <span className="text-xs text-neutral-500">
-                              Connected {new Date(account.created_at).toLocaleDateString()}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-error-600 hover:text-error-700"
-                              leftIcon={<Trash2 size={14} />}
-                              onClick={() => handleDeleteAccount(account.id)}
-                              isLoading={isDeletingAccount}
-                            >
-                              Remove
-                            </Button>
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-error-600 hover:text-error-700"
+                            leftIcon={<Trash2 size={14} />}
+                            onClick={() => handleDeleteAccount(account.id)}
+                            isLoading={isDeletingAccount}
+                          >
+                            Remove
+                          </Button>
                         </div>
                       );
                     })}
@@ -462,11 +454,15 @@ const Settings: React.FC = () => {
                     <button
                       key={platform.id}
                       onClick={() => setSelectedPlatform(platform.id)}
-                      className={`w-full flex items-center p-2 rounded-md transition-all ${platform.color} ${platform.hoverColor}`}
+                      className="flex items-center justify-between w-full p-3 rounded-md hover:bg-neutral-50"
                     >
-                      <platform.icon size={16} />
-                      <span className="ml-3 text-sm">{platform.name}</span>
-                      <ChevronRight className="ml-auto" size={16} />
+                      <div className="flex items-center">
+                        <div className={`w-8 h-8 rounded-md ${platform.color} flex items-center justify-center`}>
+                          <platform.icon size={16} />
+                        </div>
+                        <span className="ml-3">{platform.name}</span>
+                      </div>
+                      <ChevronRight size={16} className="text-neutral-400" />
                     </button>
                   ))}
                 </div>
