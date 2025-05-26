@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wand2, Copy, CheckCircle } from 'lucide-react';
+import { Wand2, Copy, CheckCircle, Check } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +19,7 @@ const RNSGenerator: React.FC = () => {
   const [isCopied, setIsCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editableContent, setEditableContent] = useState('');
+  const [isApproved, setIsApproved] = useState(false);
 
   useEffect(() => {
     const fetchAssistantId = async () => {
@@ -85,6 +86,7 @@ const RNSGenerator: React.FC = () => {
       
       setGeneratedContent(content);
       setEditableContent(content);
+      setIsApproved(false); // Reset approval status for new content
       setActiveTab('output');
     } catch (err) {
       console.error('Error generating RNS:', err);
@@ -113,11 +115,17 @@ const RNSGenerator: React.FC = () => {
   const handleSaveEdit = () => {
     setGeneratedContent(editableContent);
     setIsEditing(false);
+    setIsApproved(false); // Reset approval status when content is edited
   };
 
   const handleCancelEdit = () => {
     setEditableContent(generatedContent);
     setIsEditing(false);
+  };
+
+  const handleApprove = () => {
+    setIsApproved(true);
+    // Here you could add additional logic like saving to database, sending notifications, etc.
   };
 
   // Enhanced markdown renderer for RNS content
@@ -295,6 +303,20 @@ const RNSGenerator: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {generatedContent && !isEditing && (
+              <div className="mt-6 flex justify-center">
+                <Button
+                  onClick={handleApprove}
+                  size="lg"
+                  leftIcon={isApproved ? <CheckCircle size={20} /> : <Check size={20} />}
+                  className={isApproved ? 'bg-success-600 hover:bg-success-700 text-white' : ''}
+                  disabled={isApproved}
+                >
+                  {isApproved ? 'Approved' : 'Approve'}
+                </Button>
+              </div>
+            )}
 
             <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-6 min-h-[500px]">
               {isGenerating ? (
