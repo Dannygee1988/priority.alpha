@@ -449,11 +449,14 @@ const Settings: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center mb-6">
-                    {platforms.find(p => p.id === selectedPlatform)?.icon && (
-                      <platforms.find(p => p.id === selectedPlatform)!.icon 
-                        className={`${platforms.find(p => p.id === selectedPlatform)?.color} w-6 h-6 mr-2`}
-                      />
-                    )}
+                    {selectedPlatform && (() => {
+                      const platform = platforms.find(p => p.id === selectedPlatform);
+                      if (platform) {
+                        const Icon = platform.icon;
+                        return <Icon className={`${platform.color} w-6 h-6 mr-2`} />;
+                      }
+                      return null;
+                    })()}
                     <h3 className="text-lg font-medium">
                       {platforms.find(p => p.id === selectedPlatform)?.name}
                     </h3>
