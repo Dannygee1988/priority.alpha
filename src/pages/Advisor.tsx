@@ -38,11 +38,13 @@ const Advisor: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showSources, setShowSources] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [assistantId, setAssistantId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     loadConversations();
+    loadAssistantId();
   }, [user]);
 
   useEffect(() => {
@@ -54,6 +56,26 @@ const Advisor: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const loadAssistantId = async () => {
+    if (!user?.id) return;
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      const { data, error } = await supabase
+        .from('company_profiles')
+        .select('assistant_id')
+        .eq('id', companyId)
+        .single();
+
+      if (error) throw error;
+      setAssistantId(data?.assistant_id);
+    } catch (err) {
+      console.error('Error loading assistant ID:', err);
+    }
+  };
 
   const loadConversations = async () => {
     if (!user?.id) return;
@@ -175,7 +197,8 @@ const Advisor: React.FC = () => {
           message: input.trim(),
           company_id: companyId,
           message_id: messageId,
-          conversation_id: conversationId
+          conversation_id: conversationId,
+          assistant_id: assistantId
         })
       });
 
