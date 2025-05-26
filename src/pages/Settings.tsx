@@ -395,7 +395,7 @@ const Settings: React.FC = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
                 ) : socialAccounts.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {socialAccounts.map((account) => {
                       const platform = platforms.find(p => p.id === account.platform);
                       if (!platform) return null;
@@ -403,15 +403,15 @@ const Settings: React.FC = () => {
                       return (
                         <div
                           key={account.id}
-                          className="flex items-center justify-between p-4 bg-white rounded-lg border border-neutral-200 hover:border-neutral-300 transition-all"
+                          className="flex items-center justify-between p-3 bg-white rounded-lg border border-neutral-200 hover:border-neutral-300 transition-all"
                         >
                           <div className="flex items-center">
-                            <div className={`w-10 h-10 rounded-lg ${platform.color} flex items-center justify-center transition-all`}>
-                              <platform.icon size={20} />
+                            <div className={`w-8 h-8 rounded-md ${platform.color} flex items-center justify-center transition-all`}>
+                              <platform.icon size={16} />
                             </div>
-                            <div className="ml-4">
+                            <div className="ml-3">
                               <h3 className="text-sm font-medium text-neutral-800">{platform.name}</h3>
-                              <p className="text-sm text-neutral-500">@{account.username}</p>
+                              <p className="text-xs text-neutral-500">@{account.username}</p>
                             </div>
                           </div>
                           <div className="flex items-center space-x-4">
@@ -422,7 +422,7 @@ const Settings: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               className="text-error-600 hover:text-error-700"
-                              leftIcon={<Trash2 size={16} />}
+                              leftIcon={<Trash2 size={14} />}
                               onClick={() => handleDeleteAccount(account.id)}
                               isLoading={isDeletingAccount}
                             >
@@ -456,17 +456,17 @@ const Settings: React.FC = () => {
               <h2 className="text-xl font-bold text-neutral-800 mb-6">Connect Social Account</h2>
               
               {!selectedPlatform ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <h3 className="text-sm font-medium text-neutral-700 mb-3">Select Platform</h3>
                   {availablePlatforms.map((platform) => (
                     <button
                       key={platform.id}
                       onClick={() => setSelectedPlatform(platform.id)}
-                      className={`w-full flex items-center p-4 rounded-lg transition-all ${platform.color} ${platform.hoverColor}`}
+                      className={`w-full flex items-center p-3 rounded-md transition-all ${platform.color} ${platform.hoverColor}`}
                     >
-                      <platform.icon className="w-6 h-6" />
-                      <span className="ml-3 font-medium">{platform.name}</span>
-                      <ChevronRight className="ml-auto" size={20} />
+                      <platform.icon className="w-5 h-5" />
+                      <span className="ml-3 font-medium text-sm">{platform.name}</span>
+                      <ChevronRight className="ml-auto" size={16} />
                     </button>
                   ))}
                 </div>
@@ -509,29 +509,27 @@ const Settings: React.FC = () => {
                     onChange={(e) => setNewAccount({ ...newAccount, apiKey: e.target.value })}
                     placeholder="Enter your API key if available"
                   />
+
+                  <div className="mt-6 flex justify-end space-x-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowAddAccountModal(false);
+                        setSelectedPlatform(null);
+                        setNewAccount({ username: '', password: '', apiKey: '' });
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleAddAccount}
+                      disabled={!newAccount.username || !newAccount.password}
+                    >
+                      Connect Account
+                    </Button>
+                  </div>
                 </div>
               )}
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowAddAccountModal(false);
-                    setSelectedPlatform(null);
-                    setNewAccount({ username: '', password: '', apiKey: '' });
-                  }}
-                >
-                  Cancel
-                </Button>
-                {selectedPlatform && (
-                  <Button
-                    onClick={handleAddAccount}
-                    disabled={!newAccount.username || !newAccount.password}
-                  >
-                    Connect Account
-                  </Button>
-                )}
-              </div>
             </div>
           </div>
         </div>
