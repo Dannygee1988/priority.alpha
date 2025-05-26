@@ -6,34 +6,7 @@ import Input from '../components/Input';
 const Gallery: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showUploadModal, setShowUploadModal] = useState(false);
-
-  // Example gallery items
-  const galleryItems = [
-    {
-      id: '1',
-      title: 'Company Logo',
-      url: 'https://images.pexels.com/photos/1643409/pexels-photo-1643409.jpeg',
-      type: 'image',
-      size: '256KB',
-      created: '2024-05-26',
-    },
-    {
-      id: '2',
-      title: 'Team Photo',
-      url: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg',
-      type: 'image',
-      size: '512KB',
-      created: '2024-05-25',
-    },
-    {
-      id: '3',
-      title: 'Office Space',
-      url: 'https://images.pexels.com/photos/1170412/pexels-photo-1170412.jpeg',
-      type: 'image',
-      size: '384KB',
-      created: '2024-05-24',
-    },
-  ];
+  const [images, setImages] = useState<any[]>([]);
 
   return (
     <div className="px-4 py-8 animate-fade-in">
@@ -90,9 +63,14 @@ const Gallery: React.FC = () => {
             </div>
           </div>
 
-          {viewMode === 'grid' ? (
+          {images.length === 0 ? (
+            <div className="text-center py-12">
+              <ImageIcon size={48} className="mx-auto text-neutral-300 mb-4" />
+              <p className="text-neutral-500">No images uploaded yet</p>
+            </div>
+          ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {galleryItems.map((item) => (
+              {images.map((item) => (
                 <div
                   key={item.id}
                   className="group relative bg-neutral-50 rounded-lg border border-neutral-200 overflow-hidden"
@@ -126,7 +104,7 @@ const Gallery: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {galleryItems.map((item) => (
+                  {images.map((item) => (
                     <tr
                       key={item.id}
                       className="border-b border-neutral-100 hover:bg-neutral-50"
