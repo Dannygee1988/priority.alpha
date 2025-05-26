@@ -10,6 +10,7 @@ import PublishedRNS from './pages/PublishedRNS';
 import CRM from './pages/CRM';
 import Insiders from './pages/Insiders';
 import Settings from './pages/Settings';
+import Gallery from './pages/Gallery';
 import AppLayout from './layouts/AppLayout';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
             <Route path="/pr/rns/published" element={<PublishedRNS />} />
             <Route path="/investors/insiders" element={<Insiders />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/social-media/gallery" element={<Gallery />} />
             {/* Add more routes as they're developed */}
             <Route path="/analytics" element={<div className="p-8">Analytics page (coming soon)</div>} />
             <Route path="/team" element={<div className="p-8">Team Management page (coming soon)</div>} />

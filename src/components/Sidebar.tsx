@@ -47,12 +47,14 @@ import {
   Sparkles,
   FileCheck,
   UserPlus,
+  Image,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
   { name: 'Create New Post', icon: PenSquare, path: '/social-media/create' },
   { name: 'Generate Captions', icon: MessageSquare, path: '/social-media/captions' },
   { name: 'Create Graphics', icon: Palette, path: '/social-media/graphics' },
+  { name: 'Gallery', icon: Image, path: '/social-media/gallery' },
   { name: 'Hashtag Suggestions', icon: Hash, path: '/social-media/hashtags' },
   { name: 'Trending Tags', icon: TrendingUp, path: '/social-media/trending' },
   { name: 'Content Calendar', icon: CalendarDays, path: '/social-media/calendar' },
