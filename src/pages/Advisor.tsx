@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Copy, Check, AlertCircle, MessageSquare, Plus, X, Trash2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Copy, Check, AlertCircle, MessageSquare, Plus, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -60,6 +60,7 @@ const Advisor: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Real-time subscription for new messages
   useEffect(() => {
     if (!currentConversationId || !user?.id) {
       if (subscriptionRef.current) {
@@ -153,6 +154,41 @@ const Advisor: React.FC = () => {
     }
   };
 
+  const deleteConversation = async (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the conversation selection
+    
+    if (!user?.id) return;
+    
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      // Delete all messages in the conversation
+      const { error } = await supabase
+        .from('advisor_messages')
+        .delete()
+        .eq('company_id', companyId)
+        .eq('conversation_id', conversationId);
+
+      if (error) throw error;
+
+      // If we're currently viewing the deleted conversation, clear the view
+      if (currentConversationId === conversationId) {
+        setCurrentConversationId(null);
+        setMessages([]);
+        setPendingMessageId(null);
+        setIsLoading(false);
+        setError(null);
+      }
+
+      // Reload conversations list
+      loadConversations();
+    } catch (err) {
+      console.error('Error deleting conversation:', err);
+      setError('Failed to delete conversation');
+    }
+  };
+
   const loadConversations = async () => {
     if (!user?.id) return;
 
@@ -237,6 +273,7 @@ const Advisor: React.FC = () => {
     }
   };
 
+  // Manual check function (keeping for potential future debugging)
   const checkForResponse = async () => {
     if (!pendingMessageId || !currentConversationId || !user?.id) return;
 
@@ -279,62 +316,6 @@ const Advisor: React.FC = () => {
     }
   };
 
-  const handleDeleteMessage = async (messageId: string) => {
-    if (!user?.id) return;
-
-    try {
-      const companyId = await getUserCompany(user.id);
-      if (!companyId) return;
-
-      const { error } = await supabase
-        .from('advisor_messages')
-        .delete()
-        .eq('id', messageId)
-        .eq('company_id', companyId);
-
-      if (error) throw error;
-
-      setMessages(prev => prev.filter(msg => msg.id !== messageId));
-
-      if (messages.length <= 1) {
-        loadConversations();
-        if (currentConversationId) {
-          startNewConversation();
-        }
-      }
-    } catch (err) {
-      console.error('Error deleting message:', err);
-      setError('Failed to delete message');
-    }
-  };
-
-  const handleDeleteConversation = async (conversationId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!user?.id) return;
-
-    try {
-      const companyId = await getUserCompany(user.id);
-      if (!companyId) return;
-
-      const { error } = await supabase
-        .from('advisor_messages')
-        .delete()
-        .eq('conversation_id', conversationId)
-        .eq('company_id', companyId);
-
-      if (error) throw error;
-
-      setConversations(prev => prev.filter(conv => conv.id !== conversationId));
-      
-      if (currentConversationId === conversationId) {
-        startNewConversation();
-      }
-    } catch (err) {
-      console.error('Error deleting conversation:', err);
-      setError('Failed to delete conversation');
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !user?.id) return;
@@ -367,6 +348,7 @@ const Advisor: React.FC = () => {
         throw new Error('No company found');
       }
 
+      // Save user message to database
       const { error: insertError } = await supabase
         .from('advisor_messages')
         .insert({
@@ -382,6 +364,7 @@ const Advisor: React.FC = () => {
         throw insertError;
       }
 
+      // Prepare webhook payload
       const webhookPayload = {
         message: userInput,
         company_id: companyId,
@@ -390,6 +373,7 @@ const Advisor: React.FC = () => {
         assistant_id: assistantId
       };
 
+      // Send webhook
       const webhookResponse = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
         method: 'POST',
         headers: {
@@ -405,6 +389,7 @@ const Advisor: React.FC = () => {
 
       const webhookData = await webhookResponse.json();
 
+      // Check if we got an immediate response
       if (webhookData && Array.isArray(webhookData) && webhookData[0]?.output) {
         
         const assistantMessage: Message = {
@@ -420,11 +405,13 @@ const Advisor: React.FC = () => {
         setIsLoading(false);
         setPendingMessageId(null);
 
+        // Clear timeout since we got a response
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
           timeoutRef.current = null;
         }
 
+        // Save assistant message to database
         try {
           await supabase
             .from('advisor_messages')
@@ -441,13 +428,16 @@ const Advisor: React.FC = () => {
           console.error('Database save error:', dbError);
         }
 
+        // Update conversations list
         loadConversations();
       } else {
+        // No immediate response, wait for real-time update
+        // Set a timeout to stop loading if no response comes within 60 seconds
         timeoutRef.current = setTimeout(() => {
           setIsLoading(false);
           setPendingMessageId(null);
           setError('Response timeout - the assistant is taking longer than expected. Please try again.');
-        }, 60000);
+        }, 60000); // 60 second timeout
       }
 
     } catch (err) {
@@ -477,6 +467,7 @@ const Advisor: React.FC = () => {
 
   return (
     <div className="px-4 py-8 h-[calc(100vh-4rem)] flex animate-fade-in">
+      {/* Conversations Sidebar */}
       <div className="w-80 mr-8 flex flex-col">
         <div className="mb-4">
           <Button
@@ -494,18 +485,18 @@ const Advisor: React.FC = () => {
               {conversations.map((conversation) => (
                 <div
                   key={conversation.id}
-                  className={`relative group ${
-                    currentConversationId === conversation.id ? 'bg-neutral-50' : 'hover:bg-neutral-50'
+                  className={`group relative flex items-center hover:bg-neutral-50 transition-colors ${
+                    currentConversationId === conversation.id ? 'bg-neutral-50' : ''
                   }`}
                 >
                   <button
                     onClick={() => setCurrentConversationId(conversation.id)}
-                    className="w-full text-left p-4"
+                    className="flex-1 text-left p-4 min-w-0"
                   >
-                    <div className="flex items-start pr-8">
-                      <MessageSquare size={18} className="text-neutral-400 mt-1 mr-3" />
-                      <div>
-                        <p className="text-sm text-neutral-600 line-clamp-2">
+                    <div className="flex items-start">
+                      <MessageSquare size={18} className="text-neutral-400 mt-1 mr-3 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-neutral-600 line-clamp-2 break-words">
                           {conversation.preview}
                         </p>
                         <p className="text-xs text-neutral-400 mt-1">
@@ -515,12 +506,13 @@ const Advisor: React.FC = () => {
                     </div>
                   </button>
                   
+                  {/* Delete button */}
                   <button
-                    onClick={(e) => handleDeleteConversation(conversation.id, e)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-neutral-400 hover:text-error-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => deleteConversation(conversation.id, e)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 rounded-full text-neutral-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all duration-200"
                     title="Delete conversation"
                   >
-                    <Trash2 size={16} />
+                    <X size={14} />
                   </button>
                 </div>
               ))}
@@ -533,12 +525,14 @@ const Advisor: React.FC = () => {
         </div>
       </div>
 
+      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
         <div className="p-6 border-b border-neutral-200">
           <h1 className="text-2xl font-bold text-neutral-800">Business Advisor</h1>
           <p className="text-neutral-500">Get AI-powered insights and answers about your business</p>
         </div>
 
+        {/* Messages Container */}
         <div className="flex-1 overflow-y-auto p-6">
           {messages.length === 0 ? (
             <div className="h-full flex items-center justify-center text-center">
@@ -577,35 +571,6 @@ const Advisor: React.FC = () => {
                           : 'bg-primary text-white'
                       }`}
                     >
-                      <div className="absolute top-2 right-2 flex items-center space-x-1">
-                        <button
-                          onClick={() => handleDeleteMessage(message.id)}
-                          className={`p-1.5 rounded ${
-                            message.role === 'assistant'
-                              ? 'hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600'
-                              : 'hover:bg-primary-700 text-white/60 hover:text-white'
-                          }`}
-                          title="Delete message"
-                        >
-                          <X size={14} />
-                        </button>
-                        <button
-                          onClick={() => copyToClipboard(message.content, message.id)}
-                          className={`p-1.5 rounded ${
-                            message.role === 'assistant'
-                              ? 'hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600'
-                              : 'hover:bg-primary-700 text-white/60 hover:text-white'
-                          }`}
-                          title={copiedId === message.id ? 'Copied!' : 'Copy message'}
-                        >
-                          {copiedId === message.id ? (
-                            <Check size={14} />
-                          ) : (
-                            <Copy size={14} />
-                          )}
-                        </button>
-                      </div>
-
                       {message.role === 'assistant' ? (
                         <div className="prose prose-neutral max-w-none">
                           <ReactMarkdown
@@ -653,6 +618,21 @@ const Advisor: React.FC = () => {
                       ) : (
                         <p className="whitespace-pre-wrap">{message.content}</p>
                       )}
+
+                      <button
+                        onClick={() => copyToClipboard(message.content, message.id)}
+                        className={`absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
+                          message.role === 'assistant'
+                            ? 'hover:bg-neutral-100 text-neutral-400 hover:text-neutral-600'
+                            : 'hover:bg-primary-700 text-white/60 hover:text-white'
+                        }`}
+                      >
+                        {copiedId === message.id ? (
+                          <Check size={14} />
+                        ) : (
+                          <Copy size={14} />
+                        )}
+                      </button>
                     </div>
 
                     <div className={`text-xs text-neutral-400 mt-1 ${
@@ -722,6 +702,7 @@ const Advisor: React.FC = () => {
           )}
         </div>
 
+        {/* Input Container */}
         <div className="border-t border-neutral-200 p-4">
           {error && (
             <div className="mb-4 p-3 bg-error-50 text-error-700 rounded-lg text-sm flex justify-between items-start">
