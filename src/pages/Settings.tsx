@@ -6,8 +6,6 @@ import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
 
-// Rest of the imports and helper functions remain the same...
-
 interface SocialAccount {
   id: string;
   platform: 'twitter' | 'facebook' | 'linkedin' | 'instagram';
@@ -16,10 +14,20 @@ interface SocialAccount {
 }
 
 const Settings: React.FC = () => {
-  // Existing state...
+  const { user } = useAuth(); // Add this line to get the user from AuthContext
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(true);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('connections');
+  const [showAddAccountModal, setShowAddAccountModal] = useState(false);
+
+  const platforms = [
+    { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'text-blue-400' },
+    { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'text-blue-600' },
+    { id: 'linkedin', name: 'LinkedIn', icon: LinkedIn, color: 'text-blue-700' },
+    { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'text-pink-600' },
+  ];
 
   useEffect(() => {
     loadSocialAccounts();
@@ -72,8 +80,6 @@ const Settings: React.FC = () => {
       setIsDeletingAccount(false);
     }
   };
-
-  // Rest of the component code remains the same until the Connected Accounts section...
 
   return (
     <div>
