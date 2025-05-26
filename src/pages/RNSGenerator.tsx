@@ -63,21 +63,22 @@ const RNSGenerator: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate RNS');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
       
-      if (!data.content) {
+      if (!data || !data.content) {
         throw new Error('No content received from the server');
       }
 
+      // Only set content and switch tabs if we have valid content
       setGeneratedContent(data.content);
       setActiveTab('output');
     } catch (error) {
       console.error('Error generating RNS:', error);
       setError(error instanceof Error ? error.message : 'Failed to generate RNS. Please try again.');
-      setActiveTab('input'); // Stay on input tab if there's an error
+      setActiveTab('input');
     } finally {
       setIsGenerating(false);
     }
@@ -86,7 +87,7 @@ const RNSGenerator: React.FC = () => {
   // Only allow switching to output tab if we have content
   const handleTabChange = (tab: 'input' | 'output') => {
     if (tab === 'output' && !generatedContent && !isGenerating) {
-      return; // Don't switch to output if no content and not generating
+      return;
     }
     setActiveTab(tab);
   };
