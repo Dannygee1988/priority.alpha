@@ -41,6 +41,24 @@ const Settings: React.FC = () => {
           return;
         }
 
+        // First, check if the current user has admin role
+        const { data: userData, error: userError } = await supabase
+          .from('user_companies')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        if (userError) throw userError;
+
+        // Update user metadata with role
+        if (userData?.role) {
+          const { data: { user: updatedUser }, error: updateError } = await supabase.auth.updateUser({
+            data: { role: userData.role }
+          });
+
+          if (updateError) throw updateError;
+        }
+
         const { count, error: countError } = await supabase
           .from('user_companies')
           .select('*', { count: 'exact', head: true })
