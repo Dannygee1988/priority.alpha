@@ -11,6 +11,7 @@ import RNSDrafts from './pages/RNSDrafts';
 import CRM from './pages/CRM';
 import Insiders from './pages/Insiders';
 import Settings from './pages/Settings';
+import Advisor from './pages/Advisor';
 import AppLayout from './layouts/AppLayout';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
             <Route path="/pr/rns/drafts" element={<RNSDrafts />} />
             <Route path="/investors/insiders" element={<Insiders />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/advisor" element={<Advisor />} />
             {/* Add more routes as they're developed */}
             <Route path="/analytics" element={<div className="p-8">Analytics page (coming soon)</div>} />
             <Route path="/team" element={<div className="p-8">Team Management page (coming soon)</div>} />
