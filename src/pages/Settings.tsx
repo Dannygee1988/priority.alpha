@@ -14,7 +14,6 @@ const Settings: React.FC = () => {
   const [userCount, setUserCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [newAccount, setNewAccount] = useState({
     platform: 'twitter',
     username: '',
@@ -24,7 +23,7 @@ const Settings: React.FC = () => {
     email: '',
     firstName: '',
     lastName: '',
-    role: 'user' as const
+    role: 'user'
   });
 
   const MAX_USERS = 5;
@@ -39,24 +38,6 @@ const Settings: React.FC = () => {
           console.warn('No company found for user');
           setIsLoading(false);
           return;
-        }
-
-        // First, check if the current user has admin role
-        const { data: userData, error: userError } = await supabase
-          .from('user_companies')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
-
-        if (userError) throw userError;
-
-        // Update user metadata with role
-        if (userData?.role) {
-          const { data: { user: updatedUser }, error: updateError } = await supabase.auth.updateUser({
-            data: { role: userData.role }
-          });
-
-          if (updateError) throw updateError;
         }
 
         const { count, error: countError } = await supabase
@@ -76,108 +57,6 @@ const Settings: React.FC = () => {
 
     loadUserCount();
   }, [user]);
-
-  const generatePassword = () => {
-    const length = 12;
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0; i < length; i++) {
-      password += charset.charAt(Math.floor(Math.random() * charset.length));
-    }
-    return password;
-  };
-
-  const handleAddUser = async () => {
-    if (!user?.id || userCount >= MAX_USERS) return;
-    
-    // Check if the current user has admin role
-    const { data: currentUser, error: roleError } = await supabase
-      .from('user_companies')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (roleError || currentUser?.role !== 'admin') {
-      setError('You do not have permission to add users. Only administrators can add new users.');
-      return;
-    }
-    
-    setIsCreatingUser(true);
-    setError(null);
-
-    try {
-      const companyId = await getUserCompany(user.id);
-      if (!companyId) {
-        throw new Error('No company found for user');
-      }
-
-      const password = generatePassword();
-      
-      // Create new user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newUser.email,
-        password: password,
-        options: {
-          data: {
-            full_name: `${newUser.firstName} ${newUser.lastName}`,
-            role: newUser.role
-          }
-        }
-      });
-
-      if (authError) throw authError;
-
-      if (!authData.user?.id) {
-        throw new Error('Failed to create user');
-      }
-
-      // Add user to company with specified role
-      const { error: linkError } = await supabase
-        .from('user_companies')
-        .insert({
-          user_id: authData.user.id,
-          company_id: companyId,
-          role: newUser.role
-        });
-
-      if (linkError) throw linkError;
-
-      // Send welcome email
-      const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
-        body: {
-          email: newUser.email,
-          password: password,
-          name: `${newUser.firstName} ${newUser.lastName}`
-        }
-      });
-
-      if (emailError) {
-        console.error('Error sending welcome email:', emailError);
-      }
-
-      setShowAddUserModal(false);
-      setNewUser({
-        email: '',
-        firstName: '',
-        lastName: '',
-        role: 'user'
-      });
-      
-      // Refresh user count
-      const { count: newCount } = await supabase
-        .from('user_companies')
-        .select('*', { count: 'exact', head: true })
-        .eq('company_id', companyId);
-
-      setUserCount(newCount || 0);
-
-    } catch (err) {
-      console.error('Error adding user:', err);
-      setError('Failed to add user. Please try again.');
-    } finally {
-      setIsCreatingUser(false);
-    }
-  };
 
   const platforms = [
     { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'text-[#1DA1F2]' },
@@ -394,7 +273,7 @@ const Settings: React.FC = () => {
                     <Button
                       leftIcon={<UserPlus size={18} />}
                       onClick={() => setShowAddUserModal(true)}
-                      disabled={userCount >= MAX_USERS || user?.user_metadata?.role !== 'admin'}
+                      disabled={userCount >= MAX_USERS}
                     >
                       Add User
                     </Button>
@@ -631,7 +510,7 @@ const Settings: React.FC = () => {
                   <div className="relative w-48">
                     <select
                       value={newUser.role}
-                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value as typeof newUser.role })}
+                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                       className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none bg-white pr-8"
                     >
                       {roles.map((role) => (
@@ -653,10 +532,12 @@ const Settings: React.FC = () => {
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleAddUser}
-                  disabled={isCreatingUser}
+                  onClick={() => {
+                    // Handle adding user
+                    setShowAddUserModal(false);
+                  }}
                 >
-                  {isCreatingUser ? 'Adding...' : 'Add User'}
+                  Add User
                 </Button>
               </div>
             </div>
