@@ -14,6 +14,7 @@ const Settings: React.FC = () => {
   const [userCount, setUserCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [newAccount, setNewAccount] = useState({
     platform: 'twitter',
     username: '',
@@ -23,7 +24,7 @@ const Settings: React.FC = () => {
     email: '',
     firstName: '',
     lastName: '',
-    role: 'user'
+    role: 'user' as const
   });
 
   const MAX_USERS = 5;
@@ -57,6 +58,90 @@ const Settings: React.FC = () => {
 
     loadUserCount();
   }, [user]);
+
+  const generatePassword = () => {
+    const length = 12;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+  };
+
+  const handleAddUser = async () => {
+    if (!user?.id || userCount >= MAX_USERS) return;
+    
+    setIsCreatingUser(true);
+    setError(null);
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found for user');
+      }
+
+      const password = generatePassword();
+      
+      // Create new user in Auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: newUser.email,
+        password: password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: `${newUser.firstName} ${newUser.lastName}`,
+          role: newUser.role
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Add user to company
+      const { error: linkError } = await supabase
+        .from('user_companies')
+        .insert({
+          user_id: authData.user.id,
+          company_id: companyId
+        });
+
+      if (linkError) throw linkError;
+
+      // Send email with credentials
+      const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+        body: {
+          email: newUser.email,
+          password: password,
+          name: `${newUser.firstName} ${newUser.lastName}`
+        }
+      });
+
+      if (emailError) {
+        console.error('Error sending welcome email:', emailError);
+      }
+
+      setShowAddUserModal(false);
+      setNewUser({
+        email: '',
+        firstName: '',
+        lastName: '',
+        role: 'user'
+      });
+      
+      // Refresh user count
+      const { count: newCount } = await supabase
+        .from('user_companies')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId);
+
+      setUserCount(newCount || 0);
+
+    } catch (err) {
+      console.error('Error adding user:', err);
+      setError('Failed to add user. Please try again.');
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
 
   const platforms = [
     { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'text-[#1DA1F2]' },
@@ -532,12 +617,10 @@ const Settings: React.FC = () => {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => {
-                    // Handle adding user
-                    setShowAddUserModal(false);
-                  }}
+                  onClick={handleAddUser}
+                  disabled={isCreatingUser}
                 >
-                  Add User
+                  {isCreatingUser ? 'Adding...' : 'Add User'}
                 </Button>
               </div>
             </div>
