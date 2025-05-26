@@ -67,7 +67,11 @@ const Advisor: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': window.location.origin,
         },
+        mode: 'cors',
+        credentials: 'omit',
         body: JSON.stringify({
           message: input.trim(),
           company_id: companyId,
@@ -79,7 +83,8 @@ const Advisor: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        const errorData = await response.text();
+        throw new Error(`Server error: ${response.status} - ${errorData}`);
       }
 
       const data = await response.json();
@@ -95,7 +100,7 @@ const Advisor: React.FC = () => {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (err) {
       console.error('Error getting response:', err);
-      setError('Failed to get response. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to get response. Please try again.');
     } finally {
       setIsLoading(false);
     }
