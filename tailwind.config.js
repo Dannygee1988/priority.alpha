@@ -115,40 +115,7 @@ export default {
           '100%': { transform: 'scale(1)', opacity: '1' },
         },
       },
-      typography: {
-        DEFAULT: {
-          css: {
-            color: '#374151',
-            maxWidth: 'none',
-            code: {
-              color: '#111827',
-              backgroundColor: '#F3F4F6',
-              paddingLeft: '0.25rem',
-              paddingRight: '0.25rem',
-              paddingTop: '0.125rem',
-              paddingBottom: '0.125rem',
-              borderRadius: '0.25rem',
-            },
-            'code::before': {
-              content: 'none',
-            },
-            'code::after': {
-              content: 'none',
-            },
-            pre: {
-              color: '#E5E7EB',
-              backgroundColor: '#1F2937',
-              marginTop: '1rem',
-              marginBottom: '1rem',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-            },
-          },
-        },
-      },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-  ],
+  plugins: [],
 };
