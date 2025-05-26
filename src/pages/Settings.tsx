@@ -75,81 +75,86 @@ const Settings: React.FC = () => {
 
   // Rest of the component code remains the same until the Connected Accounts section...
 
-  {/* Connected Accounts */}
-  {activeTab === 'connections' && (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-lg font-semibold text-neutral-800">Connected Accounts</h2>
-          <p className="text-sm text-neutral-500">Manage your connected social media accounts</p>
-        </div>
-        <Button
-          leftIcon={<Plus size={18} />}
-          onClick={() => setShowAddAccountModal(true)}
-        >
-          Add Account
-        </Button>
-      </div>
+  return (
+    <div>
+      {/* Connected Accounts */}
+      {activeTab === 'connections' && (
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-lg font-semibold text-neutral-800">Connected Accounts</h2>
+              <p className="text-sm text-neutral-500">Manage your connected social media accounts</p>
+            </div>
+            <Button
+              leftIcon={<Plus size={18} />}
+              onClick={() => setShowAddAccountModal(true)}
+            >
+              Add Account
+            </Button>
+          </div>
 
-      {error && (
-        <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
-          {error}
-        </div>
-      )}
+          {error && (
+            <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
+              {error}
+            </div>
+          )}
 
-      {isLoadingAccounts ? (
-        <div className="flex justify-center items-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      ) : socialAccounts.length > 0 ? (
-        <div className="space-y-4">
-          {socialAccounts.map((account) => {
-            const platform = platforms.find(p => p.id === account.platform);
-            if (!platform) return null;
+          {isLoadingAccounts ? (
+            <div className="flex justify-center items-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : socialAccounts.length > 0 ? (
+            <div className="space-y-4">
+              {socialAccounts.map((account) => {
+                const platform = platforms.find(p => p.id === account.platform);
+                if (!platform) return null;
 
-            return (
-              <div
-                key={account.id}
-                className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50"
-              >
-                <div className="flex items-center">
-                  <div className={`${platform.color}`}>
-                    <platform.icon size={24} />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-sm font-medium text-neutral-800">{platform.name}</h3>
-                    <p className="text-sm text-neutral-500">{account.username}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-neutral-500">
-                    Connected {new Date(account.created_at).toLocaleDateString()}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-error-600 hover:text-error-700"
-                    leftIcon={<Trash2 size={16} />}
-                    onClick={() => handleDeleteAccount(account.id)}
-                    isLoading={isDeletingAccount}
+                return (
+                  <div
+                    key={account.id}
+                    className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50"
                   >
-                    Remove
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-center py-12 bg-neutral-50 rounded-lg border border-neutral-200">
-          <Globe className="mx-auto h-12 w-12 text-neutral-400 mb-4" />
-          <h3 className="text-sm font-medium text-neutral-900 mb-1">No accounts connected</h3>
-          <p className="text-sm text-neutral-500">
-            Connect your social media accounts to manage them from one place
-          </p>
+                    <div className="flex items-center">
+                      <div className={`${platform.color}`}>
+                        <platform.icon size={24} />
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="text-sm font-medium text-neutral-800">{platform.name}</h3>
+                        <p className="text-sm text-neutral-500">{account.username}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-neutral-500">
+                        Connected {new Date(account.created_at).toLocaleDateString()}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-error-600 hover:text-error-700"
+                        leftIcon={<Trash2 size={16} />}
+                        onClick={() => handleDeleteAccount(account.id)}
+                        isLoading={isDeletingAccount}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-neutral-50 rounded-lg border border-neutral-200">
+              <Globe className="mx-auto h-12 w-12 text-neutral-400 mb-4" />
+              <h3 className="text-sm font-medium text-neutral-900 mb-1">No accounts connected</h3>
+              <p className="text-sm text-neutral-500">
+                Connect your social media accounts to manage them from one place
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
-  )}
+  );
+};
 
-  {/* Rest of the component code remains the same... */}
+export default Settings;
