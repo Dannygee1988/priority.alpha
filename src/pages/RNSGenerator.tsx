@@ -305,7 +305,7 @@ const RNSGenerator: React.FC = () => {
             </div>
 
             {generatedContent && !isEditing && (
-              <div className="mt-6 flex justify-center">
+              <div className="mt-6 flex justify-end">
                 <Button
                   onClick={handleApprove}
                   size="lg"
