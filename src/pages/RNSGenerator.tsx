@@ -353,16 +353,7 @@ const RNSGenerator: React.FC = () => {
               )}
             </div>
 
-            {generatedContent && !isEditing && (
-              <div className="mt-4 flex justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => setActiveTab('input')}
-                >
-                  Edit Input
-                </Button>
-              </div>
-            )}
+
           </div>
         </div>
       </div>
