@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Wand2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -174,7 +175,7 @@ const RNSGenerator: React.FC = () => {
                 </div>
               ) : generatedContent ? (
                 <div className="prose max-w-none">
-                  {generatedContent}
+                  <ReactMarkdown>{generatedContent}</ReactMarkdown>
                 </div>
               ) : (
                 <p className="text-neutral-500 text-sm italic">
