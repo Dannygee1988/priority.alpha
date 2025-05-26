@@ -17,6 +17,8 @@ const RNSGenerator: React.FC = () => {
   const [generatedContent, setGeneratedContent] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editableContent, setEditableContent] = useState('');
 
   useEffect(() => {
     const fetchAssistantId = async () => {
@@ -82,6 +84,7 @@ const RNSGenerator: React.FC = () => {
       }
       
       setGeneratedContent(content);
+      setEditableContent(content);
       setActiveTab('output');
     } catch (err) {
       console.error('Error generating RNS:', err);
@@ -93,12 +96,28 @@ const RNSGenerator: React.FC = () => {
 
   const handleCopyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(generatedContent);
+      const contentToCopy = isEditing ? editableContent : generatedContent;
+      await navigator.clipboard.writeText(contentToCopy);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy to clipboard:', err);
     }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditableContent(generatedContent);
+  };
+
+  const handleSaveEdit = () => {
+    setGeneratedContent(editableContent);
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditableContent(generatedContent);
+    setIsEditing(false);
   };
 
   // Enhanced markdown renderer for RNS content
@@ -256,14 +275,24 @@ const RNSGenerator: React.FC = () => {
                 <p className="text-sm text-neutral-500">Your AI-generated RNS announcement</p>
               </div>
               {generatedContent && (
-                <Button
-                  onClick={handleCopyToClipboard}
-                  variant="outline"
-                  leftIcon={isCopied ? <CheckCircle size={18} /> : <Copy size={18} />}
-                  className={isCopied ? 'text-success-600 border-success-600' : ''}
-                >
-                  {isCopied ? 'Copied!' : 'Copy to Clipboard'}
-                </Button>
+                <div className="flex space-x-2">
+                  {!isEditing && (
+                    <Button
+                      onClick={handleEdit}
+                      variant="outline"
+                    >
+                      Edit
+                    </Button>
+                  )}
+                  <Button
+                    onClick={handleCopyToClipboard}
+                    variant="outline"
+                    leftIcon={isCopied ? <CheckCircle size={18} /> : <Copy size={18} />}
+                    className={isCopied ? 'text-success-600 border-success-600' : ''}
+                  >
+                    {isCopied ? 'Copied!' : 'Copy to Clipboard'}
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -277,12 +306,36 @@ const RNSGenerator: React.FC = () => {
                   </div>
                 </div>
               ) : generatedContent ? (
-                <div 
-                  className="prose prose-neutral max-w-none text-neutral-700 leading-relaxed"
-                  dangerouslySetInnerHTML={{ 
-                    __html: renderMarkdown(generatedContent) 
-                  }}
-                />
+                isEditing ? (
+                  <div>
+                    <textarea
+                      value={editableContent}
+                      onChange={(e) => setEditableContent(e.target.value)}
+                      className="w-full h-[500px] p-4 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary resize-none font-mono text-sm"
+                      placeholder="Edit your RNS content..."
+                    />
+                    <div className="mt-4 flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        onClick={handleCancelEdit}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleSaveEdit}
+                      >
+                        Save Changes
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div 
+                    className="prose prose-neutral max-w-none text-neutral-700 leading-relaxed"
+                    dangerouslySetInnerHTML={{ 
+                      __html: renderMarkdown(generatedContent) 
+                    }}
+                  />
+                )
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
@@ -300,20 +353,13 @@ const RNSGenerator: React.FC = () => {
               )}
             </div>
 
-            {generatedContent && (
-              <div className="mt-4 flex justify-end space-x-2">
+            {generatedContent && !isEditing && (
+              <div className="mt-4 flex justify-end">
                 <Button
                   variant="outline"
                   onClick={() => setActiveTab('input')}
                 >
                   Edit Input
-                </Button>
-                <Button
-                  onClick={handleGenerate}
-                  leftIcon={<Wand2 size={18} />}
-                  disabled={!subject.trim() || !description.trim()}
-                >
-                  Regenerate
                 </Button>
               </div>
             )}
