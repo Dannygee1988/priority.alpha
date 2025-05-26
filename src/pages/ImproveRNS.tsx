@@ -97,7 +97,7 @@ const ImproveRNS: React.FC = () => {
                     {improvementOptions.map((option) => (
                       <div
                         key={option.id}
-                        className="group relative"
+                        className="group relative flex items-center"
                       >
                         <label className="flex items-center">
                           <input
@@ -106,9 +106,9 @@ const ImproveRNS: React.FC = () => {
                           />
                           <span className="ml-2 text-sm text-neutral-700">{option.title}</span>
                         </label>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 bottom-full mb-2 w-80 p-3 bg-neutral-800 text-white text-xs rounded-lg shadow-lg z-10">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute left-full ml-2 top-1/2 -translate-y-1/2 w-80 p-3 bg-neutral-800 text-white text-xs rounded-lg shadow-lg z-10">
                           {option.description}
-                          <div className="absolute left-4 bottom-[-6px] w-3 h-3 bg-neutral-800 transform rotate-45"></div>
+                          <div className="absolute left-[-6px] top-1/2 -translate-y-1/2 w-3 h-3 bg-neutral-800 transform rotate-45"></div>
                         </div>
                       </div>
                     ))}
