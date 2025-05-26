@@ -473,19 +473,25 @@ const Settings: React.FC = () => {
               <h2 className="text-xl font-bold text-neutral-800 mb-6">Add New User</h2>
               
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="First Name"
-                    value={newUser.firstName}
-                    onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
-                    placeholder="Enter first name"
-                  />
-                  <Input
-                    label="Last Name"
-                    value={newUser.lastName}
-                    onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
-                    placeholder="Enter last name"
-                  />
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Input
+                      label="First Name"
+                      value={newUser.firstName}
+                      onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
+                      placeholder="Enter first name"
+                      fullWidth
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      label="Last Name"
+                      value={newUser.lastName}
+                      onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
+                      placeholder="Enter last name"
+                      fullWidth
+                    />
+                  </div>
                 </div>
 
                 <Input
@@ -494,6 +500,7 @@ const Settings: React.FC = () => {
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                   placeholder="Enter email address"
+                  fullWidth
                 />
 
                 <div>
