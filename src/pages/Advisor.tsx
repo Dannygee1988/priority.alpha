@@ -238,7 +238,12 @@ const Advisor: React.FC = () => {
       }
 
       const data = await response.json();
-      
+      console.log('Webhook response:', data); // Add this line for debugging
+
+      if (!data.response && !data.content) {
+        throw new Error('Invalid response from assistant');
+      }
+
       // Add assistant's response to messages
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
