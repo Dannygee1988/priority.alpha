@@ -6,9 +6,41 @@ const ImproveRNS: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const improvementOptions = [
+    {
+      id: 'compliance',
+      title: 'Compliance & Regulatory Improvements',
+      description: 'Systematically review the draft against UK Listing Rules, FCA requirements, and Market Abuse Regulation standards. Cross-reference mandatory disclosure requirements with the company\'s sector and listing status. Identify any missing regulatory language or improperly categorized information. Strengthen risk warnings and forward-looking statement disclaimers where necessary.'
+    },
+    {
+      id: 'accuracy',
+      title: 'Content Quality & Accuracy Improvements',
+      description: 'Verify all factual statements against available company records and public information. Check mathematical calculations and ensure consistency across all numerical references. Validate proper use of legal entity names, subsidiary relationships, and technical terminology specific to the company\'s sector.'
+    },
+    {
+      id: 'communication',
+      title: 'Investor Communication Improvements',
+      description: 'Strengthen clarity and readability while preserving technical accuracy. Enhance the strategic context and business implications of announcements. Improve the executive summary and key highlights for maximum investor impact. Ensure messaging resonates with the intended stakeholder audience.'
+    },
+    {
+      id: 'presentation',
+      title: 'Professional Presentation Improvements',
+      description: 'Elevate the professional quality of language and structure. Optimize paragraph flow and logical progression. Strengthen headlines and executive quotes for authenticity and impact. Ensure consistency with the company\'s established communication voice and branding.'
+    },
+    {
+      id: 'formatting',
+      title: 'Technical Formatting Improvements',
+      description: 'Verify all structural elements conform to standard RNS requirements. Check contact information accuracy and completeness. Validate proper numbering, dating, and referencing throughout the document. Optimize table and data presentation for clarity and professional appearance.'
+    },
+    {
+      id: 'engagement',
+      title: 'Engagement & Impact Improvements',
+      description: 'Enhance investor appeal while maintaining full regulatory compliance. Amplify key messages for maximum impact without overstating facts. Improve timing relevance and materiality presentation. Optimize content for potential media coverage and broader stakeholder understanding.'
+    }
+  ];
+
   const handleGenerate = () => {
     setIsGenerating(true);
-    // Simulate API call
     setTimeout(() => {
       setIsGenerating(false);
       setActiveTab('output');
@@ -23,7 +55,6 @@ const ImproveRNS: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-        {/* Tabs */}
         <div className="flex border-b border-neutral-200">
           <button
             className={`flex-1 px-6 py-3 text-sm font-medium focus:outline-none ${
@@ -47,7 +78,6 @@ const ImproveRNS: React.FC = () => {
           </button>
         </div>
 
-        {/* Input Section */}
         <div className={activeTab === 'input' ? 'block' : 'hidden'}>
           <div className="p-6">
             <div className="mb-6">
@@ -60,26 +90,28 @@ const ImproveRNS: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-neutral-700 text-sm font-medium mb-1">
-                    Optimization preferences <span className="text-neutral-500">(optional)</span>
+                  <label className="block text-neutral-700 text-sm font-medium mb-3">
+                    Improvement preferences
                   </label>
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input type="checkbox" className="form-checkbox text-primary rounded" />
-                      <span className="ml-2 text-sm text-neutral-700">Improve clarity</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="form-checkbox text-primary rounded" />
-                      <span className="ml-2 text-sm text-neutral-700">Enhance professionalism</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="form-checkbox text-primary rounded" />
-                      <span className="ml-2 text-sm text-neutral-700">Optimize for SEO</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="form-checkbox text-primary rounded" />
-                      <span className="ml-2 text-sm text-neutral-700">Check compliance</span>
-                    </label>
+                  <div className="space-y-3">
+                    {improvementOptions.map((option) => (
+                      <div
+                        key={option.id}
+                        className="group relative"
+                      >
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            className="form-checkbox text-primary rounded"
+                          />
+                          <span className="ml-2 text-sm text-neutral-700">{option.title}</span>
+                        </label>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 bottom-full mb-2 w-80 p-3 bg-neutral-800 text-white text-xs rounded-lg shadow-lg z-10">
+                          {option.description}
+                          <div className="absolute left-4 bottom-[-6px] w-3 h-3 bg-neutral-800 transform rotate-45"></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -96,7 +128,6 @@ const ImproveRNS: React.FC = () => {
           </div>
         </div>
 
-        {/* Output Section */}
         <div className={activeTab === 'output' ? 'block' : 'hidden'}>
           <div className="p-6">
             <div className="mb-4">
