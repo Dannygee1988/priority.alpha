@@ -66,12 +66,12 @@ const ImproveRNS: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-neutral-700 text-sm font-medium mb-3">
-                    Improvement preferences
-                  </label>
-                  <div className="space-y-3">
+                  <h3 className="text-lg font-bold text-neutral-800 mb-4">
+                    Improvement Preferences
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
                     {improvementOptions.map((option) => (
-                      <label key={option.id} className="flex items-center cursor-pointer">
+                      <label key={option.id} className="flex items-center cursor-pointer p-3 rounded-lg hover:bg-neutral-50">
                         <input
                           type="checkbox"
                           className="form-checkbox text-primary rounded"
