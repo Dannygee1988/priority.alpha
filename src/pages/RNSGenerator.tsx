@@ -123,7 +123,7 @@ const RNSGenerator: React.FC = () => {
     setIsEditing(false);
   };
 
-  const handleApprove = () => {
+  const handleSaveDraft = () => {
     setIsApproved(true);
     // Here you could add additional logic like saving to database, sending notifications, etc.
   };
@@ -361,17 +361,17 @@ const RNSGenerator: React.FC = () => {
               )}
             </div>
 
-            {/* Approve button moved to bottom with adjusted size and spacing */}
+            {/* Save Draft button moved to bottom with adjusted size and spacing */}
             {generatedContent && !isEditing && (
               <div className="mt-8 flex justify-center">
                 <Button
-                  onClick={handleApprove}
+                  onClick={handleSaveDraft}
                   size="md"
                   leftIcon={isApproved ? <CheckCircle size={18} /> : <Check size={18} />}
                   className={`w-64 ${isApproved ? 'bg-success-600 hover:bg-success-700 text-white' : ''}`}
                   disabled={isApproved}
                 >
-                  {isApproved ? 'Approved' : 'Approve'}
+                  {isApproved ? 'Draft Saved' : 'Save Draft'}
                 </Button>
               </div>
             )}
