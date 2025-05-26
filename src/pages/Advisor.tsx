@@ -44,13 +44,9 @@ const Advisor: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Store pending message IDs waiting for webhook responses
-  const [pendingResponses, setPendingResponses] = useState<Set<string>>(new Set());
-
   useEffect(() => {
     loadConversations();
     loadAssistantId();
-    setupWebhookListener();
   }, [user]);
 
   useEffect(() => {
@@ -62,82 +58,6 @@ const Advisor: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const setupWebhookListener = () => {
-    // Listen for webhook responses via Supabase realtime
-    const channel = supabase
-      .channel('advisor_responses')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'advisor_webhook_responses'
-        },
-        (payload) => {
-          handleWebhookResponse(payload.new);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
-  const handleWebhookResponse = async (responseData: any) => {
-    const { conversation_id, content, message_id, sources } = responseData;
-    
-    // Check if this response belongs to the current conversation
-    if (conversation_id !== currentConversationId) return;
-
-    try {
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: content || 'No response received',
-        timestamp: new Date(),
-        conversation_id: conversation_id,
-        sources: sources || []
-      };
-
-      // Add the assistant message to the UI
-      setMessages(prev => [...prev, assistantMessage]);
-
-      // Save to database
-      const companyId = await getUserCompany(user!.id);
-      if (companyId) {
-        const { error: assistantSaveError } = await supabase
-          .from('advisor_messages')
-          .insert({
-            company_id: companyId,
-            conversation_id: conversation_id,
-            role: 'assistant',
-            content: assistantMessage.content,
-            sources: assistantMessage.sources
-          });
-
-        if (assistantSaveError) {
-          console.error('Error saving assistant message:', assistantSaveError);
-        }
-      }
-
-      // Remove from pending responses
-      setPendingResponses(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(message_id);
-        return newSet;
-      });
-
-      setIsLoading(false);
-      setError(null);
-
-    } catch (err) {
-      console.error('Error handling webhook response:', err);
-      setError('Failed to process response');
-      setIsLoading(false);
-    }
-  };
 
   const loadAssistantId = async () => {
     if (!user?.id) return;
@@ -231,9 +151,8 @@ const Advisor: React.FC = () => {
     if (!input.trim() || isLoading || !assistantId) return;
 
     const conversationId = currentConversationId || crypto.randomUUID();
-    const messageId = crypto.randomUUID();
     const userMessage: Message = {
-      id: messageId,
+      id: crypto.randomUUID(),
       role: 'user',
       content: input.trim(),
       timestamp: new Date(),
@@ -245,18 +164,13 @@ const Advisor: React.FC = () => {
     setIsLoading(true);
     setError(null);
 
-    // Add to pending responses
-    setPendingResponses(prev => new Set([...prev, messageId]));
-
     try {
       const companyId = await getUserCompany(user!.id);
       if (!companyId) throw new Error('Company not found');
 
-      // Save user message
       const { error: saveError } = await supabase
         .from('advisor_messages')
         .insert({
-          id: messageId,
           company_id: companyId,
           conversation_id: conversationId,
           role: 'user',
@@ -270,40 +184,79 @@ const Advisor: React.FC = () => {
         await loadConversations();
       }
 
-      // Send webhook to N8N
-      const webhookResponse = await fetch(`${import.meta.env.VITE_N8N_WEBHOOK_URL}`, {
+      console.log('Calling advisor API with:', {
+        message: userMessage.content,
+        assistantId,
+        conversationId
+      });
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/advisor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           message: userMessage.content,
           assistantId,
-          conversationId,
-          messageId,
-          companyId,
-          userId: user!.id
+          conversationId
         }),
       });
 
-      if (!webhookResponse.ok) {
-        throw new Error(`Webhook request failed: ${webhookResponse.status}`);
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`API request failed: ${response.status} - ${errorText}`);
       }
 
-      // The response will come via the webhook listener
-      // We don't set isLoading to false here as it will be handled by the webhook response
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError);
+        throw new Error('Invalid response format from server');
+      }
+
+      console.log('Parsed response:', responseData);
+
+      if (!responseData || typeof responseData !== 'object') {
+        throw new Error('Assistant returned an invalid response format');
+      }
+
+      const assistantContent = responseData.output || responseData.content || responseData.message || 'No response received';
+      
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: assistantContent,
+        timestamp: new Date(),
+        conversation_id: conversationId,
+        threadId: responseData.threadId,
+        sources: responseData.sources || []
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+
+      const { error: assistantSaveError } = await supabase
+        .from('advisor_messages')
+        .insert({
+          company_id: companyId,
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: assistantMessage.content,
+          sources: assistantMessage.sources
+        });
+
+      if (assistantSaveError) throw assistantSaveError;
 
     } catch (err) {
       console.error('Error in handleSubmit:', err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
       setIsLoading(false);
-      
-      // Remove from pending responses on error
-      setPendingResponses(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(messageId);
-        return newSet;
-      });
     }
   };
 
@@ -311,7 +264,6 @@ const Advisor: React.FC = () => {
     setCurrentConversationId(null);
     setMessages([]);
     setError(null);
-    setPendingResponses(new Set()); // Clear pending responses
   };
 
   const handleDeleteConversation = async (conversationId: string) => {
@@ -375,7 +327,6 @@ const Advisor: React.FC = () => {
 
   return (
     <div className="flex h-full bg-gray-50">
-      {/* Sidebar with conversations */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <Button
@@ -426,7 +377,6 @@ const Advisor: React.FC = () => {
         </div>
       </div>
 
-      {/* Main chat area */}
       <div className="flex-1 flex flex-col">
         <div className="flex-1 overflow-y-auto p-6">
           <div className="max-w-4xl mx-auto space-y-6">
@@ -467,7 +417,7 @@ const Advisor: React.FC = () => {
                   {message.role === 'user' ? (
                     <p className="whitespace-pre-wrap">{message.content}</p>
                   ) : (
-                    <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-code:text-blue-600 prose-pre:bg-gray-50">
+                    <div className="prose prose-sm max-w-none">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{
@@ -478,40 +428,16 @@ const Advisor: React.FC = () => {
                                 style={tomorrow}
                                 language={match[1]}
                                 PreTag="div"
-                                className="rounded-md"
                                 {...props}
                               >
                                 {String(children).replace(/\n$/, '')}
                               </SyntaxHighlighter>
                             ) : (
-                              <code 
-                                className={`${className} bg-gray-100 px-1 py-0.5 rounded text-sm`} 
-                                {...props}
-                              >
+                              <code className={className} {...props}>
                                 {children}
                               </code>
                             );
                           },
-                          h1: ({ children }) => (
-                            <h1 className="text-xl font-bold text-gray-900 mb-4">{children}</h1>
-                          ),
-                          h2: ({ children }) => (
-                            <h2 className="text-lg font-semibold text-gray-900 mb-3">{children}</h2>
-                          ),
-                          h3: ({ children }) => (
-                            <h3 className="text-base font-medium text-gray-900 mb-2">{children}</h3>
-                          ),
-                          ul: ({ children }) => (
-                            <ul className="list-disc list-inside space-y-1 text-gray-700">{children}</ul>
-                          ),
-                          ol: ({ children }) => (
-                            <ol className="list-decimal list-inside space-y-1 text-gray-700">{children}</ol>
-                          ),
-                          blockquote: ({ children }) => (
-                            <blockquote className="border-l-4 border-blue-200 pl-4 italic text-gray-600">
-                              {children}
-                            </blockquote>
-                          ),
                         }}
                       >
                         {message.content}
@@ -616,7 +542,6 @@ const Advisor: React.FC = () => {
           </div>
         </div>
 
-        {/* Input area */}
         <div className="border-t border-gray-200 bg-white p-4">
           <div className="max-w-4xl mx-auto">
             <form onSubmit={handleSubmit} className="flex gap-4">
