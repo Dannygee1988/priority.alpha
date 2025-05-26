@@ -462,7 +462,7 @@ const Settings: React.FC = () => {
                     <button
                       key={platform.id}
                       onClick={() => setSelectedPlatform(platform.id)}
-                      className={`max-w-[240px] mx-auto flex items-center p-2 rounded-md transition-all ${platform.color} ${platform.hoverColor}`}
+                      className={`w-full flex items-center p-2 rounded-md transition-all ${platform.color} ${platform.hoverColor}`}
                     >
                       <platform.icon size={16} />
                       <span className="ml-3 text-sm">{platform.name}</span>
