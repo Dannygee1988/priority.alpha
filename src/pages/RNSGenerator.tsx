@@ -14,6 +14,7 @@ const RNSGenerator: React.FC = () => {
   const [description, setDescription] = useState('');
   const [keywords, setKeywords] = useState('');
   const [assistantId, setAssistantId] = useState<string | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAssistantId = async () => {
@@ -41,26 +42,35 @@ const RNSGenerator: React.FC = () => {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setGeneratedContent(null);
 
-    // Fire webhook without waiting for response
-    fetch('https://pri0r1ty.app.n8n.cloud/webhook/25e0d499-6af1-4357-8c23-a1b43d7bedb8', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        subject,
-        description,
-        keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
-        assistant_id: assistantId
-      })
-    }).catch(console.error); // Log any errors but don't wait
+    try {
+      const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25e0d499-6af1-4357-8c23-a1b43d7bedb8', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          subject,
+          description,
+          keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+          assistant_id: assistantId
+        })
+      });
 
-    // Simulate processing time
-    setTimeout(() => {
-      setIsGenerating(false);
+      if (!response.ok) {
+        throw new Error('Failed to generate RNS');
+      }
+
+      const data = await response.json();
+      setGeneratedContent(data.content || 'No content received');
       setActiveTab('output');
-    }, 2000);
+    } catch (error) {
+      console.error('Error generating RNS:', error);
+      setGeneratedContent('Failed to generate RNS. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -155,22 +165,38 @@ const RNSGenerator: React.FC = () => {
           <div className="p-6">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-neutral-800">Generated Announcement</h2>
-              <p className="text-sm text-neutral-500">Your AI-generated RNS announcement will appear here</p>
+              <p className="text-sm text-neutral-500">Your AI-generated RNS announcement</p>
             </div>
             <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 min-h-[500px]">
-              <p className="text-neutral-500 text-sm italic">
-                Generated content will appear here...
-              </p>
+              {isGenerating ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : generatedContent ? (
+                <div className="prose max-w-none">
+                  {generatedContent}
+                </div>
+              ) : (
+                <p className="text-neutral-500 text-sm italic">
+                  Generated content will appear here...
+                </p>
+              )}
             </div>
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex justify-end space-x-2">
               <Button
                 variant="outline"
                 onClick={() => setActiveTab('input')}
-                className="mr-2"
               >
                 Edit Input
               </Button>
-              <Button>
+              <Button
+                onClick={() => {
+                  if (generatedContent) {
+                    navigator.clipboard.writeText(generatedContent);
+                  }
+                }}
+                disabled={!generatedContent}
+              >
                 Copy to Clipboard
               </Button>
             </div>
