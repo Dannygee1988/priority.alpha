@@ -434,33 +434,33 @@ const Gallery: React.FC = () => {
                       </Button>
                     </div>
                   </div>
-
-                  <div className="pt-4 border-t border-neutral-200">
-                    <Button
-                      variant="outline"
-                      className="text-error-600 hover:bg-error-50 hover:border-error-600"
-                      leftIcon={<Trash2 size={18} />}
-                      onClick={() => setShowDeleteConfirm(true)}
-                    >
-                      Delete Image
-                    </Button>
-                  </div>
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="mt-6 flex justify-between items-center border-t border-neutral-200 pt-6">
                 <Button
                   variant="outline"
-                  onClick={() => setShowEditModal(false)}
+                  className="text-error-600 hover:bg-error-50 hover:border-error-600"
+                  leftIcon={<Trash2 size={18} />}
+                  onClick={() => setShowDeleteConfirm(true)}
                 >
-                  Cancel
+                  Delete Image
                 </Button>
-                <Button
-                  onClick={handleSave}
-                  isLoading={isSaving}
-                >
-                  Save Changes
-                </Button>
+
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowEditModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    isLoading={isSaving}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
