@@ -56,32 +56,33 @@ const Settings: React.FC = () => {
           return;
         }
 
-        // Then, get user details from auth.users
-        const { data: authUsers, error: authUsersError } = await supabase
-          .from('auth.users')
-          .select('id, email, raw_user_meta_data')
-          .in('id', userCompanies.map(uc => uc.user_id));
+        // Get user details from Supabase auth admin API
+        const { data: { users: authUsers }, error: authUsersError } = await supabase.auth.admin.listUsers();
 
         if (authUsersError) throw authUsersError;
 
-        // Merge the data
-        const formattedUsers = userCompanies.map(uc => {
-          const authUser = authUsers?.find(au => au.id === uc.user_id);
-          return {
-            id: uc.user_id,
-            firstName: authUser?.raw_user_meta_data?.first_name || '',
-            lastName: authUser?.raw_user_meta_data?.last_name || '',
-            email: authUser?.email || '',
-            role: authUser?.raw_user_meta_data?.role || 'user',
-            lastActive: uc.created_at
-          };
-        });
+        // Filter and format users that belong to the company
+        const formattedUsers = userCompanies
+          .map(uc => {
+            const authUser = authUsers?.find(au => au.id === uc.user_id);
+            if (!authUser) return null;
+            
+            return {
+              id: uc.user_id,
+              firstName: authUser.user_metadata?.first_name || '',
+              lastName: authUser.user_metadata?.last_name || '',
+              email: authUser.email || '',
+              role: authUser.user_metadata?.role || 'user',
+              lastActive: uc.created_at
+            };
+          })
+          .filter(Boolean);
 
         setRegisteredUsers(formattedUsers);
         setUserCount(formattedUsers.length);
       } catch (err) {
         console.error('Error loading users:', err);
-        setError('Failed to load users');
+        setError('Failed to load users. Please try again later.');
       } finally {
         setIsLoading(false);
       }
@@ -299,62 +300,68 @@ const Settings: React.FC = () => {
                   </div>
                 )}
 
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-neutral-200">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">User</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Role</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Last Active</th>
-                        <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {registeredUsers.map((user) => (
-                        <tr
-                          key={user.id}
-                          className="border-b border-neutral-100 hover:bg-neutral-50"
-                        >
-                          <td className="py-3 px-4">
-                            <div className="flex items-center">
-                              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                                <User size={16} />
-                              </div>
-                              <div className="ml-3">
-                                <div className="text-sm font-medium text-neutral-900">
-                                  {user.firstName} {user.lastName}
-                                </div>
-                                <div className="text-sm text-neutral-500">{user.email}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.role === 'admin'
-                                ? 'bg-primary-50 text-primary-700'
-                                : 'bg-neutral-100 text-neutral-700'
-                            }`}>
-                              {user.role === 'admin' ? 'Administrator' : 'User'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-neutral-600">
-                            {new Date(user.lastActive).toLocaleString()}
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-error-600 hover:text-error-700"
-                              leftIcon={<Trash2 size={16} />}
-                            >
-                              Remove
-                            </Button>
-                          </td>
+                {isLoading ? (
+                  <div className="text-center py-8 text-neutral-500">
+                    Loading users...
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-neutral-200">
+                          <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">User</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Role</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Last Active</th>
+                          <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {registeredUsers.map((user) => (
+                          <tr
+                            key={user.id}
+                            className="border-b border-neutral-100 hover:bg-neutral-50"
+                          >
+                            <td className="py-3 px-4">
+                              <div className="flex items-center">
+                                <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                                  <User size={16} />
+                                </div>
+                                <div className="ml-3">
+                                  <div className="text-sm font-medium text-neutral-900">
+                                    {user.firstName} {user.lastName}
+                                  </div>
+                                  <div className="text-sm text-neutral-500">{user.email}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                user.role === 'admin'
+                                  ? 'bg-primary-50 text-primary-700'
+                                  : 'bg-neutral-100 text-neutral-700'
+                              }`}>
+                                {user.role === 'admin' ? 'Administrator' : 'User'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-sm text-neutral-600">
+                              {new Date(user.lastActive).toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-error-600 hover:text-error-700"
+                                leftIcon={<Trash2 size={16} />}
+                              >
+                                Remove
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
