@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Copy, Check, AlertCircle, MessageSquare, Plus, X } from 'lucide-react';
+import { Send, Bot, User, Loader2, Copy, Check, AlertCircle, MessageSquare, Plus, X, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -308,6 +308,33 @@ const Advisor: React.FC = () => {
     }
   };
 
+  const handleDeleteConversation = async (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user?.id) return;
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      const { error } = await supabase
+        .from('advisor_messages')
+        .delete()
+        .eq('conversation_id', conversationId)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      setConversations(prev => prev.filter(conv => conv.id !== conversationId));
+      
+      if (currentConversationId === conversationId) {
+        startNewConversation();
+      }
+    } catch (err) {
+      console.error('Error deleting conversation:', err);
+      setError('Failed to delete conversation');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !user?.id) return;
@@ -465,25 +492,37 @@ const Advisor: React.FC = () => {
           {conversations.length > 0 ? (
             <div className="divide-y divide-neutral-200">
               {conversations.map((conversation) => (
-                <button
+                <div
                   key={conversation.id}
-                  onClick={() => setCurrentConversationId(conversation.id)}
-                  className={`w-full text-left p-4 hover:bg-neutral-50 transition-colors ${
-                    currentConversationId === conversation.id ? 'bg-neutral-50' : ''
+                  className={`relative group ${
+                    currentConversationId === conversation.id ? 'bg-neutral-50' : 'hover:bg-neutral-50'
                   }`}
                 >
-                  <div className="flex items-start">
-                    <MessageSquare size={18} className="text-neutral-400 mt-1 mr-3" />
-                    <div>
-                      <p className="text-sm text-neutral-600 line-clamp-2">
-                        {conversation.preview}
-                      </p>
-                      <p className="text-xs text-neutral-400 mt-1">
-                        {new Date(conversation.created_at).toLocaleDateString()}
-                      </p>
+                  <button
+                    onClick={() => setCurrentConversationId(conversation.id)}
+                    className="w-full text-left p-4"
+                  >
+                    <div className="flex items-start pr-8">
+                      <MessageSquare size={18} className="text-neutral-400 mt-1 mr-3" />
+                      <div>
+                        <p className="text-sm text-neutral-600 line-clamp-2">
+                          {conversation.preview}
+                        </p>
+                        <p className="text-xs text-neutral-400 mt-1">
+                          {new Date(conversation.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
+                  
+                  <button
+                    onClick={(e) => handleDeleteConversation(conversation.id, e)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-neutral-400 hover:text-error-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Delete conversation"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               ))}
             </div>
           ) : (
