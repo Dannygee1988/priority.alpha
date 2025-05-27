@@ -12,6 +12,17 @@ interface DocumentStats {
   totalDocuments: number;
 }
 
+interface Document {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  token_count: number;
+  url: string;
+  created_at: string;
+  updated_at: string;
+}
+
 const Data: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'documents' | 'upload'>('documents');
@@ -20,7 +31,7 @@ const Data: React.FC = () => {
   const [urls, setUrls] = useState<string[]>([]);
   const [extractingSitemap, setExtractingSitemap] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [documents, setDocuments] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [stats, setStats] = useState<DocumentStats>({
     totalSize: 0,
     totalTokens: 0,
@@ -30,34 +41,47 @@ const Data: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadData();
   }, [user]);
 
   const loadData = async () => {
-    if (user?.id) {
-      try {
-        const companyId = await getUserCompany(user.id);
-        
-        if (!companyId) {
-          console.warn('No company found for user');
-          setIsLoading(false);
-          return;
-        }
+    if (!user?.id) return;
 
-        const [docsData, statsData] = await Promise.all([
-          getDocuments(companyId),
-          getDocumentStats(companyId)
-        ]);
-
-        setDocuments(docsData);
-        setStats(statsData);
-      } catch (error) {
-        console.error('Error loading documents:', error);
-      } finally {
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        console.warn('No company found for user');
         setIsLoading(false);
+        return;
       }
+
+      // Fetch documents directly from Supabase
+      const { data: documentsData, error: documentsError } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+      if (documentsError) throw documentsError;
+
+      setDocuments(documentsData || []);
+
+      // Calculate stats from the documents
+      const stats = {
+        totalSize: documentsData?.reduce((acc, doc) => acc + (doc.size || 0), 0) || 0,
+        totalTokens: documentsData?.reduce((acc, doc) => acc + (doc.token_count || 0), 0) || 0,
+        totalDocuments: documentsData?.length || 0
+      };
+
+      setStats(stats);
+    } catch (error) {
+      console.error('Error loading documents:', error);
+      setError('Failed to load documents. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -73,7 +97,6 @@ const Data: React.FC = () => {
     const files = event.target.files;
     if (files) {
       setSelectedFiles(Array.from(files));
-      // Reset progress
       setUploadProgress({});
     }
   };
@@ -86,7 +109,6 @@ const Data: React.FC = () => {
     event.preventDefault();
     const files = event.dataTransfer.files;
     setSelectedFiles(Array.from(files));
-    // Reset progress
     setUploadProgress({});
   };
 
@@ -192,6 +214,10 @@ const Data: React.FC = () => {
     }
   };
 
+  const filteredDocuments = documents.filter(doc =>
+    doc.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
@@ -285,6 +311,8 @@ const Data: React.FC = () => {
               <div className="flex-1 max-w-md">
                 <Input
                   placeholder="Search documents..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   leftIcon={<Search size={18} />}
                   fullWidth
                 />
@@ -298,11 +326,17 @@ const Data: React.FC = () => {
               </Button>
             </div>
 
+            {error && (
+              <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
+                {error}
+              </div>
+            )}
+
             {isLoading ? (
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : documents.length > 0 ? (
+            ) : filteredDocuments.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -316,7 +350,7 @@ const Data: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {documents.map((doc) => (
+                    {filteredDocuments.map((doc) => (
                       <tr
                         key={doc.id}
                         className="border-b border-neutral-100 hover:bg-neutral-50"
