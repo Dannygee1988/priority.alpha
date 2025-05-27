@@ -1,5 +1,5 @@
-import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
-import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -139,13 +139,19 @@ const Data: React.FC = () => {
       if (companyError) throw companyError;
 
       const formData = new FormData();
+      
+      // Add files with their extensions
       selectedFiles.forEach((file, index) => {
         formData.append(`file${index}`, file);
+        // Extract file extension
+        const extension = file.name.split('.').pop()?.toLowerCase() || '';
+        formData.append(`extension${index}`, extension);
       });
 
-      // Add company details to formData
+      // Add company details and number of files
       formData.append('company_id', companyId);
       formData.append('company_name', companyData.name);
+      formData.append('file_count', selectedFiles.length.toString());
 
       const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/037b4955-9a5f-4d8d-9be0-c62efaa1371c', {
         method: 'POST',
