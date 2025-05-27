@@ -48,6 +48,7 @@ import {
   Image,
   FileEdit,
   FileCheck,
+  Brain,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
