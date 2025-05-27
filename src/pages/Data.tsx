@@ -23,6 +23,12 @@ interface Document {
   updated_at: string;
 }
 
+interface DataTypeStats {
+  count: number;
+  totalSize: number;
+  totalTokens: number;
+}
+
 const Data: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'documents' | 'upload'>('documents');
@@ -58,7 +64,6 @@ const Data: React.FC = () => {
         return;
       }
 
-      // Fetch documents directly from Supabase
       const { data: documentsData, error: documentsError } = await supabase
         .from('documents')
         .select('*')
@@ -69,7 +74,7 @@ const Data: React.FC = () => {
 
       setDocuments(documentsData || []);
 
-      // Calculate stats from the documents
+      // Calculate overall stats
       const stats = {
         totalSize: documentsData?.reduce((acc, doc) => acc + (doc.size || 0), 0) || 0,
         totalTokens: documentsData?.reduce((acc, doc) => acc + (doc.token_count || 0), 0) || 0,
@@ -83,6 +88,26 @@ const Data: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getDataTypeStats = () => {
+    const typeStats: { [key: string]: DataTypeStats } = {};
+    
+    documents.forEach(doc => {
+      const type = doc.type.toUpperCase();
+      if (!typeStats[type]) {
+        typeStats[type] = {
+          count: 0,
+          totalSize: 0,
+          totalTokens: 0
+        };
+      }
+      typeStats[type].count++;
+      typeStats[type].totalSize += doc.size;
+      typeStats[type].totalTokens += doc.token_count || 0;
+    });
+
+    return typeStats;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -123,13 +148,11 @@ const Data: React.FC = () => {
     setError(null);
 
     try {
-      // Get company details
       const companyId = await getUserCompany(user.id);
       if (!companyId) {
         throw new Error('No company found');
       }
 
-      // Get company name
       const { data: companyData, error: companyError } = await supabase
         .from('company_profiles')
         .select('name')
@@ -140,7 +163,6 @@ const Data: React.FC = () => {
 
       const formData = new FormData();
       
-      // Add files with their names and extensions
       selectedFiles.forEach((file, index) => {
         formData.append(`file${index}`, file);
         formData.append(`filename${index}`, file.name);
@@ -148,7 +170,6 @@ const Data: React.FC = () => {
         formData.append(`extension${index}`, extension);
       });
 
-      // Add company details and number of files
       formData.append('company_id', companyId);
       formData.append('company_name', companyData.name);
       formData.append('file_count', selectedFiles.length.toString());
@@ -165,9 +186,7 @@ const Data: React.FC = () => {
       const result = await response.json();
       console.log('Upload successful:', result);
 
-      // Clear selected files after successful upload
       setSelectedFiles([]);
-      // Reload documents
       loadData();
     } catch (err) {
       console.error('Upload error:', err);
@@ -191,10 +210,8 @@ const Data: React.FC = () => {
 
   const handleExtractSitemap = async () => {
     setExtractingSitemap(true);
-    // Simulate sitemap extraction
     setTimeout(() => {
       setExtractingSitemap(false);
-      // Add example URLs from sitemap
       setUrls([
         ...urls,
         'https://example.com/about',
@@ -224,6 +241,8 @@ const Data: React.FC = () => {
     doc.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const dataTypeStats = getDataTypeStats();
+
   return (
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
@@ -233,53 +252,27 @@ const Data: React.FC = () => {
 
       {/* Statistics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white p-6 rounded-lg border border-neutral-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-neutral-600 text-sm font-medium">Total Documents</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
-                {stats.totalDocuments || '-'}
-              </h3>
+        {Object.entries(dataTypeStats).map(([type, stats]) => (
+          <div key={type} className="bg-white p-6 rounded-lg border border-neutral-200">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-neutral-600 text-sm font-medium">{type} Files</p>
+                <h3 className="text-2xl font-bold text-neutral-800 mt-1">
+                  {stats.count}
+                </h3>
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-neutral-500">
+                    Size: {formatFileSize(stats.totalSize)}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    Tokens: {stats.totalTokens.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              {getFileIcon(type)}
             </div>
-            <FileText className="text-primary" size={24} />
           </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg border border-neutral-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-neutral-600 text-sm font-medium">Storage Used</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
-                {stats.totalSize ? formatFileSize(stats.totalSize) : '-'}
-              </h3>
-            </div>
-            <Database className="text-success-500" size={24} />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg border border-neutral-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-neutral-600 text-sm font-medium">Total Tokens</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
-                {stats.totalTokens ? stats.totalTokens.toLocaleString() : '-'}
-              </h3>
-            </div>
-            <Layers className="text-warning-500" size={24} />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg border border-neutral-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-neutral-600 text-sm font-medium">Data Sources</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
-                {documents.length || '-'}
-              </h3>
-            </div>
-            <Database className="text-accent" size={24} />
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Main Content */}
