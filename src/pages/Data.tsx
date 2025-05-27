@@ -26,36 +26,39 @@ const Data: React.FC = () => {
     totalDocuments: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadData = async () => {
-      if (user?.id) {
-        try {
-          const companyId = await getUserCompany(user.id);
-          
-          if (!companyId) {
-            console.warn('No company found for user');
-            setIsLoading(false);
-            return;
-          }
-
-          const [docsData, statsData] = await Promise.all([
-            getDocuments(companyId),
-            getDocumentStats(companyId)
-          ]);
-
-          setDocuments(docsData);
-          setStats(statsData);
-        } catch (error) {
-          console.error('Error loading documents:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-
     loadData();
   }, [user]);
+
+  const loadData = async () => {
+    if (user?.id) {
+      try {
+        const companyId = await getUserCompany(user.id);
+        
+        if (!companyId) {
+          console.warn('No company found for user');
+          setIsLoading(false);
+          return;
+        }
+
+        const [docsData, statsData] = await Promise.all([
+          getDocuments(companyId),
+          getDocumentStats(companyId)
+        ]);
+
+        setDocuments(docsData);
+        setStats(statsData);
+      } catch (error) {
+        console.error('Error loading documents:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -69,6 +72,8 @@ const Data: React.FC = () => {
     const files = event.target.files;
     if (files) {
       setSelectedFiles(Array.from(files));
+      // Reset progress
+      setUploadProgress({});
     }
   };
 
@@ -80,10 +85,49 @@ const Data: React.FC = () => {
     event.preventDefault();
     const files = event.dataTransfer.files;
     setSelectedFiles(Array.from(files));
+    // Reset progress
+    setUploadProgress({});
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFiles.length) return;
+
+    setIsUploading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      selectedFiles.forEach((file, index) => {
+        formData.append(`file${index}`, file);
+      });
+
+      const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/037b4955-9a5f-4d8d-9be0-c62efaa1371c', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed with status ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Upload successful:', result);
+
+      // Clear selected files after successful upload
+      setSelectedFiles([]);
+      // Reload documents
+      loadData();
+    } catch (err) {
+      console.error('Upload error:', err);
+      setError('Failed to upload files. Please try again.');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress({});
+    }
   };
 
   const handleAddUrl = () => {
@@ -349,17 +393,29 @@ const Data: React.FC = () => {
                   <div className="mt-4 flex justify-end space-x-2">
                     <Button
                       variant="outline"
-                      onClick={() => setSelectedFiles([])}
+                      onClick={() => {
+                        setSelectedFiles([]);
+                        setUploadProgress({});
+                      }}
                     >
                       Clear
                     </Button>
-                    <Button>
+                    <Button
+                      onClick={handleUpload}
+                      isLoading={isUploading}
+                    >
                       Upload Files
                     </Button>
                   </div>
                 </div>
               )}
             </div>
+
+            {error && (
+              <div className="mt-4 p-4 bg-error-50 text-error-700 rounded-md">
+                {error}
+              </div>
+            )}
 
             {/* URL Training Section */}
             <div className="mt-8">
