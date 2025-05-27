@@ -93,7 +93,7 @@ const Data: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
       setSelectedFiles(Array.from(files));
@@ -140,10 +140,10 @@ const Data: React.FC = () => {
 
       const formData = new FormData();
       
-      // Add files with their extensions
+      // Add files with their names and extensions
       selectedFiles.forEach((file, index) => {
         formData.append(`file${index}`, file);
-        // Extract file extension
+        formData.append(`filename${index}`, file.name);
         const extension = file.name.split('.').pop()?.toLowerCase() || '';
         formData.append(`extension${index}`, extension);
       });
