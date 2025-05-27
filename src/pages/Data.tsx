@@ -4,6 +4,7 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
 import { getDocuments, getDocumentStats, getUserCompany } from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 interface DocumentStats {
   totalSize: number;
@@ -94,16 +95,35 @@ const Data: React.FC = () => {
   };
 
   const handleUpload = async () => {
-    if (!selectedFiles.length) return;
+    if (!selectedFiles.length || !user?.id) return;
 
     setIsUploading(true);
     setError(null);
 
     try {
+      // Get company details
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      // Get company name
+      const { data: companyData, error: companyError } = await supabase
+        .from('company_profiles')
+        .select('name')
+        .eq('id', companyId)
+        .single();
+
+      if (companyError) throw companyError;
+
       const formData = new FormData();
       selectedFiles.forEach((file, index) => {
         formData.append(`file${index}`, file);
       });
+
+      // Add company details to formData
+      formData.append('company_id', companyId);
+      formData.append('company_name', companyData.name);
 
       const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/037b4955-9a5f-4d8d-9be0-c62efaa1371c', {
         method: 'POST',
