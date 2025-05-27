@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, MoreVertical, Search, Filter, X } from 'lucide-react';
+import { Eye, MoreVertical, Search, Filter, X, PenLine, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Button from '../components/Button';
@@ -24,6 +24,11 @@ const RNSDrafts: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedDocument, setSelectedDocument] = useState<RNSDocument | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,6 +63,72 @@ const RNSDrafts: React.FC = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!selectedDocument || !user?.id) return;
+
+    setIsDeleting(true);
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      const { error: deleteError } = await supabase
+        .from('rns_documents')
+        .delete()
+        .eq('id', selectedDocument.id)
+        .eq('company_id', companyId);
+
+      if (deleteError) throw deleteError;
+
+      setDocuments(docs => docs.filter(doc => doc.id !== selectedDocument.id));
+      setShowDeleteConfirm(false);
+      setShowViewModal(false);
+      setSelectedDocument(null);
+    } catch (err) {
+      console.error('Error deleting document:', err);
+      setError('Failed to delete document. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!selectedDocument || !user?.id) return;
+
+    setIsSaving(true);
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      const { error: updateError } = await supabase
+        .from('rns_documents')
+        .update({
+          content: editedContent,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedDocument.id)
+        .eq('company_id', companyId);
+
+      if (updateError) throw updateError;
+
+      setDocuments(docs => docs.map(doc =>
+        doc.id === selectedDocument.id
+          ? { ...doc, content: editedContent, updated_at: new Date().toISOString() }
+          : doc
+      ));
+      setIsEditing(false);
+      setSelectedDocument(prev => prev ? { ...prev, content: editedContent } : null);
+    } catch (err) {
+      console.error('Error updating document:', err);
+      setError('Failed to save changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const filteredDocuments = documents.filter(doc =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -72,6 +143,7 @@ const RNSDrafts: React.FC = () => {
 
   const handleViewDocument = (doc: RNSDocument) => {
     setSelectedDocument(doc);
+    setEditedContent(doc.content);
     setShowViewModal(true);
   };
 
@@ -161,14 +233,39 @@ const RNSDrafts: React.FC = () => {
                         {formatDate(doc.updated_at)}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          leftIcon={<Eye size={16} />}
-                          onClick={() => handleViewDocument(doc)}
-                        >
-                          View
-                        </Button>
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            leftIcon={<Eye size={16} />}
+                            onClick={() => handleViewDocument(doc)}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            leftIcon={<PenLine size={16} />}
+                            onClick={() => {
+                              handleViewDocument(doc);
+                              setIsEditing(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            leftIcon={<Trash2 size={16} />}
+                            className="text-error-600 hover:text-error-700"
+                            onClick={() => {
+                              setSelectedDocument(doc);
+                              setShowDeleteConfirm(true);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -183,7 +280,7 @@ const RNSDrafts: React.FC = () => {
         </div>
       </div>
 
-      {/* View Modal */}
+      {/* View/Edit Modal */}
       {showViewModal && selectedDocument && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
@@ -195,7 +292,11 @@ const RNSDrafts: React.FC = () => {
                 </p>
               </div>
               <button
-                onClick={() => setShowViewModal(false)}
+                onClick={() => {
+                  setShowViewModal(false);
+                  setIsEditing(false);
+                  setSelectedDocument(null);
+                }}
                 className="p-1 hover:bg-neutral-100 rounded-full"
               >
                 <X size={20} className="text-neutral-500" />
@@ -203,24 +304,98 @@ const RNSDrafts: React.FC = () => {
             </div>
             
             <div className="p-6 overflow-y-auto flex-1">
-              <div 
-                className="prose prose-neutral max-w-none"
-                dangerouslySetInnerHTML={{ 
-                  __html: renderMarkdown(selectedDocument.content) 
-                }}
-              />
+              {isEditing ? (
+                <textarea
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="w-full h-full min-h-[500px] p-4 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary resize-none font-mono text-sm"
+                />
+              ) : (
+                <div 
+                  className="prose prose-neutral max-w-none"
+                  dangerouslySetInnerHTML={{ 
+                    __html: renderMarkdown(selectedDocument.content) 
+                  }}
+                />
+              )}
             </div>
 
-            <div className="p-6 border-t border-neutral-200 flex justify-end space-x-3">
+            <div className="p-6 border-t border-neutral-200 flex justify-between">
               <Button
                 variant="outline"
-                onClick={() => setShowViewModal(false)}
+                className="text-error-600 hover:bg-error-50 hover:border-error-600"
+                leftIcon={<Trash2 size={18} />}
+                onClick={() => setShowDeleteConfirm(true)}
               >
-                Close
+                Delete Draft
               </Button>
-              <Button>
-                Edit Draft
-              </Button>
+
+              <div className="flex space-x-3">
+                {isEditing ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditing(false);
+                        setEditedContent(selectedDocument.content);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSave}
+                      isLoading={isSaving}
+                    >
+                      Save Changes
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowViewModal(false)}
+                    >
+                      Close
+                    </Button>
+                    <Button
+                      onClick={() => setIsEditing(true)}
+                      leftIcon={<PenLine size={18} />}
+                    >
+                      Edit Draft
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-neutral-800 mb-4">Delete Draft</h2>
+              <p className="text-neutral-600 mb-6">
+                Are you sure you want to delete this draft? This action cannot be undone.
+              </p>
+
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-error-600 hover:bg-error-700"
+                  onClick={handleDelete}
+                  isLoading={isDeleting}
+                >
+                  Delete
+                </Button>
+              </div>
             </div>
           </div>
         </div>
