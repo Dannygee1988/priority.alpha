@@ -539,3 +539,5 @@ const Data: React.FC = () => {
 };
 
 export default Data;
+
+export default Data
