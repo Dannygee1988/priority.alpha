@@ -1,5 +1,5 @@
-import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
-import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -23,10 +23,14 @@ interface Document {
   updated_at: string;
 }
 
+interface FileWithType extends File {
+  detectedType?: string;
+}
+
 const Data: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'documents' | 'upload'>('documents');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<FileWithType[]>([]);
   const [url, setUrl] = useState('');
   const [urls, setUrls] = useState<string[]>([]);
   const [extractingSitemap, setExtractingSitemap] = useState(false);
@@ -58,7 +62,6 @@ const Data: React.FC = () => {
         return;
       }
 
-      // Fetch documents directly from Supabase
       const { data: documentsData, error: documentsError } = await supabase
         .from('documents')
         .select('*')
@@ -69,7 +72,6 @@ const Data: React.FC = () => {
 
       setDocuments(documentsData || []);
 
-      // Calculate stats from the documents
       const stats = {
         totalSize: documentsData?.reduce((acc, doc) => acc + (doc.size || 0), 0) || 0,
         totalTokens: documentsData?.reduce((acc, doc) => acc + (doc.token_count || 0), 0) || 0,
@@ -93,10 +95,33 @@ const Data: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
+  const detectFileType = (file: File): string => {
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
+    const mimeType = file.type;
+
+    if (mimeType.includes('pdf') || extension === 'pdf') {
+      return 'PDF';
+    } else if (['doc', 'docx'].includes(extension) || mimeType.includes('word')) {
+      return 'DOC';
+    } else if (['xls', 'xlsx', 'csv'].includes(extension) || mimeType.includes('spreadsheet') || mimeType.includes('csv')) {
+      return 'CSV';
+    } else if (extension === 'json' || mimeType.includes('json')) {
+      return 'JSON';
+    } else if (['txt', 'text'].includes(extension) || mimeType.includes('text')) {
+      return 'TXT';
+    } else {
+      return 'UNKNOWN';
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      setSelectedFiles(Array.from(files));
+      const filesWithTypes = Array.from(files).map(file => ({
+        ...file,
+        detectedType: detectFileType(file)
+      }));
+      setSelectedFiles(filesWithTypes);
       setUploadProgress({});
     }
   };
@@ -108,7 +133,11 @@ const Data: React.FC = () => {
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const files = event.dataTransfer.files;
-    setSelectedFiles(Array.from(files));
+    const filesWithTypes = Array.from(files).map(file => ({
+      ...file,
+      detectedType: detectFileType(file)
+    }));
+    setSelectedFiles(filesWithTypes);
     setUploadProgress({});
   };
 
@@ -123,13 +152,11 @@ const Data: React.FC = () => {
     setError(null);
 
     try {
-      // Get company details
       const companyId = await getUserCompany(user.id);
       if (!companyId) {
         throw new Error('No company found');
       }
 
-      // Get company name
       const { data: companyData, error: companyError } = await supabase
         .from('company_profiles')
         .select('name')
@@ -141,9 +168,9 @@ const Data: React.FC = () => {
       const formData = new FormData();
       selectedFiles.forEach((file, index) => {
         formData.append(`file${index}`, file);
+        formData.append(`type${index}`, file.detectedType || 'UNKNOWN');
       });
 
-      // Add company details to formData
       formData.append('company_id', companyId);
       formData.append('company_name', companyData.name);
 
@@ -159,9 +186,7 @@ const Data: React.FC = () => {
       const result = await response.json();
       console.log('Upload successful:', result);
 
-      // Clear selected files after successful upload
       setSelectedFiles([]);
-      // Reload documents
       loadData();
     } catch (err) {
       console.error('Upload error:', err);
@@ -185,10 +210,8 @@ const Data: React.FC = () => {
 
   const handleExtractSitemap = async () => {
     setExtractingSitemap(true);
-    // Simulate sitemap extraction
     setTimeout(() => {
       setExtractingSitemap(false);
-      // Add example URLs from sitemap
       setUrls([
         ...urls,
         'https://example.com/about',
@@ -435,8 +458,13 @@ const Data: React.FC = () => {
                         className="flex items-center justify-between bg-white p-3 rounded-lg border border-neutral-200"
                       >
                         <div className="flex items-center">
-                          {getFileIcon(file.type.split('/')[1].toUpperCase())}
-                          <span className="ml-2 text-sm text-neutral-700">{file.name}</span>
+                          {getFileIcon(file.detectedType || 'UNKNOWN')}
+                          <div className="ml-2">
+                            <span className="text-sm text-neutral-700">{file.name}</span>
+                            <span className="text-xs text-neutral-500 ml-2">
+                              (Detected: {file.detectedType || 'Unknown'})
+                            </span>
+                          </div>
                         </div>
                         <span className="text-sm text-neutral-500">
                           {formatFileSize(file.size)}
