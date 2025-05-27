@@ -451,28 +451,59 @@ const Data: React.FC = () => {
                   <h3 className="text-sm font-medium text-neutral-900 mb-4">
                     Selected Files ({selectedFiles.length})
                   </h3>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {selectedFiles.map((file, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between bg-white p-3 rounded-lg border border-neutral-200"
+                        className="bg-white p-4 rounded-lg border border-neutral-200"
                       >
-                        <div className="flex items-center">
-                          {getFileIcon(file.detectedType || 'UNKNOWN')}
-                          <div className="ml-2">
-                            <span className="text-sm text-neutral-700">{file.name}</span>
-                            <span className="text-xs text-neutral-500 ml-2">
-                              (Detected: {file.detectedType || 'Unknown'})
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center">
+                              {getFileIcon(file.detectedType || 'UNKNOWN')}
+                              <div className="ml-3 truncate">
+                                <p className="text-sm font-medium text-neutral-900 truncate">
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-neutral-500 mt-0.5">
+                                  Type: {file.detectedType || 'Unknown'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="ml-4 flex items-center space-x-4">
+                            <span className="text-sm text-neutral-500">
+                              {formatFileSize(file.size)}
                             </span>
+                            <button
+                              onClick={() => {
+                                setSelectedFiles(files => files.filter((_, i) => i !== index));
+                                setUploadProgress(prog => {
+                                  const newProg = { ...prog };
+                                  delete newProg[file.name];
+                                  return newProg;
+                                });
+                              }}
+                              className="p-1 hover:bg-neutral-100 rounded-full text-neutral-400 hover:text-neutral-600"
+                            >
+                              <X size={16} />
+                            </button>
                           </div>
                         </div>
-                        <span className="text-sm text-neutral-500">
-                          {formatFileSize(file.size)}
-                        </span>
+                        {uploadProgress[file.name] !== undefined && (
+                          <div className="mt-2">
+                            <div className="h-1 bg-neutral-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary rounded-full transition-all duration-300"
+                                style={{ width: `${uploadProgress[file.name]}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
-                  <div className="mt-4 flex justify-end space-x-2">
+                  <div className="mt-4 flex justify-end space-x-3">
                     <Button
                       variant="outline"
                       onClick={() => {
