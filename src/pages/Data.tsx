@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X } from 'lucide-react';
+import React, { useState, useRef, ChangeEvent, useEffect } from 'react';
+import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -23,14 +23,10 @@ interface Document {
   updated_at: string;
 }
 
-interface FileWithType extends File {
-  detectedType?: string;
-}
-
 const Data: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'documents' | 'upload'>('documents');
-  const [selectedFiles, setSelectedFiles] = useState<FileWithType[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [url, setUrl] = useState('');
   const [urls, setUrls] = useState<string[]>([]);
   const [extractingSitemap, setExtractingSitemap] = useState(false);
@@ -62,6 +58,7 @@ const Data: React.FC = () => {
         return;
       }
 
+      // Fetch documents directly from Supabase
       const { data: documentsData, error: documentsError } = await supabase
         .from('documents')
         .select('*')
@@ -72,6 +69,7 @@ const Data: React.FC = () => {
 
       setDocuments(documentsData || []);
 
+      // Calculate stats from the documents
       const stats = {
         totalSize: documentsData?.reduce((acc, doc) => acc + (doc.size || 0), 0) || 0,
         totalTokens: documentsData?.reduce((acc, doc) => acc + (doc.token_count || 0), 0) || 0,
@@ -95,33 +93,10 @@ const Data: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const detectFileType = (file: File): string => {
-    const extension = file.name.split('.').pop()?.toLowerCase() || '';
-    const mimeType = file.type;
-
-    if (mimeType.includes('pdf') || extension === 'pdf') {
-      return 'PDF';
-    } else if (['doc', 'docx'].includes(extension) || mimeType.includes('word')) {
-      return 'DOC';
-    } else if (['xls', 'xlsx', 'csv'].includes(extension) || mimeType.includes('spreadsheet') || mimeType.includes('csv')) {
-      return 'CSV';
-    } else if (extension === 'json' || mimeType.includes('json')) {
-      return 'JSON';
-    } else if (['txt', 'text'].includes(extension) || mimeType.includes('text')) {
-      return 'TXT';
-    } else {
-      return 'UNKNOWN';
-    }
-  };
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      const filesWithTypes = Array.from(files).map(file => ({
-        ...file,
-        detectedType: detectFileType(file)
-      }));
-      setSelectedFiles(filesWithTypes);
+      setSelectedFiles(Array.from(files));
       setUploadProgress({});
     }
   };
@@ -133,11 +108,7 @@ const Data: React.FC = () => {
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const files = event.dataTransfer.files;
-    const filesWithTypes = Array.from(files).map(file => ({
-      ...file,
-      detectedType: detectFileType(file)
-    }));
-    setSelectedFiles(filesWithTypes);
+    setSelectedFiles(Array.from(files));
     setUploadProgress({});
   };
 
@@ -152,11 +123,13 @@ const Data: React.FC = () => {
     setError(null);
 
     try {
+      // Get company details
       const companyId = await getUserCompany(user.id);
       if (!companyId) {
         throw new Error('No company found');
       }
 
+      // Get company name
       const { data: companyData, error: companyError } = await supabase
         .from('company_profiles')
         .select('name')
@@ -168,9 +141,9 @@ const Data: React.FC = () => {
       const formData = new FormData();
       selectedFiles.forEach((file, index) => {
         formData.append(`file${index}`, file);
-        formData.append(`type${index}`, file.detectedType || 'UNKNOWN');
       });
 
+      // Add company details to formData
       formData.append('company_id', companyId);
       formData.append('company_name', companyData.name);
 
@@ -186,7 +159,9 @@ const Data: React.FC = () => {
       const result = await response.json();
       console.log('Upload successful:', result);
 
+      // Clear selected files after successful upload
       setSelectedFiles([]);
+      // Reload documents
       loadData();
     } catch (err) {
       console.error('Upload error:', err);
@@ -210,8 +185,10 @@ const Data: React.FC = () => {
 
   const handleExtractSitemap = async () => {
     setExtractingSitemap(true);
+    // Simulate sitemap extraction
     setTimeout(() => {
       setExtractingSitemap(false);
+      // Add example URLs from sitemap
       setUrls([
         ...urls,
         'https://example.com/about',
@@ -451,59 +428,23 @@ const Data: React.FC = () => {
                   <h3 className="text-sm font-medium text-neutral-900 mb-4">
                     Selected Files ({selectedFiles.length})
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {selectedFiles.map((file, index) => (
                       <div
                         key={index}
-                        className="bg-white p-4 rounded-lg border border-neutral-200"
+                        className="flex items-center justify-between bg-white p-3 rounded-lg border border-neutral-200"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center">
-                              {getFileIcon(file.detectedType || 'UNKNOWN')}
-                              <div className="ml-3 truncate">
-                                <p className="text-sm font-medium text-neutral-900 truncate">
-                                  {file.name}
-                                </p>
-                                <p className="text-xs text-neutral-500 mt-0.5">
-                                  Type: {file.detectedType || 'Unknown'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="ml-4 flex items-center space-x-4">
-                            <span className="text-sm text-neutral-500">
-                              {formatFileSize(file.size)}
-                            </span>
-                            <button
-                              onClick={() => {
-                                setSelectedFiles(files => files.filter((_, i) => i !== index));
-                                setUploadProgress(prog => {
-                                  const newProg = { ...prog };
-                                  delete newProg[file.name];
-                                  return newProg;
-                                });
-                              }}
-                              className="p-1 hover:bg-neutral-100 rounded-full text-neutral-400 hover:text-neutral-600"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
+                        <div className="flex items-center">
+                          {getFileIcon(file.type.split('/')[1].toUpperCase())}
+                          <span className="ml-2 text-sm text-neutral-700">{file.name}</span>
                         </div>
-                        {uploadProgress[file.name] !== undefined && (
-                          <div className="mt-2">
-                            <div className="h-1 bg-neutral-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-primary rounded-full transition-all duration-300"
-                                style={{ width: `${uploadProgress[file.name]}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
+                        <span className="text-sm text-neutral-500">
+                          {formatFileSize(file.size)}
+                        </span>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-4 flex justify-end space-x-3">
+                  <div className="mt-4 flex justify-end space-x-2">
                     <Button
                       variant="outline"
                       onClick={() => {
