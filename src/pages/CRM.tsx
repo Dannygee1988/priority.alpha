@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, MoreVertical, Mail, Phone, Building2, UserRound, ChevronDown, Globe, MapPin, Users, DollarSign, Briefcase } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, Mail, Phone, Building2, UserRound, ChevronDown, Globe, MapPin, Users, DollarSign, Briefcase, X } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -42,6 +42,34 @@ const CRM: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form states
+  const [newContact, setNewContact] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    company_name: '',
+    job_title: '',
+    type: 'Customer' as const,
+    status: 'prospect' as const,
+    crm_company_id: '' as string | null
+  });
+
+  const [newCompany, setNewCompany] = useState({
+    name: '',
+    industry: '',
+    website: '',
+    description: '',
+    annual_revenue: '' as string | number,
+    employee_count: '' as string | number,
+    status: 'active' as const
+  });
+
+  const contactTypes = ['Staff', 'Customer', 'Investor', 'Lead', 'Advisor', 'Other'] as const;
+  const contactStatuses = ['prospect', 'lead', 'customer', 'inactive'] as const;
+  const companyStatuses = ['active', 'inactive', 'lead', 'prospect'] as const;
 
   useEffect(() => {
     loadData();
@@ -91,8 +119,78 @@ const CRM: React.FC = () => {
     }
   };
 
-  const handleAddItem = () => {
-    setShowAddModal(true);
+  const handleAddItem = async () => {
+    if (!user?.id) return;
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      if (activeView === 'contacts') {
+        const { data: contact, error: contactError } = await supabase
+          .from('crm_customers')
+          .insert({
+            ...newContact,
+            company_id: companyId,
+            crm_company_id: newContact.crm_company_id || null
+          })
+          .select()
+          .single();
+
+        if (contactError) throw contactError;
+        setContacts([contact, ...contacts]);
+      } else {
+        const { data: company, error: companyError } = await supabase
+          .from('crm_companies')
+          .insert({
+            ...newCompany,
+            company_id: companyId,
+            annual_revenue: newCompany.annual_revenue ? parseFloat(newCompany.annual_revenue.toString()) : null,
+            employee_count: newCompany.employee_count ? parseInt(newCompany.employee_count.toString()) : null
+          })
+          .select()
+          .single();
+
+        if (companyError) throw companyError;
+        setCompanies([company, ...companies]);
+      }
+
+      setShowAddModal(false);
+      resetForms();
+    } catch (err) {
+      console.error('Error adding item:', err);
+      setError(`Failed to add ${activeView === 'contacts' ? 'contact' : 'company'}. Please try again.`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const resetForms = () => {
+    setNewContact({
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      company_name: '',
+      job_title: '',
+      type: 'Customer',
+      status: 'prospect',
+      crm_company_id: null
+    });
+
+    setNewCompany({
+      name: '',
+      industry: '',
+      website: '',
+      description: '',
+      annual_revenue: '',
+      employee_count: '',
+      status: 'active'
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -189,7 +287,7 @@ const CRM: React.FC = () => {
               </Button>
               <Button
                 leftIcon={<Plus size={18} />}
-                onClick={handleAddItem}
+                onClick={() => setShowAddModal(true)}
               >
                 Add {activeView === 'contacts' ? 'Contact' : 'Company'}
               </Button>
@@ -385,6 +483,210 @@ const CRM: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Add Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-bold text-neutral-800">
+                  Add {activeView === 'contacts' ? 'Contact' : 'Company'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowAddModal(false);
+                    resetForms();
+                  }}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <X size={20} className="text-neutral-500" />
+                </button>
+              </div>
+
+              {activeView === 'contacts' ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <Input
+                      label="First Name"
+                      value={newContact.first_name}
+                      onChange={(e) => setNewContact({ ...newContact, first_name: e.target.value })}
+                      required
+                    />
+                    <Input
+                      label="Last Name"
+                      value={newContact.last_name}
+                      onChange={(e) => setNewContact({ ...newContact, last_name: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <Input
+                      label="Email"
+                      type="email"
+                      value={newContact.email}
+                      onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                      required
+                    />
+                    <Input
+                      label="Phone"
+                      type="tel"
+                      value={newContact.phone}
+                      onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Associated Company
+                      </label>
+                      <select
+                        value={newContact.crm_company_id || ''}
+                        onChange={(e) => setNewContact({ ...newContact, crm_company_id: e.target.value || null })}
+                        className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                      >
+                        <option value="">No company</option>
+                        {companies.map((company) => (
+                          <option key={company.id} value={company.id}>
+                            {company.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <Input
+                      label="Job Title"
+                      value={newContact.job_title}
+                      onChange={(e) => setNewContact({ ...newContact, job_title: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Type
+                      </label>
+                      <select
+                        value={newContact.type}
+                        onChange={(e) => setNewContact({ ...newContact, type: e.target.value as typeof contactTypes[number] })}
+                        className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                      >
+                        {contactTypes.map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Status
+                      </label>
+                      <select
+                        value={newContact.status}
+                        onChange={(e) => setNewContact({ ...newContact, status: e.target.value as typeof contactStatuses[number] })}
+                        className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                      >
+                        {contactStatuses.map((status) => (
+                          <option key={status} value={status}>
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <Input
+                    label="Company Name"
+                    value={newCompany.name}
+                    onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
+                    required
+                  />
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <Input
+                      label="Industry"
+                      value={newCompany.industry}
+                      onChange={(e) => setNewCompany({ ...newCompany, industry: e.target.value })}
+                    />
+                    <Input
+                      label="Website"
+                      type="url"
+                      value={newCompany.website}
+                      onChange={(e) => setNewCompany({ ...newCompany, website: e.target.value })}
+                      placeholder="https://"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <Input
+                      label="Annual Revenue"
+                      type="number"
+                      value={newCompany.annual_revenue}
+                      onChange={(e) => setNewCompany({ ...newCompany, annual_revenue: e.target.value })}
+                      placeholder="£"
+                    />
+                    <Input
+                      label="Employee Count"
+                      type="number"
+                      value={newCompany.employee_count}
+                      onChange={(e) => setNewCompany({ ...newCompany, employee_count: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={newCompany.description}
+                      onChange={(e) => setNewCompany({ ...newCompany, description: e.target.value })}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary h-32 resize-none"
+                      placeholder="Enter company description..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={newCompany.status}
+                      onChange={(e) => setNewCompany({ ...newCompany, status: e.target.value as typeof companyStatuses[number] })}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    >
+                      {companyStatuses.map((status) => (
+                        <option key={status} value={status}>
+                          {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-8 flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    resetForms();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddItem}
+                  isLoading={isSaving}
+                >
+                  Add {activeView === 'contacts' ? 'Contact' : 'Company'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
