@@ -463,11 +463,13 @@ const Insiders: React.FC = () => {
                     Project Name
                   </label>
                   <div className="relative">
-                    <Input
+                    <input
+                      type="text"
                       value={newSounding.project_name}
                       onChange={(e) => setNewSounding({ ...newSounding, project_name: e.target.value })}
                       required
-                      className="pr-10"
+                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                      placeholder="Enter project name"
                     />
                     <button
                       type="button"
