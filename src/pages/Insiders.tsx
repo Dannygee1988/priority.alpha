@@ -18,6 +18,12 @@ interface Contact {
   last_contacted: string | null;
   created_at: string;
   tags: string[];
+  soundings?: {
+    id: string;
+    subject: string;
+    project_name: string;
+    status: 'Live' | 'Cleansed';
+  }[];
 }
 
 interface MarketSounding {
@@ -62,15 +68,32 @@ const Insiders: React.FC = () => {
         return;
       }
 
-      // Load contacts
+      // Load contacts with their associated soundings
       const { data: contactsData, error: contactsError } = await supabase
         .from('crm_customers')
-        .select('*')
+        .select(`
+          *,
+          soundings:insider_soundings(
+            sounding:market_soundings(
+              id,
+              subject,
+              project_name,
+              status
+            )
+          )
+        `)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (contactsError) throw contactsError;
-      setContacts(contactsData || []);
+
+      // Transform the data to match our Contact interface
+      const transformedContacts = contactsData?.map(contact => ({
+        ...contact,
+        soundings: contact.soundings?.map((s: any) => s.sounding)
+      })) || [];
+
+      setContacts(transformedContacts);
 
       // Load market soundings
       const { data: soundingsData, error: soundingsError } = await supabase
@@ -303,7 +326,7 @@ const Insiders: React.FC = () => {
                         <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact Info</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Company</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Last Contacted</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Market Soundings</th>
                         <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
                       </tr>
                     </thead>
@@ -357,10 +380,33 @@ const Insiders: React.FC = () => {
                               {insider.type}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-sm text-neutral-600">
-                            {insider.last_contacted
-                              ? new Date(insider.last_contacted).toLocaleDateString()
-                              : 'Never'}
+                          <td className="py-3 px-4">
+                            <div className="space-y-1">
+                              {insider.soundings && insider.soundings.length > 0 ? (
+                                insider.soundings.map(sounding => (
+                                  <div
+                                    key={sounding.id}
+                                    className="flex items-center space-x-2"
+                                  >
+                                    <span className={`w-2 h-2 rounded-full ${
+                                      sounding.status === 'Live'
+                                        ? 'bg-success-500'
+                                        : 'bg-neutral-300'
+                                    }`} />
+                                    <span className="text-sm text-neutral-600">
+                                      {sounding.subject}
+                                      <span className="text-neutral-400 ml-1">
+                                        ({sounding.project_name})
+                                      </span>
+                                    </span>
+                                  </div>
+                                ))
+                              ) : (
+                                <span className="text-sm text-neutral-500">
+                                  No soundings
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 px-4 text-right">
                             <button className="p-1 hover:bg-neutral-100 rounded-full">
