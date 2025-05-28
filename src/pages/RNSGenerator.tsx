@@ -13,6 +13,7 @@ const RNSGenerator: React.FC = () => {
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [keywords, setKeywords] = useState('');
+  const [rnsType, setRnsType] = useState<'RNS' | 'RNS Reach'>('RNS');
   const [assistantId, setAssistantId] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +66,8 @@ const RNSGenerator: React.FC = () => {
           subject,
           description,
           keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
-          assistant_id: assistantId
+          assistant_id: assistantId,
+          rns_type: rnsType
         })
       });
 
@@ -161,7 +163,7 @@ const RNSGenerator: React.FC = () => {
     return content
       .replace(/^RNS Number: (.+)$/gm, '<div class="text-sm text-neutral-600 mb-2"><strong>RNS Number:</strong> $1</div>')
       .replace(/^([A-Z][A-Z\s&]+PLC)$/gm, '<h1 class="text-xl font-bold text-primary mb-2">$1</h1>')
-      .replace(/^([A-Z\s:]+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
+      .replace(/^([A-Z\s:]+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$2</h2>')
       .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-neutral-800 mb-3 mt-5">$1</h3>')
       .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
       .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-neutral-800 mb-6 mt-8">$1</h1>')
@@ -225,6 +227,37 @@ const RNSGenerator: React.FC = () => {
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-neutral-800 mb-4">Announcement Details</h2>
               <div className="space-y-4">
+                <div>
+                  <label className="block text-neutral-700 text-sm font-medium mb-1">
+                    RNS Type <span className="text-error-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      className={`px-4 py-2 rounded-md border text-sm font-medium transition-colors ${
+                        rnsType === 'RNS'
+                          ? 'bg-primary text-white border-primary'
+                          : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
+                      }`}
+                      onClick={() => setRnsType('RNS')}
+                    >
+                      RNS
+                    </button>
+                    <button
+                      className={`px-4 py-2 rounded-md border text-sm font-medium transition-colors ${
+                        rnsType === 'RNS Reach'
+                          ? 'bg-primary text-white border-primary'
+                          : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
+                      }`}
+                      onClick={() => setRnsType('RNS Reach')}
+                    >
+                      RNS Reach
+                    </button>
+                  </div>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    Select the type of regulatory announcement
+                  </p>
+                </div>
+
                 <Input
                   label="Subject"
                   placeholder="Enter the subject of your announcement"
