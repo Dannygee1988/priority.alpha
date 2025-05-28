@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, UserRound, Mail, Phone, Building2, MoreVertical, ChevronDown, X, AlertCircle, Check, FileText } from 'lucide-react';
+import { Search, Filter, Plus, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -22,12 +22,12 @@ interface Contact {
 
 interface MarketSounding {
   id: string;
-  title: string;
+  subject: string;
+  project_name: string;
   description: string | null;
   status: 'Live' | 'Cleansed';
   created_at: string;
   cleansed_at: string | null;
-  confidentiality_level: 'Standard' | 'High' | 'Critical';
   insiders: string[];
 }
 
@@ -44,9 +44,9 @@ const Insiders: React.FC = () => {
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
   const [selectedSounding, setSelectedSounding] = useState<MarketSounding | null>(null);
   const [newSounding, setNewSounding] = useState({
-    title: '',
-    description: '',
-    confidentiality_level: 'Standard' as const
+    subject: '',
+    project_name: '',
+    description: ''
   });
 
   useEffect(() => {
@@ -154,9 +154,9 @@ const Insiders: React.FC = () => {
       setMarketSoundings([{ ...sounding, insiders: [] }, ...marketSoundings]);
       setShowSoundingModal(false);
       setNewSounding({
-        title: '',
-        description: '',
-        confidentiality_level: 'Standard'
+        subject: '',
+        project_name: '',
+        description: ''
       });
     } catch (err) {
       console.error('Error adding market sounding:', err);
@@ -189,19 +189,6 @@ const Insiders: React.FC = () => {
     }
   };
 
-  const getConfidentialityColor = (level: string) => {
-    switch (level) {
-      case 'Critical':
-        return 'bg-error-50 text-error-700';
-      case 'High':
-        return 'bg-warning-50 text-warning-700';
-      case 'Standard':
-        return 'bg-success-50 text-success-700';
-      default:
-        return 'bg-neutral-50 text-neutral-600';
-    }
-  };
-
   const filteredData = activeView === 'insiders'
     ? contacts.filter(contact =>
         `${contact.first_name} ${contact.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -209,7 +196,8 @@ const Insiders: React.FC = () => {
         contact.company_name?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : marketSoundings.filter(sounding =>
-        sounding.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sounding.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sounding.project_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         sounding.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
@@ -378,9 +366,9 @@ const Insiders: React.FC = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-neutral-200">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Title</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Project Name</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Subject</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Status</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Confidentiality</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Insiders</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Created</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Cleansed</th>
@@ -400,14 +388,19 @@ const Insiders: React.FC = () => {
                           </div>
                           <div className="ml-3">
                             <div className="text-sm font-medium text-neutral-900">
-                              {sounding.title}
+                              {sounding.project_name}
                             </div>
-                            {sounding.description && (
-                              <div className="text-sm text-neutral-500 mt-0.5">
-                                {sounding.description}
-                              </div>
-                            )}
                           </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="text-sm text-neutral-600">
+                          {sounding.subject}
+                          {sounding.description && (
+                            <div className="text-sm text-neutral-500 mt-0.5">
+                              {sounding.description}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -417,13 +410,6 @@ const Insiders: React.FC = () => {
                             : 'bg-neutral-100 text-neutral-700'
                         }`}>
                           {sounding.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          getConfidentialityColor(sounding.confidentiality_level)
-                        }`}>
-                          {sounding.confidentiality_level}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -540,9 +526,9 @@ const Insiders: React.FC = () => {
                   onClick={() => {
                     setShowSoundingModal(false);
                     setNewSounding({
-                      title: '',
-                      description: '',
-                      confidentiality_level: 'Standard'
+                      subject: '',
+                      project_name: '',
+                      description: ''
                     });
                   }}
                   className="p-1 hover:bg-neutral-100 rounded-full"
@@ -553,9 +539,16 @@ const Insiders: React.FC = () => {
 
               <div className="space-y-6">
                 <Input
-                  label="Title"
-                  value={newSounding.title}
-                  onChange={(e) => setNewSounding({ ...newSounding, title: e.target.value })}
+                  label="Project Name"
+                  value={newSounding.project_name}
+                  onChange={(e) => setNewSounding({ ...newSounding, project_name: e.target.value })}
+                  required
+                />
+
+                <Input
+                  label="Subject"
+                  value={newSounding.subject}
+                  onChange={(e) => setNewSounding({ ...newSounding, subject: e.target.value })}
                   required
                 />
 
@@ -570,24 +563,6 @@ const Insiders: React.FC = () => {
                     placeholder="Enter a description of the market sounding..."
                   />
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Confidentiality Level
-                  </label>
-                  <select
-                    value={newSounding.confidentiality_level}
-                    onChange={(e) => setNewSounding({
-                      ...newSounding,
-                      confidentiality_level: e.target.value as 'Standard' | 'High' | 'Critical'
-                    })}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  >
-                    <option value="Standard">Standard</option>
-                    <option value="High">High</option>
-                    <option value="Critical">Critical</option>
-                  </select>
-                </div>
               </div>
 
               <div className="mt-8 flex justify-end space-x-3">
@@ -596,9 +571,9 @@ const Insiders: React.FC = () => {
                   onClick={() => {
                     setShowSoundingModal(false);
                     setNewSounding({
-                      title: '',
-                      description: '',
-                      confidentiality_level: 'Standard'
+                      subject: '',
+                      project_name: '',
+                      description: ''
                     });
                   }}
                 >
@@ -606,7 +581,7 @@ const Insiders: React.FC = () => {
                 </Button>
                 <Button
                   onClick={handleAddSounding}
-                  disabled={!newSounding.title.trim()}
+                  disabled={!newSounding.subject.trim() || !newSounding.project_name.trim()}
                 >
                   Create Market Sounding
                 </Button>
@@ -624,8 +599,11 @@ const Insiders: React.FC = () => {
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h2 className="text-xl font-bold text-neutral-800">
-                    {selectedSounding.title}
+                    {selectedSounding.project_name}
                   </h2>
+                  <p className="text-neutral-600 mt-1">
+                    {selectedSounding.subject}
+                  </p>
                   <div className="flex items-center space-x-2 mt-2">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       selectedSounding.status === 'Live'
@@ -633,11 +611,6 @@ const Insiders: React.FC = () => {
                         : 'bg-neutral-100 text-neutral-700'
                     }`}>
                       {selectedSounding.status}
-                    </span>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      getConfidentialityColor(selectedSounding.confidentiality_level)
-                    }`}>
-                      {selectedSounding.confidentiality_level}
                     </span>
                   </div>
                 </div>
