@@ -14,3 +14,5 @@ interface Contact {
   phone: string | null;
   company_name: string | null;
 }
+
+export default Input
