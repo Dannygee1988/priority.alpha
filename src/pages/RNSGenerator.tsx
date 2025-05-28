@@ -231,9 +231,10 @@ const RNSGenerator: React.FC = () => {
                   <label className="block text-neutral-700 text-sm font-medium mb-1">
                     RNS Type <span className="text-error-500">*</span>
                   </label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="flex space-x-2">
                     <button
-                      className={`px-4 py-2 rounded-md border text-sm font-medium transition-colors ${
+                      type="button"
+                      className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-colors ${
                         rnsType === 'RNS'
                           ? 'bg-primary text-white border-primary'
                           : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
@@ -243,7 +244,8 @@ const RNSGenerator: React.FC = () => {
                       RNS
                     </button>
                     <button
-                      className={`px-4 py-2 rounded-md border text-sm font-medium transition-colors ${
+                      type="button"
+                      className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-colors ${
                         rnsType === 'RNS Reach'
                           ? 'bg-primary text-white border-primary'
                           : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
