@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, UserRound, Mail, Phone, Building2, MoreVertical } from 'lucide-react';
+import { Search, Filter, Plus, UserRound, Mail, Phone, Building2, MoreVertical, ChevronDown, X, AlertCircle, Check, FileText } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
-import { getCustomers, getUserCompany } from '../lib/api';
+import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
 
 interface Contact {
@@ -20,20 +20,40 @@ interface Contact {
   tags: string[];
 }
 
+interface MarketSounding {
+  id: string;
+  title: string;
+  description: string | null;
+  status: 'Live' | 'Cleansed';
+  created_at: string;
+  cleansed_at: string | null;
+  confidentiality_level: 'Standard' | 'High' | 'Critical';
+  insiders: string[];
+}
+
 const Insiders: React.FC = () => {
   const { user } = useAuth();
+  const [activeView, setActiveView] = useState<'insiders' | 'soundings'>('insiders');
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [marketSoundings, setMarketSoundings] = useState<MarketSounding[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showSoundingModal, setShowSoundingModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
+  const [selectedSounding, setSelectedSounding] = useState<MarketSounding | null>(null);
+  const [newSounding, setNewSounding] = useState({
+    title: '',
+    description: '',
+    confidentiality_level: 'Standard' as const
+  });
 
   useEffect(() => {
-    loadContacts();
-  }, [user]);
+    loadData();
+  }, [user, activeView]);
 
-  const loadContacts = async () => {
+  const loadData = async () => {
     if (!user?.id) return;
     
     try {
@@ -44,11 +64,40 @@ const Insiders: React.FC = () => {
         return;
       }
 
-      const data = await getCustomers(companyId);
-      setContacts(data);
-    } catch (error) {
-      console.error('Error loading contacts:', error);
-      setError('Failed to load contacts. Please try again later.');
+      if (activeView === 'insiders') {
+        const { data: contactsData, error: contactsError } = await supabase
+          .from('crm_customers')
+          .select('*')
+          .eq('company_id', companyId)
+          .contains('tags', ['insider'])
+          .order('created_at', { ascending: false });
+
+        if (contactsError) throw contactsError;
+        setContacts(contactsData || []);
+      } else {
+        const { data: soundingsData, error: soundingsError } = await supabase
+          .from('market_soundings')
+          .select(`
+            *,
+            insider_soundings (
+              insider_id
+            )
+          `)
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: false });
+
+        if (soundingsError) throw soundingsError;
+        
+        const formattedSoundings = soundingsData?.map(sounding => ({
+          ...sounding,
+          insiders: sounding.insider_soundings.map(is => is.insider_id)
+        })) || [];
+        
+        setMarketSoundings(formattedSoundings);
+      }
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError('Failed to load data. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -75,20 +124,94 @@ const Insiders: React.FC = () => {
 
       setShowAddModal(false);
       setSelectedContact(null);
-      loadContacts();
+      loadData();
     } catch (error) {
       console.error('Error adding insider:', error);
       setError('Failed to add insider. Please try again.');
     }
   };
 
-  const insiders = contacts.filter(contact => contact.tags?.includes('insider'));
-  
-  const filteredInsiders = insiders.filter(insider =>
-    `${insider.first_name} ${insider.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    insider.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    insider.company_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleAddSounding = async () => {
+    if (!user?.id) return;
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      const { data: sounding, error: soundingError } = await supabase
+        .from('market_soundings')
+        .insert({
+          ...newSounding,
+          company_id: companyId
+        })
+        .select()
+        .single();
+
+      if (soundingError) throw soundingError;
+
+      setMarketSoundings([{ ...sounding, insiders: [] }, ...marketSoundings]);
+      setShowSoundingModal(false);
+      setNewSounding({
+        title: '',
+        description: '',
+        confidentiality_level: 'Standard'
+      });
+    } catch (err) {
+      console.error('Error adding market sounding:', err);
+      setError('Failed to add market sounding. Please try again.');
+    }
+  };
+
+  const handleCleanseSounding = async (soundingId: string) => {
+    try {
+      const { error: updateError } = await supabase
+        .from('market_soundings')
+        .update({
+          status: 'Cleansed',
+          cleansed_at: new Date().toISOString()
+        })
+        .eq('id', soundingId);
+
+      if (updateError) throw updateError;
+
+      setMarketSoundings(soundings =>
+        soundings.map(s =>
+          s.id === soundingId
+            ? { ...s, status: 'Cleansed', cleansed_at: new Date().toISOString() }
+            : s
+        )
+      );
+    } catch (err) {
+      console.error('Error cleansing market sounding:', err);
+      setError('Failed to cleanse market sounding. Please try again.');
+    }
+  };
+
+  const getConfidentialityColor = (level: string) => {
+    switch (level) {
+      case 'Critical':
+        return 'bg-error-50 text-error-700';
+      case 'High':
+        return 'bg-warning-50 text-warning-700';
+      case 'Standard':
+        return 'bg-success-50 text-success-700';
+      default:
+        return 'bg-neutral-50 text-neutral-600';
+    }
+  };
+
+  const filteredData = activeView === 'insiders'
+    ? contacts.filter(contact =>
+        `${contact.first_name} ${contact.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        contact.company_name?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : marketSoundings.filter(sounding =>
+        sounding.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sounding.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
   return (
     <div className="px-4 py-8 animate-fade-in">
@@ -98,11 +221,36 @@ const Insiders: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
+        <div className="border-b border-neutral-200">
+          <div className="flex">
+            <button
+              className={`px-6 py-3 text-sm font-medium ${
+                activeView === 'insiders'
+                  ? 'text-primary border-b-2 border-primary bg-primary/5'
+                  : 'text-neutral-600 hover:text-primary'
+              }`}
+              onClick={() => setActiveView('insiders')}
+            >
+              Insiders
+            </button>
+            <button
+              className={`px-6 py-3 text-sm font-medium ${
+                activeView === 'soundings'
+                  ? 'text-primary border-b-2 border-primary bg-primary/5'
+                  : 'text-neutral-600 hover:text-primary'
+              }`}
+              onClick={() => setActiveView('soundings')}
+            >
+              Market Soundings
+            </button>
+          </div>
+        </div>
+
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <div className="flex-1 max-w-md">
               <Input
-                placeholder="Search insiders..."
+                placeholder={`Search ${activeView}...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 leftIcon={<Search size={18} />}
@@ -118,9 +266,9 @@ const Insiders: React.FC = () => {
               </Button>
               <Button
                 leftIcon={<Plus size={18} />}
-                onClick={() => setShowAddModal(true)}
+                onClick={() => activeView === 'insiders' ? setShowAddModal(true) : setShowSoundingModal(true)}
               >
-                Add to Insider List
+                Add {activeView === 'insiders' ? 'Insider' : 'Market Sounding'}
               </Button>
             </div>
           </div>
@@ -135,78 +283,183 @@ const Insiders: React.FC = () => {
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-          ) : filteredInsiders.length > 0 ? (
+          ) : activeView === 'insiders' ? (
+            filteredData.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-neutral-200">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact Info</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Company</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Last Contacted</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(filteredData as Contact[]).map((contact) => (
+                      <tr
+                        key={contact.id}
+                        className="border-b border-neutral-100 hover:bg-neutral-50"
+                      >
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                              <UserRound size={16} />
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-neutral-900">
+                                {contact.first_name} {contact.last_name}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center text-sm text-neutral-600">
+                              <Mail size={14} className="mr-1" />
+                              {contact.email}
+                            </div>
+                            {contact.phone && (
+                              <div className="flex items-center text-sm text-neutral-600">
+                                <Phone size={14} className="mr-1" />
+                                {contact.phone}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          {contact.company_name && (
+                            <div className="flex items-center text-sm text-neutral-600">
+                              <Building2 size={14} className="mr-1" />
+                              {contact.company_name}
+                              {contact.job_title && (
+                                <span className="text-neutral-400 ml-1">
+                                  ({contact.job_title})
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            contact.type === 'Staff' ? 'bg-primary-50 text-primary-700' :
+                            contact.type === 'Customer' ? 'bg-success-50 text-success-700' :
+                            contact.type === 'Investor' ? 'bg-warning-50 text-warning-700' :
+                            contact.type === 'Lead' ? 'bg-accent-50 text-accent-700' :
+                            'bg-neutral-100 text-neutral-700'
+                          }`}>
+                            {contact.type}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-neutral-600">
+                          {contact.last_contacted
+                            ? new Date(contact.last_contacted).toLocaleDateString()
+                            : 'Never'}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <button className="p-1 hover:bg-neutral-100 rounded-full">
+                            <MoreVertical size={16} className="text-neutral-400" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-neutral-500">No insiders found</p>
+              </div>
+            )
+          ) : filteredData.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-neutral-200">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact Info</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Company</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Last Contacted</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Title</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Status</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Confidentiality</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Insiders</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Created</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Cleansed</th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredInsiders.map((insider) => (
+                  {(filteredData as MarketSounding[]).map((sounding) => (
                     <tr
-                      key={insider.id}
+                      key={sounding.id}
                       className="border-b border-neutral-100 hover:bg-neutral-50"
                     >
                       <td className="py-3 px-4">
                         <div className="flex items-center">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                            <UserRound size={16} />
+                          <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                            <FileText size={16} />
                           </div>
                           <div className="ml-3">
                             <div className="text-sm font-medium text-neutral-900">
-                              {insider.first_name} {insider.last_name}
+                              {sounding.title}
                             </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center text-sm text-neutral-600">
-                            <Mail size={14} className="mr-1" />
-                            {insider.email}
-                          </div>
-                          {insider.phone && (
-                            <div className="flex items-center text-sm text-neutral-600">
-                              <Phone size={14} className="mr-1" />
-                              {insider.phone}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        {insider.company_name && (
-                          <div className="flex items-center text-sm text-neutral-600">
-                            <Building2 size={14} className="mr-1" />
-                            {insider.company_name}
-                            {insider.job_title && (
-                              <span className="text-neutral-400 ml-1">
-                                ({insider.job_title})
-                              </span>
+                            {sounding.description && (
+                              <div className="text-sm text-neutral-500 mt-0.5">
+                                {sounding.description}
+                              </div>
                             )}
                           </div>
-                        )}
+                        </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-50 text-warning-700">
-                          {insider.type}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          sounding.status === 'Live'
+                            ? 'bg-success-50 text-success-700'
+                            : 'bg-neutral-100 text-neutral-700'
+                        }`}>
+                          {sounding.status}
                         </span>
                       </td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          getConfidentialityColor(sounding.confidentiality_level)
+                        }`}>
+                          {sounding.confidentiality_level}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center text-sm text-neutral-600">
+                          <UserRound size={14} className="mr-1" />
+                          {sounding.insiders.length}
+                        </div>
+                      </td>
                       <td className="py-3 px-4 text-sm text-neutral-600">
-                        {insider.last_contacted
-                          ? new Date(insider.last_contacted).toLocaleDateString()
-                          : 'Never'}
+                        {new Date(sounding.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-neutral-600">
+                        {sounding.cleansed_at
+                          ? new Date(sounding.cleansed_at).toLocaleDateString()
+                          : '-'}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button className="p-1 hover:bg-neutral-100 rounded-full">
-                          <MoreVertical size={16} className="text-neutral-400" />
-                        </button>
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedSounding(sounding)}
+                          >
+                            View
+                          </Button>
+                          {sounding.status === 'Live' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-warning-600 hover:text-warning-700"
+                              onClick={() => handleCleanseSounding(sounding.id)}
+                            >
+                              Cleanse
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -215,13 +468,13 @@ const Insiders: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-neutral-500">No insiders found</p>
+              <p className="text-neutral-500">No market soundings found</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Add to Insider List Modal */}
+      {/* Add Insider Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-lg my-8">
@@ -268,6 +521,209 @@ const Insiders: React.FC = () => {
                 >
                   Add to Insider List
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Market Sounding Modal */}
+      {showSoundingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-bold text-neutral-800">
+                  Add Market Sounding
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowSoundingModal(false);
+                    setNewSounding({
+                      title: '',
+                      description: '',
+                      confidentiality_level: 'Standard'
+                    });
+                  }}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <X size={20} className="text-neutral-500" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <Input
+                  label="Title"
+                  value={newSounding.title}
+                  onChange={(e) => setNewSounding({ ...newSounding, title: e.target.value })}
+                  required
+                />
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={newSounding.description}
+                    onChange={(e) => setNewSounding({ ...newSounding, description: e.target.value })}
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary h-32 resize-none"
+                    placeholder="Enter a description of the market sounding..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Confidentiality Level
+                  </label>
+                  <select
+                    value={newSounding.confidentiality_level}
+                    onChange={(e) => setNewSounding({
+                      ...newSounding,
+                      confidentiality_level: e.target.value as 'Standard' | 'High' | 'Critical'
+                    })}
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="Standard">Standard</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowSoundingModal(false);
+                    setNewSounding({
+                      title: '',
+                      description: '',
+                      confidentiality_level: 'Standard'
+                    });
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddSounding}
+                  disabled={!newSounding.title.trim()}
+                >
+                  Create Market Sounding
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Market Sounding Modal */}
+      {selectedSounding && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-800">
+                    {selectedSounding.title}
+                  </h2>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      selectedSounding.status === 'Live'
+                        ? 'bg-success-50 text-success-700'
+                        : 'bg-neutral-100 text-neutral-700'
+                    }`}>
+                      {selectedSounding.status}
+                    </span>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      getConfidentialityColor(selectedSounding.confidentiality_level)
+                    }`}>
+                      {selectedSounding.confidentiality_level}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedSounding(null)}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <X size={20} className="text-neutral-500" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {selectedSounding.description && (
+                  <div>
+                    <h3 className="text-sm font-medium text-neutral-700 mb-2">
+                      Description
+                    </h3>
+                    <p className="text-neutral-600">
+                      {selectedSounding.description}
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <h3 className="text-sm font-medium text-neutral-700 mb-2">
+                    Insiders ({selectedSounding.insiders.length})
+                  </h3>
+                  <div className="bg-neutral-50 rounded-lg border border-neutral-200 p-4">
+                    {selectedSounding.insiders.length > 0 ? (
+                      <div className="space-y-2">
+                        {contacts
+                          .filter(contact => selectedSounding.insiders.includes(contact.id))
+                          .map(contact => (
+                            <div
+                              key={contact.id}
+                              className="flex items-center justify-between bg-white p-3 rounded-lg border border-neutral-200"
+                            >
+                              <div className="flex items-center">
+                                <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                                  <UserRound size={16} />
+                                </div>
+                                <div className="ml-3">
+                                  <div className="text-sm font-medium text-neutral-900">
+                                    {contact.first_name} {contact.last_name}
+                                  </div>
+                                  <div className="text-sm text-neutral-500">
+                                    {contact.email}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        }
+                      </div>
+                    ) : (
+                      <p className="text-neutral-500 text-sm text-center">
+                        No insiders added yet
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-neutral-200">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-neutral-500">
+                      Created on {new Date(selectedSounding.created_at).toLocaleDateString()}
+                    </div>
+                    {selectedSounding.status === 'Live' ? (
+                      <Button
+                        variant="outline"
+                        className="text-warning-600 hover:bg-warning-50 hover:border-warning-600"
+                        onClick={() => {
+                          handleCleanseSounding(selectedSounding.id);
+                          setSelectedSounding(null);
+                        }}
+                      >
+                        Cleanse Market Sounding
+                      </Button>
+                    ) : (
+                      <div className="flex items-center text-sm text-success-600">
+                        <Check size={16} className="mr-1" />
+                        Cleansed on {new Date(selectedSounding.cleansed_at!).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
