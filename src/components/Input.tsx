@@ -18,7 +18,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         <div className="relative">
           {leftIcon && (
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
-              {leftIcon}
+              {React.cloneElement(leftIcon as React.ReactElement, { 
+                size: 20,
+                className: "h-5 w-5"
+              })}
             </div>
           )}
           <input
@@ -46,7 +49,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           />
           {rightIcon && (
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-neutral-500">
-              {rightIcon}
+              {React.cloneElement(rightIcon as React.ReactElement, {
+                size: 20,
+                className: "h-5 w-5"
+              })}
             </div>
           )}
         </div>
