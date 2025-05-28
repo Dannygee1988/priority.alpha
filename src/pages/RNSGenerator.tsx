@@ -310,7 +310,7 @@ const RNSGenerator: React.FC = () => {
                       title="Generate random project name"
                       className="h-[42px] w-[42px] p-0 flex items-center justify-center"
                     >
-                      <Wand2 size={18} className="h-[18px] w-[18px]" />
+                      <Wand2 size={20} />
                     </Button>
                   </div>
                   <p className="mt-1 text-sm text-neutral-500">
