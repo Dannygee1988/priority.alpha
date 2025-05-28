@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText } from 'lucide-react';
+import { Search, Filter, Plus, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText, Wand2 } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -48,6 +48,16 @@ const Insiders: React.FC = () => {
     project_name: '',
     description: ''
   });
+
+  const generateRandomProjectName = () => {
+    const adjectives = ['Blue', 'Red', 'Green', 'Silent', 'Swift', 'Bright', 'Dark', 'Noble', 'Royal', 'Golden'];
+    const nouns = ['Eagle', 'Lion', 'Star', 'Moon', 'Sun', 'River', 'Mountain', 'Ocean', 'Forest', 'Castle'];
+    const elements = ['Alpha', 'Beta', 'Delta', 'Gamma', 'Omega', 'Prime', 'Zero', 'One', 'Nova', 'Core'];
+    
+    const randomWord = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+    
+    return `${randomWord(adjectives)}.${randomWord(nouns)}.${randomWord(elements)}`;
+  };
 
   useEffect(() => {
     loadData();
@@ -538,19 +548,39 @@ const Insiders: React.FC = () => {
               </div>
 
               <div className="space-y-6">
-                <Input
-                  label="Project Name"
-                  value={newSounding.project_name}
-                  onChange={(e) => setNewSounding({ ...newSounding, project_name: e.target.value })}
-                  required
-                />
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Project Name
+                  </label>
+                  <div className="flex space-x-2">
+                    <Input
+                      value={newSounding.project_name}
+                      onChange={(e) => setNewSounding({ ...newSounding, project_name: e.target.value })}
+                      required
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => setNewSounding({ ...newSounding, project_name: generateRandomProjectName() })}
+                      title="Generate random project name"
+                    >
+                      <Wand2 size={18} />
+                    </Button>
+                  </div>
+                </div>
 
-                <Input
-                  label="Subject"
-                  value={newSounding.subject}
-                  onChange={(e) => setNewSounding({ ...newSounding, subject: e.target.value })}
-                  required
-                />
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Subject
+                  </label>
+                  <textarea
+                    value={newSounding.subject}
+                    onChange={(e) => setNewSounding({ ...newSounding, subject: e.target.value })}
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary h-24 resize-none"
+                    placeholder="Enter the subject of the market sounding..."
+                    required
+                  />
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
