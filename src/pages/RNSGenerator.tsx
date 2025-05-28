@@ -10,6 +10,7 @@ const RNSGenerator: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [projectName, setProjectName] = useState('');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [keywords, setKeywords] = useState('');
@@ -46,9 +47,20 @@ const RNSGenerator: React.FC = () => {
     fetchAssistantId();
   }, [user]);
 
+  const generateProjectName = () => {
+    const adjectives = ['Blue', 'Red', 'Green', 'Silver', 'Gold', 'Crystal', 'Swift', 'Bright', 'Alpha', 'Nova'];
+    const nouns = ['Star', 'Moon', 'Sun', 'Sky', 'Ocean', 'Mountain', 'River', 'Forest', 'Peak', 'Valley'];
+    const numbers = ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+
+    const randomWord = (array: string[]) => array[Math.floor(Math.random() * array.length)];
+    const newProjectName = `${randomWord(adjectives)}.${randomWord(nouns)}.${randomWord(numbers)}`;
+
+    setProjectName(newProjectName);
+  };
+
   const handleGenerate = async () => {
-    if (!subject.trim() || !description.trim()) {
-      setError('Please fill in both subject and description fields.');
+    if (!projectName.trim() || !subject.trim() || !description.trim()) {
+      setError('Please fill in all required fields.');
       return;
     }
 
@@ -63,6 +75,7 @@ const RNSGenerator: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          project_name: projectName,
           subject,
           description,
           keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
@@ -163,7 +176,7 @@ const RNSGenerator: React.FC = () => {
     return content
       .replace(/^RNS Number: (.+)$/gm, '<div class="text-sm text-neutral-600 mb-2"><strong>RNS Number:</strong> $1</div>')
       .replace(/^([A-Z][A-Z\s&]+PLC)$/gm, '<h1 class="text-xl font-bold text-primary mb-2">$1</h1>')
-      .replace(/^([A-Z\s:]+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
+      .replace(/^([A-Z\s:]+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$2</h2>')
       .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-neutral-800 mb-3 mt-5">$1</h3>')
       .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
       .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-neutral-800 mb-6 mt-8">$1</h1>')
@@ -263,15 +276,24 @@ const RNSGenerator: React.FC = () => {
                   <label className="block text-neutral-700 text-sm font-medium mb-1">
                     Project Name <span className="text-error-500">*</span>
                   </label>
-                  <Input
-                    placeholder="Enter the project name"
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    fullWidth
-                    required
-                  />
+                  <div className="flex space-x-2">
+                    <Input
+                      placeholder="Enter project name"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      fullWidth
+                      required
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={generateProjectName}
+                      title="Generate random project name"
+                    >
+                      <Wand2 size={18} />
+                    </Button>
+                  </div>
                   <p className="mt-1 text-sm text-neutral-500">
-                    A unique identifier for this announcement
+                    Click the magic wand to generate a random project name
                   </p>
                 </div>
 
@@ -328,7 +350,7 @@ const RNSGenerator: React.FC = () => {
               isLoading={isGenerating}
               leftIcon={<Wand2 size={18} />}
               fullWidth
-              disabled={!subject.trim() || !description.trim()}
+              disabled={!projectName.trim() || !subject.trim() || !description.trim()}
             >
               {isGenerating ? 'Generating RNS Announcement...' : 'Generate RNS Announcement'}
             </Button>
