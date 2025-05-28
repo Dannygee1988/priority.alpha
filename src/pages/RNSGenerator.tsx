@@ -163,7 +163,7 @@ const RNSGenerator: React.FC = () => {
     return content
       .replace(/^RNS Number: (.+)$/gm, '<div class="text-sm text-neutral-600 mb-2"><strong>RNS Number:</strong> $1</div>')
       .replace(/^([A-Z][A-Z\s&]+PLC)$/gm, '<h1 class="text-xl font-bold text-primary mb-2">$1</h1>')
-      .replace(/^([A-Z\s:]+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$2</h2>')
+      .replace(/^([A-Z\s:]+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
       .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-neutral-800 mb-3 mt-5">$1</h3>')
       .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
       .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-neutral-800 mb-6 mt-8">$1</h1>')
@@ -185,7 +185,6 @@ const RNSGenerator: React.FC = () => {
         return `<p class="mb-4 leading-relaxed">${paragraph}</p>`;
       })
       .join('')
-      .replace(/<p class="mb-4 leading-relaxed"><\/p>/g, '')
       .replace(/<p class="mb-4 leading-relaxed">(<h[1-6]|<hr|<div)/g, '$1')
       .replace(/(<\/h[1-6]>|<\/hr>|<\/div>)<\/p>/g, '$1');
   };
@@ -260,6 +259,22 @@ const RNSGenerator: React.FC = () => {
                   </p>
                 </div>
 
+                <div>
+                  <label className="block text-neutral-700 text-sm font-medium mb-1">
+                    Project Name <span className="text-error-500">*</span>
+                  </label>
+                  <Input
+                    placeholder="Enter the project name"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    fullWidth
+                    required
+                  />
+                  <p className="mt-1 text-sm text-neutral-500">
+                    A unique identifier for this announcement
+                  </p>
+                </div>
+
                 <Input
                   label="Subject"
                   placeholder="Enter the subject of your announcement"
@@ -268,6 +283,7 @@ const RNSGenerator: React.FC = () => {
                   fullWidth
                   required
                 />
+
                 <div>
                   <label className="block text-neutral-700 text-sm font-medium mb-1">
                     Description <span className="text-error-500">*</span>
@@ -283,6 +299,7 @@ const RNSGenerator: React.FC = () => {
                     Provide detailed information about your announcement for the press release
                   </p>
                 </div>
+
                 <div>
                   <label className="block text-neutral-700 text-sm font-medium mb-1">
                     Keywords <span className="text-neutral-500">(optional)</span>
