@@ -309,7 +309,7 @@ const RNSGenerator: React.FC = () => {
                       onClick={generateProjectName}
                       title="Generate random project name"
                     >
-                      <Wand2 size={5} className="h-5 w-5" />
+                      <Wand2 size={20} className="h-2 w-2" />
                     </Button>
                   </div>
                   <p className="mt-1 text-sm text-neutral-500">
