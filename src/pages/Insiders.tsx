@@ -462,19 +462,21 @@ const Insiders: React.FC = () => {
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Project Name
                   </label>
-                  <div className="flex space-x-2">
+                  <div className="relative">
                     <Input
                       value={newSounding.project_name}
                       onChange={(e) => setNewSounding({ ...newSounding, project_name: e.target.value })}
                       required
+                      className="pr-10"
                     />
-                    <Button
-                      variant="outline"
+                    <button
+                      type="button"
                       onClick={generateProjectName}
                       title="Generate random project name"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors"
                     >
-                      <Wand2 size={18} />
-                    </Button>
+                      <Wand2 className="h-5 w-5" />
+                    </button>
                   </div>
                   <p className="mt-1 text-xs text-neutral-500">
                     Click the magic wand to generate a random project name
