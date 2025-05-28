@@ -13,3 +13,4 @@ interface Contact {
   email: string;
   phone: string | null;
   company_name: string |
+}
