@@ -14,13 +14,16 @@ const Header: React.FC = () => {
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
+    // You would implement actual dark mode switching here
   };
 
   return (
     <header className="bg-white border-b border-neutral-200 sticky top-0 z-10">
       <div className="h-16 px-6 flex items-center justify-between">
         <div className="flex items-center">
-          {/* Empty div to maintain spacing */}
+          <h1 className="text-xl font-semibold text-neutral-800">
+            {window.location.pathname.split('/').pop()?.charAt(0).toUpperCase() + window.location.pathname.split('/').pop()?.slice(1) || 'Dashboard'}
+          </h1>
         </div>
         
         <div className="flex items-center space-x-4">
@@ -59,6 +62,7 @@ const Header: React.FC = () => {
                     <span className="font-medium">{user.name.charAt(0)}</span>
                   </div>
                 )}
+                <span className="ml-2 text-neutral-700 font-medium">{user.name}</span>
                 <ChevronDown 
                   size={16} 
                   className={`ml-1 text-neutral-500 transition-transform ${
