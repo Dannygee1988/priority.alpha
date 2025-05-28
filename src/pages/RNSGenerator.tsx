@@ -296,22 +296,23 @@ const RNSGenerator: React.FC = () => {
                   <label className="block text-neutral-700 text-sm font-medium mb-1">
                     Project Name <span className="text-error-500">*</span>
                   </label>
-                  <div className="flex space-x-2">
+                  <div className="relative">
                     <Input
                       placeholder="Enter project name"
                       value={projectName}
                       onChange={(e) => setProjectName(e.target.value)}
                       fullWidth
                       required
+                      className="pr-10"
                     />
-                    <Button
-                      variant="outline"
+                    <button
+                      type="button"
                       onClick={generateProjectName}
                       title="Generate random project name"
-                      className="h-[42px] w-[42px] p-0 flex items-center justify-center"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors"
                     >
-                      <Wand2 className="h-6 w-6" />
-                    </Button>
+                      <Wand2 className="h-5 w-5" />
+                    </button>
                   </div>
                   <p className="mt-1 text-sm text-neutral-500">
                     Click the magic wand to generate a random project name
