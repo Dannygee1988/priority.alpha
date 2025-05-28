@@ -144,7 +144,7 @@ const RNSGenerator: React.FC = () => {
     try {
       const companyId = await getUserCompany(user.id);
       if (!companyId) {
-        setError('No company found for user');
+        setError('No company found');
         return;
       }
 
@@ -309,7 +309,7 @@ const RNSGenerator: React.FC = () => {
                       onClick={generateProjectName}
                       title="Generate random project name"
                     >
-                      <Wand2 size={18} />
+                      <Wand2 size={20} className="h-5 w-5" />
                     </Button>
                   </div>
                   <p className="mt-1 text-sm text-neutral-500">
@@ -368,7 +368,7 @@ const RNSGenerator: React.FC = () => {
             <Button
               onClick={handleGenerate}
               isLoading={isGenerating}
-              leftIcon={<Wand2 size={18} />}
+              leftIcon={<Wand2 size={20} className="h-5 w-5" />}
               fullWidth
               disabled={!projectName.trim() || !subject.trim() || !description.trim()}
             >
