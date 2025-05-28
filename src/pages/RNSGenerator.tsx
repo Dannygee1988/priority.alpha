@@ -22,6 +22,7 @@ const RNSGenerator: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editableContent, setEditableContent] = useState('');
   const [isApproved, setIsApproved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchAssistantId = async () => {
@@ -139,6 +140,7 @@ const RNSGenerator: React.FC = () => {
   const handleSaveDraft = async () => {
     if (!user?.id || !generatedContent) return;
 
+    setIsSaving(true);
     try {
       const companyId = await getUserCompany(user.id);
       if (!companyId) {
@@ -146,7 +148,23 @@ const RNSGenerator: React.FC = () => {
         return;
       }
 
-      const { data, error: insertError } = await supabase
+      // First create the market sounding
+      const { data: soundingData, error: soundingError } = await supabase
+        .from('market_soundings')
+        .insert({
+          company_id: companyId,
+          subject,
+          description,
+          project_name: projectName,
+          status: 'Live'
+        })
+        .select()
+        .single();
+
+      if (soundingError) throw soundingError;
+
+      // Then create the RNS draft
+      const { data: rnsData, error: rnsError } = await supabase
         .from('rns_documents')
         .insert({
           company_id: companyId,
@@ -159,7 +177,7 @@ const RNSGenerator: React.FC = () => {
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (rnsError) throw rnsError;
 
       setIsApproved(true);
       setTimeout(() => {
@@ -167,8 +185,10 @@ const RNSGenerator: React.FC = () => {
       }, 2000);
 
     } catch (err) {
-      console.error('Error saving draft:', err);
-      setError('Failed to save draft. Please try again.');
+      console.error('Error saving:', err);
+      setError('Failed to save. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -450,9 +470,10 @@ const RNSGenerator: React.FC = () => {
                   size="md"
                   leftIcon={isApproved ? <CheckCircle size={18} /> : <Check size={18} />}
                   className={`w-64 ${isApproved ? 'bg-success-600 hover:bg-success-700 text-white' : ''}`}
-                  disabled={isApproved}
+                  disabled={isApproved || isSaving}
+                  isLoading={isSaving}
                 >
-                  {isApproved ? 'Draft Saved' : 'Save Draft'}
+                  {isApproved ? 'Saved' : isSaving ? 'Saving...' : 'Save Draft'}
                 </Button>
               </div>
             )}
