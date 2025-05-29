@@ -243,7 +243,7 @@ const Insiders: React.FC = () => {
                           <h3 className="font-medium text-neutral-800">{sounding.subject}</h3>
                           <p className="text-sm text-neutral-500 mt-1">{sounding.project_name}</p>
                         </div>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${
                           sounding.status === 'Live'
                             ? 'bg-success-50 text-success-700'
                             : 'bg-neutral-100 text-neutral-700'
@@ -294,12 +294,14 @@ const Insiders: React.FC = () => {
                 <div className="flex space-x-2">
                   <Button
                     variant="outline"
-                    leftIcon={<Filter size={18} />}
+                    size="sm"
+                    leftIcon={<Filter size={16} />}
                   >
                     Filter
                   </Button>
                   <Button
-                    leftIcon={<Plus size={18} />}
+                    size="sm"
+                    leftIcon={<Plus size={16} />}
                     onClick={() => setShowAddModal(true)}
                   >
                     Add to List
