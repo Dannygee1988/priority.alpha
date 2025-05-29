@@ -214,9 +214,9 @@ const Insiders: React.FC = () => {
         <p className="text-neutral-500">Manage contacts with access to confidential company information</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-8">
+      <div className="grid grid-cols-2 gap-8">
         {/* Market Soundings */}
-        <div className="col-span-1">
+        <div>
           <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
             <div className="p-4 border-b border-neutral-200">
               <div className="flex justify-between items-center">
@@ -278,7 +278,7 @@ const Insiders: React.FC = () => {
         </div>
 
         {/* Insiders List */}
-        <div className="col-span-2">
+        <div>
           <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
@@ -302,7 +302,7 @@ const Insiders: React.FC = () => {
                     leftIcon={<Plus size={18} />}
                     onClick={() => setShowAddModal(true)}
                   >
-                    Add to Insider List
+                    Add to List
                   </Button>
                 </div>
               </div>
