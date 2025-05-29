@@ -119,6 +119,26 @@ export async function getCustomers(companyId: string) {
   }
 }
 
+export async function getCompanies(companyId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('crm_companies')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching companies:', error.message);
+      throw new Error(`Failed to fetch companies: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getCompanies:', error);
+    throw new Error('Failed to fetch companies. Please check your connection and try again.');
+  }
+}
+
 export async function addCustomer(customerData: {
   company_id: string;
   first_name: string;

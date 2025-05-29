@@ -3,7 +3,7 @@ import { Plus, Search, Filter, MoreVertical, Mail, Phone, Building2, UserRound, 
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
-import { getUserCompany } from '../lib/api';
+import { getUserCompany, getCustomers, getCompanies } from '../lib/api';
 import { supabase } from '../lib/supabase';
 
 interface Contact {
@@ -70,136 +70,506 @@ const CRM: React.FC = () => {
   const contactStatuses = ['prospect', 'lead', 'customer', 'inactive'] as const;
   const companyStatuses = ['active', 'inactive', 'lead', 'prospect'] as const;
 
+  const loadData = async () => {
+    if (!user) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found for user');
+      }
+
+      const [contactsData, companiesData] = await Promise.all([
+        getCustomers(companyId),
+        getCompanies(companyId)
+      ]);
+
+      setContacts(contactsData);
+      setCompanies(companiesData);
+    } catch (err) {
+      console.error('Error loading CRM data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load CRM data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetForms = () => {
+    setNewContact({
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      company_name: '',
+      job_title: '',
+      type: 'Customer',
+      linkedin_url: '',
+      crm_company_id: null
+    });
+    setNewCompany({
+      name: '',
+      industry: '',
+      website: '',
+      description: '',
+      annual_revenue: '',
+      employee_count: '',
+      status: 'active'
+    });
+  };
+
+  const handleAddItem = async () => {
+    if (!user) return;
+
+    try {
+      setIsSaving(true);
+      setError(null);
+
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found for user');
+      }
+
+      if (activeView === 'contacts') {
+        const { data, error } = await supabase
+          .from('crm_customers')
+          .insert([{
+            ...newContact,
+            company_id: companyId,
+            crm_company_id: newContact.crm_company_id || null
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+        setContacts(prev => [data, ...prev]);
+      } else {
+        const { data, error } = await supabase
+          .from('crm_companies')
+          .insert([{
+            ...newCompany,
+            company_id: companyId,
+            annual_revenue: newCompany.annual_revenue ? Number(newCompany.annual_revenue) : null,
+            employee_count: newCompany.employee_count ? Number(newCompany.employee_count) : null
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+        setCompanies(prev => [data, ...prev]);
+      }
+
+      setShowAddModal(false);
+      resetForms();
+    } catch (err) {
+      console.error('Error adding item:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add item');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
   }, [user, activeView]);
 
-  // ... rest of the component implementation remains exactly the same until the modal ...
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          {error}
+        </div>
+      )}
 
-  {showAddModal && (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl">
-        <div className="p-8">
-          <div className="flex justify-between items-start mb-6">
-            <h2 className="text-xl font-bold text-neutral-800">Add Contact</h2>
-            <button
-              onClick={() => {
-                setShowAddModal(false);
-                resetForms();
-              }}
-              className="p-1 hover:bg-neutral-100 rounded-full"
-            >
-              <X size={20} className="text-neutral-500" />
-            </button>
-          </div>
-          
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <Input
-                label="First Name"
-                value={newContact.first_name}
-                onChange={(e) => setNewContact({ ...newContact, first_name: e.target.value })}
-                required
-              />
-              <Input
-                label="Last Name"
-                value={newContact.last_name}
-                onChange={(e) => setNewContact({ ...newContact, last_name: e.target.value })}
-                required
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-6">
-              <Input
-                label="Email"
-                type="email"
-                value={newContact.email}
-                onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                required
-              />
-              <Input
-                label="Phone"
-                type="tel"
-                value={newContact.phone}
-                onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Associated Company
-                </label>
-                <select
-                  value={newContact.crm_company_id || ''}
-                  onChange={(e) => setNewContact({ ...newContact, crm_company_id: e.target.value || null })}
-                  className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-semibold text-gray-900">CRM</h1>
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeView === 'contacts'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  onClick={() => setActiveView('contacts')}
                 >
-                  <option value="">No company</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <Input
-                label="Job Title"
-                value={newContact.job_title}
-                onChange={(e) => setNewContact({ ...newContact, job_title: e.target.value })}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Type
-                </label>
-                <select
-                  value={newContact.type}
-                  onChange={(e) => setNewContact({ ...newContact, type: e.target.value as typeof contactTypes[number] })}
-                  className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  Contacts
+                </button>
+                <button
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeView === 'companies'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  onClick={() => setActiveView('companies')}
                 >
-                  {contactTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
+                  Companies
+                </button>
               </div>
-              <Input
-                label="LinkedIn URL"
-                type="url"
-                value={newContact.linkedin_url}
-                onChange={(e) => setNewContact({ ...newContact, linkedin_url: e.target.value })}
-                placeholder="https://linkedin.com/in/username"
-              />
             </div>
-          </div>
-
-          <div className="mt-8 flex justify-end space-x-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowAddModal(false);
-                resetForms();
-              }}
-              size="lg"
-            >
-              Cancel
+            <Button onClick={() => setShowAddModal(true)} size="lg">
+              <Plus size={20} className="mr-2" />
+              Add {activeView === 'contacts' ? 'Contact' : 'Company'}
             </Button>
-            <Button
-              onClick={handleAddItem}
-              size="lg"
-              disabled={!newContact.first_name || !newContact.last_name || !newContact.email}
-            >
-              Add Contact
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                icon={<Search size={20} className="text-gray-400" />}
+              />
+            </div>
+            <Button variant="outline" size="lg">
+              <Filter size={20} className="mr-2" />
+              Filters
             </Button>
           </div>
         </div>
-      </div>
-    </div>
-  )}
 
-  {/* Rest of the component remains exactly the same... */}
+        {isLoading ? (
+          <div className="p-8 text-center text-gray-500">Loading...</div>
+        ) : activeView === 'contacts' ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200 text-left">
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Last Contact</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {contacts.map((contact) => (
+                  <tr key={contact.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 flex-shrink-0">
+                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                            <UserRound size={20} className="text-gray-500" />
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{contact.first_name} {contact.last_name}</div>
+                          <div className="text-sm text-gray-500">{contact.job_title || '—'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 flex items-center">
+                        <Mail size={16} className="mr-2 text-gray-400" />
+                        {contact.email}
+                      </div>
+                      {contact.phone && (
+                        <div className="text-sm text-gray-500 flex items-center mt-1">
+                          <Phone size={16} className="mr-2 text-gray-400" />
+                          {contact.phone}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 flex items-center">
+                        <Building2 size={16} className="mr-2 text-gray-400" />
+                        {contact.company_name || '—'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-3 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-700">
+                        {contact.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {contact.last_contacted ? new Date(contact.last_contacted).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button className="text-gray-400 hover:text-gray-500">
+                        <MoreVertical size={20} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200 text-left">
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {companies.map((company) => (
+                  <tr key={company.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 flex-shrink-0">
+                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                            <Building2 size={20} className="text-gray-500" />
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{company.name}</div>
+                          <div className="text-sm text-gray-500">{company.industry || '—'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {company.website && (
+                        <div className="text-sm text-gray-900 flex items-center">
+                          <Globe size={16} className="mr-2 text-gray-400" />
+                          {company.website}
+                        </div>
+                      )}
+                      {company.employee_count && (
+                        <div className="text-sm text-gray-500 flex items-center mt-1">
+                          <Users size={16} className="mr-2 text-gray-400" />
+                          {company.employee_count} employees
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                        company.status === 'active'
+                          ? 'bg-green-50 text-green-700'
+                          : company.status === 'inactive'
+                          ? 'bg-gray-100 text-gray-700'
+                          : 'bg-blue-50 text-blue-700'
+                      }`}>
+                        {company.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {new Date(company.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button className="text-gray-400 hover:text-gray-500">
+                        <MoreVertical size={20} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl">
+            <div className="p-8">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-bold text-neutral-800">
+                  Add {activeView === 'contacts' ? 'Contact' : 'Company'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowAddModal(false);
+                    resetForms();
+                  }}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <X size={20} className="text-neutral-500" />
+                </button>
+              </div>
+              
+              {activeView === 'contacts' ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <Input
+                      label="First Name"
+                      value={newContact.first_name}
+                      onChange={(e) => setNewContact({ ...newContact, first_name: e.target.value })}
+                      required
+                    />
+                    <Input
+                      label="Last Name"
+                      value={newContact.last_name}
+                      onChange={(e) => setNewContact({ ...newContact, last_name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-6">
+                    <Input
+                      label="Email"
+                      type="email"
+                      value={newContact.email}
+                      onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                      required
+                    />
+                    <Input
+                      label="Phone"
+                      type="tel"
+                      value={newContact.phone}
+                      onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Associated Company
+                      </label>
+                      <select
+                        value={newContact.crm_company_id || ''}
+                        onChange={(e) => setNewContact({ ...newContact, crm_company_id: e.target.value || null })}
+                        className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                      >
+                        <option value="">No company</option>
+                        {companies.map((company) => (
+                          <option key={company.id} value={company.id}>
+                            {company.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <Input
+                      label="Job Title"
+                      value={newContact.job_title}
+                      onChange={(e) => setNewContact({ ...newContact, job_title: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Type
+                      </label>
+                      <select
+                        value={newContact.type}
+                        onChange={(e) => setNewContact({ ...newContact, type: e.target.value as typeof contactTypes[number] })}
+                        className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                      >
+                        {contactTypes.map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <Input
+                      label="LinkedIn URL"
+                      type="url"
+                      value={newContact.linkedin_url}
+                      onChange={(e) => setNewContact({ ...newContact, linkedin_url: e.target.value })}
+                      placeholder="https://linkedin.com/in/username"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <Input
+                    label="Company Name"
+                    value={newCompany.name}
+                    onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
+                    required
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-6">
+                    <Input
+                      label="Industry"
+                      value={newCompany.industry}
+                      onChange={(e) => setNewCompany({ ...newCompany, industry: e.target.value })}
+                    />
+                    <Input
+                      label="Website"
+                      type="url"
+                      value={newCompany.website}
+                      onChange={(e) => setNewCompany({ ...newCompany, website: e.target.value })}
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-6">
+                    <Input
+                      label="Annual Revenue"
+                      type="number"
+                      value={newCompany.annual_revenue}
+                      onChange={(e) => setNewCompany({ ...newCompany, annual_revenue: e.target.value })}
+                      placeholder="0"
+                    />
+                    <Input
+                      label="Employee Count"
+                      type="number"
+                      value={newCompany.employee_count}
+                      onChange={(e) => setNewCompany({ ...newCompany, employee_count: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={newCompany.description}
+                      onChange={(e) => setNewCompany({ ...newCompany, description: e.target.value })}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={newCompany.status}
+                      onChange={(e) => setNewCompany({ ...newCompany, status: e.target.value as typeof companyStatuses[number] })}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    >
+                      {companyStatuses.map((status) => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-8 flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    resetForms();
+                  }}
+                  size="lg"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddItem}
+                  size="lg"
+                  disabled={
+                    isSaving ||
+                    (activeView === 'contacts'
+                      ? !newContact.first_name || !newContact.last_name || !newContact.email
+                      : !newCompany.name)
+                  }
+                >
+                  {isSaving ? 'Saving...' : `Add ${activeView === 'contacts' ? 'Contact' : 'Company'}`}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default CRM;
