@@ -214,218 +214,214 @@ const Insiders: React.FC = () => {
         <p className="text-neutral-500">Manage contacts with access to confidential company information</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-8">
+      <div className="space-y-8">
         {/* Market Soundings */}
-        <div>
-          <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
-            <div className="p-4 border-b border-neutral-200">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold text-neutral-800">Market Soundings</h2>
-                <Button
-                  size="sm"
-                  leftIcon={<Plus size={16} />}
-                  onClick={() => setShowSoundingModal(true)}
-                >
-                  Add
-                </Button>
-              </div>
+        <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
+          <div className="p-4 border-b border-neutral-200">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-neutral-800">Market Soundings</h2>
+              <Button
+                size="sm"
+                leftIcon={<Plus size={16} />}
+                onClick={() => setShowSoundingModal(true)}
+              >
+                Add
+              </Button>
             </div>
-            <div className="p-4">
-              {marketSoundings.length > 0 ? (
-                <div className="space-y-2">
-                  {marketSoundings.map((sounding) => (
-                    <div
-                      key={sounding.id}
-                      className="p-3 rounded-lg border border-neutral-200 hover:bg-neutral-50"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-medium text-neutral-800">{sounding.subject}</h3>
-                          <p className="text-sm text-neutral-500 mt-1">{sounding.project_name}</p>
-                        </div>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${
-                          sounding.status === 'Live'
-                            ? 'bg-success-50 text-success-700'
-                            : 'bg-neutral-100 text-neutral-700'
-                        }`}>
-                          {sounding.status}
-                        </span>
+          </div>
+          <div className="p-4">
+            {marketSoundings.length > 0 ? (
+              <div className="space-y-2">
+                {marketSoundings.map((sounding) => (
+                  <div
+                    key={sounding.id}
+                    className="p-3 rounded-lg border border-neutral-200 hover:bg-neutral-50"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-medium text-neutral-800">{sounding.subject}</h3>
+                        <p className="text-sm text-neutral-500 mt-1">{sounding.project_name}</p>
                       </div>
-                      {sounding.description && (
-                        <p className="text-sm text-neutral-600 mt-2 line-clamp-2">
-                          {sounding.description}
-                        </p>
-                      )}
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-100">
-                        <span className="text-xs text-neutral-500">
-                          Created {new Date(sounding.created_at).toLocaleDateString()}
-                        </span>
-                        <button className="p-1 hover:bg-neutral-100 rounded">
-                          <MoreVertical size={14} className="text-neutral-400" />
-                        </button>
-                      </div>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${
+                        sounding.status === 'Live'
+                          ? 'bg-success-50 text-success-700'
+                          : 'bg-neutral-100 text-neutral-700'
+                      }`}>
+                        {sounding.status}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="mx-auto h-8 w-8 text-neutral-300" />
-                  <p className="mt-2 text-sm text-neutral-500">No market soundings</p>
-                </div>
-              )}
-            </div>
+                    {sounding.description && (
+                      <p className="text-sm text-neutral-600 mt-2 line-clamp-2">
+                        {sounding.description}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-100">
+                      <span className="text-xs text-neutral-500">
+                        Created {new Date(sounding.created_at).toLocaleDateString()}
+                      </span>
+                      <button className="p-1 hover:bg-neutral-100 rounded">
+                        <MoreVertical size={14} className="text-neutral-400" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <FileText className="mx-auto h-8 w-8 text-neutral-300" />
+                <p className="mt-2 text-sm text-neutral-500">No market soundings</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Insiders List */}
-        <div>
-          <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex-1 max-w-md">
-                  <Input
-                    placeholder="Search insiders..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    leftIcon={<Search size={18} />}
-                    fullWidth
-                  />
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    leftIcon={<Filter size={16} />}
-                  >
-                    Filter
-                  </Button>
-                  <Button
-                    size="sm"
-                    leftIcon={<Plus size={16} />}
-                    onClick={() => setShowAddModal(true)}
-                  >
-                    Add to List
-                  </Button>
-                </div>
+        <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex-1 max-w-md">
+                <Input
+                  placeholder="Search insiders..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  leftIcon={<Search size={18} />}
+                  fullWidth
+                />
               </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<Filter size={16} />}
+                >
+                  Filter
+                </Button>
+                <Button
+                  size="sm"
+                  leftIcon={<Plus size={16} />}
+                  onClick={() => setShowAddModal(true)}
+                >
+                  Add to List
+                </Button>
+              </div>
+            </div>
 
-              {error && (
-                <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
-                  {error}
-                </div>
-              )}
+            {error && (
+              <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
+                {error}
+              </div>
+            )}
 
-              {isLoading ? (
-                <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : filteredInsiders.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-neutral-200">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact Info</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Company</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Market Soundings</th>
-                        <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredInsiders.map((insider) => (
-                        <tr
-                          key={insider.id}
-                          className="border-b border-neutral-100 hover:bg-neutral-50"
-                        >
-                          <td className="py-3 px-4">
-                            <div className="flex items-center">
-                              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                                <UserRound size={16} />
-                              </div>
-                              <div className="ml-3">
-                                <div className="text-sm font-medium text-neutral-900">
-                                  {insider.first_name} {insider.last_name}
-                                </div>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : filteredInsiders.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-neutral-200">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Contact Info</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Company</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Market Soundings</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredInsiders.map((insider) => (
+                      <tr
+                        key={insider.id}
+                        className="border-b border-neutral-100 hover:bg-neutral-50"
+                      >
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                              <UserRound size={16} />
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-neutral-900">
+                                {insider.first_name} {insider.last_name}
                               </div>
                             </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center text-sm text-neutral-600">
-                                <Mail size={14} className="mr-1" />
-                                {insider.email}
-                              </div>
-                              {insider.phone && (
-                                <div className="flex items-center text-sm text-neutral-600">
-                                  <Phone size={14} className="mr-1" />
-                                  {insider.phone}
-                                </div>
-                              )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center text-sm text-neutral-600">
+                              <Mail size={14} className="mr-1" />
+                              {insider.email}
                             </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            {insider.company_name && (
+                            {insider.phone && (
                               <div className="flex items-center text-sm text-neutral-600">
-                                <Building2 size={14} className="mr-1" />
-                                {insider.company_name}
-                                {insider.job_title && (
-                                  <span className="text-neutral-400 ml-1">
-                                    ({insider.job_title})
-                                  </span>
-                                )}
+                                <Phone size={14} className="mr-1" />
+                                {insider.phone}
                               </div>
                             )}
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-50 text-warning-700">
-                              {insider.type}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="space-y-1">
-                              {insider.soundings && insider.soundings.length > 0 ? (
-                                insider.soundings.map(sounding => (
-                                  <div
-                                    key={sounding.id}
-                                    className="flex items-center space-x-2"
-                                  >
-                                    <span className={`w-2 h-2 rounded-full ${
-                                      sounding.status === 'Live'
-                                        ? 'bg-success-500'
-                                        : 'bg-neutral-300'
-                                    }`} />
-                                    <span className="text-sm text-neutral-600">
-                                      {sounding.subject}
-                                      <span className="text-neutral-400 ml-1">
-                                        ({sounding.project_name})
-                                      </span>
-                                    </span>
-                                  </div>
-                                ))
-                              ) : (
-                                <span className="text-sm text-neutral-500">
-                                  No soundings
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          {insider.company_name && (
+                            <div className="flex items-center text-sm text-neutral-600">
+                              <Building2 size={14} className="mr-1" />
+                              {insider.company_name}
+                              {insider.job_title && (
+                                <span className="text-neutral-400 ml-1">
+                                  ({insider.job_title})
                                 </span>
                               )}
                             </div>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <button className="p-1 hover:bg-neutral-100 rounded-full">
-                              <MoreVertical size={16} className="text-neutral-400" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-neutral-500">No insiders found</p>
-                </div>
-              )}
-            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-50 text-warning-700">
+                            {insider.type}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="space-y-1">
+                            {insider.soundings && insider.soundings.length > 0 ? (
+                              insider.soundings.map(sounding => (
+                                <div
+                                  key={sounding.id}
+                                  className="flex items-center space-x-2"
+                                >
+                                  <span className={`w-2 h-2 rounded-full ${
+                                    sounding.status === 'Live'
+                                      ? 'bg-success-500'
+                                      : 'bg-neutral-300'
+                                  }`} />
+                                  <span className="text-sm text-neutral-600">
+                                    {sounding.subject}
+                                    <span className="text-neutral-400 ml-1">
+                                      ({sounding.project_name})
+                                    </span>
+                                  </span>
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-sm text-neutral-500">
+                                No soundings
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <button className="p-1 hover:bg-neutral-100 rounded-full">
+                            <MoreVertical size={16} className="text-neutral-400" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-neutral-500">No insiders found</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
