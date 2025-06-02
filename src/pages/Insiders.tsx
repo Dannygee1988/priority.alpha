@@ -71,6 +71,9 @@ const Insiders: React.FC = () => {
   const [isCleansing, setIsCleansing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedSoundingToDelete, setSelectedSoundingToDelete] = useState<MarketSounding | null>(null);
+  const [showDeleteSoundingConfirm, setShowDeleteSoundingConfirm] = useState(false);
+  const [isDeletingSounding, setIsDeletingSounding] = useState(false);
   const [editedContact, setEditedContact] = useState({
     first_name: '',
     last_name: '',
@@ -288,6 +291,46 @@ const Insiders: React.FC = () => {
       setError('Failed to delete insider. Please try again.');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteSounding = async () => {
+    if (!selectedSoundingToDelete || !user?.id) return;
+
+    setIsDeletingSounding(true);
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      const { error: deleteError } = await supabase
+        .from('market_soundings')
+        .delete()
+        .eq('id', selectedSoundingToDelete.id)
+        .eq('company_id', companyId);
+
+      if (deleteError) throw deleteError;
+
+      // Update local state
+      setMarketSoundings(soundings => 
+        soundings.filter(s => s.id !== selectedSoundingToDelete.id)
+      );
+      
+      // Also update contacts that were associated with this sounding
+      const updatedContacts = contacts.map(contact => ({
+        ...contact,
+        soundings: contact.soundings?.filter(s => s.id !== selectedSoundingToDelete.id) || []
+      }));
+      setContacts(updatedContacts);
+
+      setShowDeleteSoundingConfirm(false);
+      setSelectedSoundingToDelete(null);
+    } catch (err) {
+      console.error('Error deleting market sounding:', err);
+      setError('Failed to delete market sounding. Please try again.');
+    } finally {
+      setIsDeletingSounding(false);
     }
   };
 
@@ -531,11 +574,24 @@ const Insiders: React.FC = () => {
                             <span className="font-bold">Expected cleanse:</span> {new Date(sounding.expected_cleanse_date).toLocaleDateString()}
                           </p>
                         )}
-                        <div className="mt-4 flex items-center">
+                        <div className="mt-4 flex items-center justify-between">
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                             <UserRound size={12} className="mr-1" />
                             {sounding.insider_count} {sounding.insider_count === 1 ? 'Insider' : 'Insiders'}
                           </span>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-error-600 hover:text-error-700"
+                            leftIcon={<Trash2 size={14} />}
+                            onClick={() => {
+                              setSelectedSoundingToDelete(sounding);
+                              setShowDeleteSoundingConfirm(true);
+                            }}
+                          >
+                            Delete
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -808,7 +864,6 @@ const Insiders: React.FC = () => {
                 <Button
                   onClick={handleSaveEdit}
                   disabled={!editedContact.first_name || !editedContact.last_name || !editedContact.email}
-                
                 >
                   Save Changes
                 </Button>
@@ -1206,8 +1261,48 @@ const Insiders: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Market Sounding Confirmation Modal */}
+      {showDeleteSoundingConfirm && selectedSoundingToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-neutral-800 mb-4">Delete Market Sounding</h2>
+              <p className="text-neutral-600 mb-6">
+                Are you sure you want to delete "{selectedSoundingToDelete.subject}"? This will:
+                <ul className="list-disc ml-6 mt-2">
+                  <li>Remove all insider associations</li>
+                  <li>Delete all related documents</li>
+                  <li>This action cannot be undone</li>
+                </ul>
+              </p>
+
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeleteSoundingConfirm(false);
+                    setSelectedSoundingToDelete(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-error-600 hover:bg-error-700"
+                  onClick={handleDeleteSounding}
+                  isLoading={isDeletingSounding}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default Insiders;
+
+export default Insiders
