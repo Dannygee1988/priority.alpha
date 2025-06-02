@@ -34,6 +34,7 @@ interface MarketSounding {
   status: 'Live' | 'Cleansed';
   created_at: string;
   cleansed_at: string | null;
+  expected_cleanse_date?: string;
 }
 
 const Insiders: React.FC = () => {
@@ -433,37 +434,30 @@ const Insiders: React.FC = () => {
           </div>
           <div className="p-4">
             {marketSoundings.length > 0 ? (
-              <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-4">
                 {marketSoundings.map((sounding) => (
                   <div
                     key={sounding.id}
                     className="p-3 rounded-lg border border-neutral-200 hover:bg-neutral-50"
                   >
                     <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-medium text-neutral-800">{sounding.subject}</h3>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-medium text-neutral-800 truncate">{sounding.subject}</h3>
                         <p className="text-sm text-neutral-500 mt-1">{sounding.project_name}</p>
+                        {sounding.expected_cleanse_date && (
+                          <p className="text-xs text-neutral-400 mt-1 flex items-center">
+                            <Calendar size={12} className="mr-1" />
+                            Expected cleanse: {new Date(sounding.expected_cleanse_date).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${
+                      <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                         sounding.status === 'Live'
                           ? 'bg-success-50 text-success-700'
                           : 'bg-neutral-100 text-neutral-700'
                       }`}>
                         {sounding.status}
                       </span>
-                    </div>
-                    {sounding.description && (
-                      <p className="text-sm text-neutral-600 mt-2 line-clamp-2">
-                        {sounding.description}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-100">
-                      <span className="text-xs text-neutral-500">
-                        Created {new Date(sounding.created_at).toLocaleDateString()}
-                      </span>
-                      <button className="p-1 hover:bg-neutral-100 rounded">
-                        <MoreVertical size={14} className="text-neutral-400" />
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -880,19 +874,19 @@ const Insiders: React.FC = () => {
                   </p>
                 </div>
 
-               <div>
-  <label className="block text-sm font-medium text-neutral-700 mb-1">
-    Expected Cleanse Date
-  </label>
-  <input
-    type="date"
-    value={newSounding.expected_cleanse_date}
-    onChange={(e) => setNewSounding({ ...newSounding, expected_cleanse_date: e.target.value })}
-    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-    min={new Date().toISOString().split('T')[0]}
-    style={{ colorScheme: 'light' }}
-  />
-</div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Expected Cleanse Date
+                  </label>
+                  <input
+                    type="date"
+                    value={newSounding.expected_cleanse_date}
+                    onChange={(e) => setNewSounding({ ...newSounding, expected_cleanse_date: e.target.value })}
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    min={new Date().toISOString().split('T')[0]}
+                    style={{ colorScheme: 'light' }}
+                  />
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
