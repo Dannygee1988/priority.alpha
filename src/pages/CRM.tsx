@@ -15,7 +15,6 @@ interface Contact {
   company_name: string | null;
   job_title: string | null;
   type: string;
-  linkedin_url: string | null;
   last_contacted: string | null;
   created_at: string;
   crm_company_id: string | null;
@@ -80,6 +79,28 @@ const CRM: React.FC = () => {
     'Manufacturing',
     'Construction',
     'Agriculture'
+  ];
+
+  const employeeRanges = [
+    '1-10',
+    '11-50',
+    '51-200',
+    '201-500',
+    '501-1000',
+    '1001-5000',
+    '5001-10000',
+    '10000+'
+  ];
+
+  const revenueRanges = [
+    'Under £1M',
+    '£1M - £5M',
+    '£5M - £10M',
+    '£10M - £50M',
+    '£50M - £100M',
+    '£100M - £500M',
+    '£500M - £1B',
+    'Over £1B'
   ];
 
   const contactTypes = ['Staff', 'Customer', 'Investor', 'Lead', 'Advisor', 'Other'] as const;
@@ -170,8 +191,8 @@ const CRM: React.FC = () => {
           .insert([{
             ...newCompany,
             company_id: companyId,
-            annual_revenue: newCompany.annual_revenue ? Number(newCompany.annual_revenue) : null,
-            employee_count: newCompany.employee_count ? Number(newCompany.employee_count) : null
+            annual_revenue: newCompany.annual_revenue,
+            employee_count: newCompany.employee_count
           }])
           .select()
           .single();
@@ -263,7 +284,7 @@ const CRM: React.FC = () => {
                   <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody>
                 {contacts.map((contact) => (
                   <tr key={contact.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
@@ -536,20 +557,46 @@ const CRM: React.FC = () => {
                   </div>
                   
                   <div className="grid grid-cols-2 gap-6">
-                    <Input
-                      label="Annual Revenue"
-                      type="number"
-                      value={newCompany.annual_revenue}
-                      onChange={(e) => setNewCompany({ ...newCompany, annual_revenue: e.target.value })}
-                      placeholder="0"
-                    />
-                    <Input
-                      label="Employee Count"
-                      type="number"
-                      value={newCompany.employee_count}
-                      onChange={(e) => setNewCompany({ ...newCompany, employee_count: e.target.value })}
-                      placeholder="0"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Annual Revenue
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={newCompany.annual_revenue}
+                          onChange={(e) => setNewCompany({ ...newCompany, annual_revenue: e.target.value })}
+                          className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
+                        >
+                          <option value="">Select revenue range...</option>
+                          {revenueRanges.map((range) => (
+                            <option key={range} value={range}>{range}</option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                          <ChevronDown size={16} className="text-neutral-400" />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Employee Count
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={newCompany.employee_count}
+                          onChange={(e) => setNewCompany({ ...newCompany, employee_count: e.target.value })}
+                          className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
+                        >
+                          <option value="">Select employee range...</option>
+                          {employeeRanges.map((range) => (
+                            <option key={range} value={range}>{range}</option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                          <ChevronDown size={16} className="text-neutral-400" />
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div>
