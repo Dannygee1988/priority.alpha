@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText, Wand2, ChevronDown } from 'lucide-react';
+import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText, Wand2, ChevronDown, PenLine, CheckCircle, Trash2 } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -42,11 +42,25 @@ const Insiders: React.FC = () => {
   const [marketSoundings, setMarketSoundings] = useState<MarketSounding[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showSoundingModal, setShowSoundingModal] = useState(false);
+  const [showCleanseConfirm, setShowCleanseConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [selectedContact, setSelectedContact] = useState<string | null>(null);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [selectedSounding, setSelectedSounding] = useState<string | null>(null);
+  const [isCleansing, setIsCleansing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editedContact, setEditedContact] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    company_name: '',
+    job_title: '',
+    type: 'Investor' as const
+  });
   const [newSounding, setNewSounding] = useState({
     subject: '',
     description: '',
@@ -112,24 +126,136 @@ const Insiders: React.FC = () => {
     }
   };
 
-  const handleDeleteAccount = async (accountId: string) => {
-    if (!user?.id) return;
+  const handleEdit = (contact: Contact) => {
+    setSelectedContact(contact);
+    setEditedContact({
+      first_name: contact.first_name,
+      last_name: contact.last_name,
+      email: contact.email,
+      phone: contact.phone || '',
+      company_name: contact.company_name || '',
+      job_title: contact.job_title || '',
+      type: contact.type as 'Investor'
+    });
+    setShowEditModal(true);
+  };
 
-    setIsDeletingAccount(true);
+  const handleSaveEdit = async () => {
+    if (!selectedContact || !user?.id) return;
+
     try {
-      const { error } = await supabase
-        .from('social_accounts')
-        .delete()
-        .eq('id', accountId);
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
 
-      if (error) throw error;
+      const { error: updateError } = await supabase
+        .from('crm_customers')
+        .update({
+          ...editedContact,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedContact.id)
+        .eq('company_id', companyId);
 
-      setSocialAccounts(accounts => accounts.filter(acc => acc.id !== accountId));
+      if (updateError) throw updateError;
+
+      setContacts(contacts.map(contact =>
+        contact.id === selectedContact.id
+          ? { ...contact, ...editedContact }
+          : contact
+      ));
+      setShowEditModal(false);
+      setSelectedContact(null);
     } catch (err) {
-      console.error('Error deleting social account:', err);
-      setError('Failed to delete social account');
+      console.error('Error updating contact:', err);
+      setError('Failed to update contact. Please try again.');
+    }
+  };
+
+  const handleCleanse = async () => {
+    if (!selectedContact || !user?.id) return;
+
+    setIsCleansing(true);
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      // Update all associated soundings to Cleansed status
+      const soundingIds = selectedContact.soundings?.map(s => s.id) || [];
+      if (soundingIds.length > 0) {
+        const { error: soundingError } = await supabase
+          .from('market_soundings')
+          .update({
+            status: 'Cleansed',
+            cleansed_at: new Date().toISOString()
+          })
+          .in('id', soundingIds);
+
+        if (soundingError) throw soundingError;
+      }
+
+      // Remove insider tag from contact
+      const newTags = (selectedContact.tags || []).filter(tag => tag !== 'insider');
+      const { error: contactError } = await supabase
+        .from('crm_customers')
+        .update({ tags: newTags })
+        .eq('id', selectedContact.id)
+        .eq('company_id', companyId);
+
+      if (contactError) throw contactError;
+
+      // Update local state
+      setContacts(contacts.filter(contact => contact.id !== selectedContact.id));
+      setShowCleanseConfirm(false);
+      setSelectedContact(null);
+    } catch (err) {
+      console.error('Error cleansing insider:', err);
+      setError('Failed to cleanse insider. Please try again.');
     } finally {
-      setIsDeletingAccount(false);
+      setIsCleansing(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedContact || !user?.id) return;
+
+    setIsDeleting(true);
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      // Delete insider_soundings associations first
+      const { error: associationError } = await supabase
+        .from('insider_soundings')
+        .delete()
+        .eq('insider_id', selectedContact.id);
+
+      if (associationError) throw associationError;
+
+      // Remove insider tag from contact
+      const newTags = (selectedContact.tags || []).filter(tag => tag !== 'insider');
+      const { error: contactError } = await supabase
+        .from('crm_customers')
+        .update({ tags: newTags })
+        .eq('id', selectedContact.id)
+        .eq('company_id', companyId);
+
+      if (contactError) throw contactError;
+
+      // Update local state
+      setContacts(contacts.filter(contact => contact.id !== selectedContact.id));
+      setShowDeleteConfirm(false);
+      setSelectedContact(null);
+    } catch (err) {
+      console.error('Error deleting insider:', err);
+      setError('Failed to delete insider. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -429,9 +555,40 @@ const Insiders: React.FC = () => {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <button className="p-1 hover:bg-neutral-100 rounded-full">
-                            <MoreVertical size={16} className="text-neutral-400" />
-                          </button>
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              leftIcon={<PenLine size={16} />}
+                              onClick={() => handleEdit(insider)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              leftIcon={<CheckCircle size={16} />}
+                              className="text-success-600 hover:text-success-700"
+                              onClick={() => {
+                                setSelectedContact(insider);
+                                setShowCleanseConfirm(true);
+                              }}
+                            >
+                              Cleanse
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              leftIcon={<Trash2 size={16} />}
+                              className="text-error-600 hover:text-error-700"
+                              onClick={() => {
+                                setSelectedContact(insider);
+                                setShowDeleteConfirm(true);
+                              }}
+                            >
+                              Delete
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -560,6 +717,153 @@ const Insiders: React.FC = () => {
         </div>
       )}
 
+      {/* Edit Modal */}
+      {showEditModal && selectedContact && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-bold text-neutral-800">Edit Insider</h2>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedContact(null);
+                  }}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <X size={20} className="text-neutral-500" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="First Name"
+                    value={editedContact.first_name}
+                    onChange={(e) => setEditedContact({ ...editedContact, first_name: e.target.value })}
+                    required
+                  />
+                  <Input
+                    label="Last Name"
+                    value={editedContact.last_name}
+                    onChange={(e) => setEditedContact({ ...editedContact, last_name: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <Input
+                  label="Email"
+                  type="email"
+                  value={editedContact.email}
+                  onChange={(e) => setEditedContact({ ...editedContact, email: e.target.value })}
+                  required
+                />
+
+                <Input
+                  label="Phone"
+                  value={editedContact.phone}
+                  onChange={(e) => setEditedContact({ ...editedContact, phone: e.target.value })}
+                />
+
+                <Input
+                  label="Company"
+                  value={editedContact.company_name}
+                  onChange={(e) => setEditedContact({ ...editedContact, company_name: e.target.value })}
+                />
+
+                <Input
+                  label="Job Title"
+                  value={editedContact.job_title}
+                  onChange={(e) => setEditedContact({ ...editedContact, job_title: e.target.value })}
+                />
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedContact(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveEdit}
+                  disabled={!editedContact.first_name || !editedContact.last_name || !editedContact.email}
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cleanse Confirmation Modal */}
+      {showCleanseConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-neutral-800 mb-4">Cleanse Insider</h2>
+              <p className="text-neutral-600 mb-6">
+                Are you sure you want to cleanse this insider? This will:
+                <ul className="list-disc ml-6 mt-2">
+                  <li>Mark all associated market soundings as cleansed</li>
+                  <li>Remove insider status from the contact</li>
+                </ul>
+              </p>
+
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCleanseConfirm(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-success-600 hover:bg-success-700"
+                  onClick={handleCleanse}
+                  isLoading={isCleansing}
+                >
+                  Confirm Cleanse
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-neutral-800 mb-4">Delete Insider</h2>
+              <p className="text-neutral-600 mb-6">
+                Are you sure you want to delete this insider? This will remove their insider status and all market sounding associations.
+              </p>
+
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-error-600 hover:bg-error-700"
+                  onClick={handleDelete}
+                  isLoading={isDeleting}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add Market Sounding Modal */}
       {showSoundingModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -667,3 +971,5 @@ const Insiders: React.FC = () => {
 };
 
 export default Insiders;
+
+export default Insiders
