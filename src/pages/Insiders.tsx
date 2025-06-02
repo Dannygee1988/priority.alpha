@@ -119,9 +119,34 @@ const Insiders: React.FC = () => {
           )
         `)
         .eq('company_id', companyId)
-        .order('created_at', { ascending
-        }
-        )
+        .order('created_at', { ascending: false });
+
+      if (contactsError) throw contactsError;
+      setContacts(contactsData || []);
+
+      // Load market soundings
+      const { data: soundingsData, error: soundingsError } = await supabase
+        .from('market_soundings')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+      if (soundingsError) throw soundingsError;
+      setMarketSoundings(soundingsData || []);
+
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred while loading data');
+    } finally {
+      setIsLoading(false);
     }
-  }
-}
+  };
+
+  return (
+    <div>
+      {/* Component JSX will go here */}
+    </div>
+  );
+};
+
+export default Insiders;
