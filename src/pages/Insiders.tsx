@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Eye, MoreVertical, X, Tag as TagIcon, Trash2, Users, UserRound, Mail, Phone, Building2, ChevronDown, Check, AlertCircle, FileText, Wand2 } from 'lucide-react';
+import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText, Wand2, ChevronDown, Trash2, Users } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +36,7 @@ interface MarketSounding {
   created_at: string;
   cleansed_at: string | null;
   expected_cleanse_date: string | null;
+  insider_count?: number;
 }
 
 const Insiders: React.FC = () => {
@@ -102,15 +103,25 @@ const Insiders: React.FC = () => {
 
       setContacts(transformedContacts);
 
-      // Load market soundings
+      // Load market soundings with insider counts
       const { data: soundingsData, error: soundingsError } = await supabase
         .from('market_soundings')
-        .select('*')
+        .select(`
+          *,
+          insiders:insider_soundings(count)
+        `)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (soundingsError) throw soundingsError;
-      setMarketSoundings(soundingsData || []);
+
+      // Transform the data to include insider count
+      const soundingsWithCounts = soundingsData?.map(sounding => ({
+        ...sounding,
+        insider_count: sounding.insiders?.[0]?.count || 0
+      })) || [];
+
+      setMarketSoundings(soundingsWithCounts);
     } catch (err) {
       console.error('Error loading data:', err);
       setError('Failed to load data. Please try again later.');
@@ -182,7 +193,7 @@ const Insiders: React.FC = () => {
 
       if (soundingError) throw soundingError;
 
-      setMarketSoundings([sounding, ...marketSoundings]);
+      setMarketSoundings([{ ...sounding, insider_count: 0 }, ...marketSoundings]);
       setShowSoundingModal(false);
       setNewSounding({
         subject: '',
@@ -281,7 +292,14 @@ const Insiders: React.FC = () => {
                     <div className="flex items-start justify-between">
                       <div>
                         <h3 className="font-medium text-neutral-800">{sounding.subject}</h3>
-                        <p className="text-sm text-neutral-500 mt-1">{sounding.project_name}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <p className="text-sm text-neutral-500">{sounding.project_name}</p>
+                          <span className="text-sm text-neutral-400">•</span>
+                          <span className="text-sm text-neutral-600 flex items-center">
+                            <Users size={14} className="mr-1" />
+                            {sounding.insider_count} {sounding.insider_count === 1 ? 'Insider' : 'Insiders'}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex items-center space-x-2">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${
