@@ -36,6 +36,7 @@ interface MarketSounding {
   cleansed_at: string | null;
   expected_cleanse_date?: string;
   type: string;
+  insider_count?: number;
 }
 
 const soundingTypes = [
@@ -130,15 +131,25 @@ const Insiders: React.FC = () => {
 
       setContacts(transformedContacts);
 
-      // Load market soundings
+      // Load market soundings with insider count
       const { data: soundingsData, error: soundingsError } = await supabase
         .from('market_soundings')
-        .select('*')
+        .select(`
+          *,
+          insiders:insider_soundings(count)
+        `)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (soundingsError) throw soundingsError;
-      setMarketSoundings(soundingsData || []);
+
+      // Transform the data to include insider count
+      const soundingsWithCount = soundingsData?.map(sounding => ({
+        ...sounding,
+        insider_count: sounding.insiders?.[0]?.count || 0
+      })) || [];
+
+      setMarketSoundings(soundingsWithCount);
     } catch (err) {
       console.error('Error loading data:', err);
       setError('Failed to load data. Please try again later.');
@@ -461,8 +472,17 @@ const Insiders: React.FC = () => {
                   >
                     <div className="flex items-start justify-between">
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-neutral-800 truncate">{sounding.subject}</h3>
-                        <p className="text-sm text-neutral-500 mt-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-bold text-neutral-800 truncate">{sounding.subject}</h3>
+                          <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            sounding.status === 'Live'
+                              ? 'bg-success-50 text-success-700'
+                              : 'bg-neutral-100 text-neutral-700'
+                          }`}>
+                            {sounding.status}
+                          </span>
+                        </div>
+                        <p className="text-sm text-neutral-500">
                           <span className="font-bold">Project:</span> {sounding.project_name}
                         </p>
                         <p className="text-xs text-neutral-400 mt-1">
@@ -474,14 +494,13 @@ const Insiders: React.FC = () => {
                             <span className="font-bold">Expected cleanse:</span> {new Date(sounding.expected_cleanse_date).toLocaleDateString()}
                           </p>
                         )}
+                        <div className="mt-2 flex items-center">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                            <UserRound size={12} className="mr-1" />
+                            {sounding.insider_count} {sounding.insider_count === 1 ? 'Insider' : 'Insiders'}
+                          </span>
+                        </div>
                       </div>
-                      <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                        sounding.status === 'Live'
-                          ? 'bg-success-50 text-success-700'
-                          : 'bg-neutral-100 text-neutral-700'
-                      }`}>
-                        {sounding.status}
-                      </span>
                     </div>
                   </div>
                 ))}
@@ -819,7 +838,6 @@ const Insiders: React.FC = () => {
                 >
                   Delete
                 </Button>
-              
               </div>
             </div>
           </div>
