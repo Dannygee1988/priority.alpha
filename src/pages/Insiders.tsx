@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText, Wand2, ChevronDown, PenLine, CheckCircle, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText, Wand2, ChevronDown, PenLine, CheckCircle, Trash2, Upload, Calendar } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -65,7 +65,9 @@ const Insiders: React.FC = () => {
   const [newSounding, setNewSounding] = useState({
     subject: '',
     description: '',
-    project_name: ''
+    project_name: '',
+    expected_cleanse_date: '',
+    files: [] as File[]
   });
 
   useEffect(() => {
@@ -317,11 +319,15 @@ const Insiders: React.FC = () => {
         throw new Error('No company found');
       }
 
+      // First, create the market sounding
       const { data: sounding, error: soundingError } = await supabase
         .from('market_soundings')
         .insert({
-          ...newSounding,
           company_id: companyId,
+          subject: newSounding.subject,
+          description: newSounding.description,
+          project_name: newSounding.project_name,
+          expected_cleanse_date: newSounding.expected_cleanse_date || null,
           status: 'Live'
         })
         .select()
@@ -329,12 +335,35 @@ const Insiders: React.FC = () => {
 
       if (soundingError) throw soundingError;
 
+      // If there are files, upload them
+      if (newSounding.files.length > 0) {
+        const formData = new FormData();
+        newSounding.files.forEach((file, index) => {
+          formData.append(`file${index}`, file);
+          formData.append(`filename${index}`, file.name);
+        });
+        formData.append('company_id', companyId);
+        formData.append('sounding_id', sounding.id);
+        formData.append('file_count', newSounding.files.length.toString());
+
+        const uploadResponse = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/037b4955-9a5f-4d8d-9be0-c62efaa1371c', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload files');
+        }
+      }
+
       setMarketSoundings([sounding, ...marketSoundings]);
       setShowSoundingModal(false);
       setNewSounding({
         subject: '',
         description: '',
-        project_name: ''
+        project_name: '',
+        expected_cleanse_date: '',
+        files: []
       });
     } catch (err) {
       console.error('Error adding market sounding:', err);
@@ -342,6 +371,23 @@ const Insiders: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      setNewSounding(prev => ({
+        ...prev,
+        files: [...prev.files, ...Array.from(files)]
+      }));
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setNewSounding(prev => ({
+      ...prev,
+      files: prev.files.filter((_, i) => i !== index)
+    }));
   };
 
   const generateProjectName = () => {
@@ -764,7 +810,7 @@ const Insiders: React.FC = () => {
       {/* Add Market Sounding Modal */}
       {showSoundingModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <h2 className="text-xl font-bold text-neutral-800">Add Market Sounding</h2>
@@ -774,7 +820,9 @@ const Insiders: React.FC = () => {
                     setNewSounding({
                       subject: '',
                       description: '',
-                      project_name: ''
+                      project_name: '',
+                      expected_cleanse_date: '',
+                      files: []
                     });
                     setError(null);
                   }}
@@ -815,7 +863,6 @@ const Insiders: React.FC = () => {
                       value={newSounding.project_name}
                       onChange={(e) => setNewSounding({ ...newSounding, project_name: e.target.value })}
                       required
-                      
                       className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                       placeholder="Enter project name"
                     />
@@ -835,6 +882,22 @@ const Insiders: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Expected Cleanse Date
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={newSounding.expected_cleanse_date}
+                      onChange={(e) => setNewSounding({ ...newSounding, expected_cleanse_date: e.target.value })}
+                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400" size={18} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Description
                   </label>
                   <textarea
@@ -843,6 +906,56 @@ const Insiders: React.FC = () => {
                     className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary h-32 resize-none"
                     placeholder="Enter a description of the market sounding..."
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Supporting Documents
+                  </label>
+                  <div className="border-2 border-dashed border-neutral-200 rounded-lg p-4">
+                    <div className="flex flex-col items-center justify-center">
+                      <Upload className="h-8 w-8 text-neutral-400 mb-2" />
+                      <p className="text-sm text-neutral-600 mb-2">
+                        Drag & drop files here or click to browse
+                      </p>
+                      <input
+                        type="file"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        multiple
+                        id="file-upload"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                      >
+                        Browse Files
+                      </Button>
+                    </div>
+
+                    {newSounding.files.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        {newSounding.files.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-neutral-50 p-2 rounded-md"
+                          >
+                            <div className="flex items-center">
+                              <FileText size={16} className="text-neutral-500 mr-2" />
+                              <span className="text-sm text-neutral-700">{file.name}</span>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveFile(index)}
+                              className="text-neutral-400 hover:text-error-600"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -854,7 +967,9 @@ const Insiders: React.FC = () => {
                     setNewSounding({
                       subject: '',
                       description: '',
-                      project_name: ''
+                      project_name: '',
+                      expected_cleanse_date: '',
+                      files: []
                     });
                     setError(null);
                   }}
