@@ -26,8 +26,8 @@ interface Company {
   industry: string | null;
   website: string | null;
   description: string | null;
-  annual_revenue: number | null;
-  employee_count: number | null;
+  annual_revenue: string | null;
+  employee_count: string | null;
   status: string;
   created_at: string;
 }
@@ -51,7 +51,6 @@ const CRM: React.FC = () => {
     company_name: '',
     job_title: '',
     type: 'Customer' as const,
-    linkedin_url: '',
     crm_company_id: '' as string | null
   });
 
@@ -60,9 +59,9 @@ const CRM: React.FC = () => {
     industry: '',
     website: '',
     description: '',
-    annual_revenue: '' as string | number,
-    employee_count: '' as string | number,
-    status: 'active' as const
+    annual_revenue: '',
+    employee_count: '',
+    status: 'customer' as const
   });
 
   const industries = [
@@ -104,7 +103,7 @@ const CRM: React.FC = () => {
   ];
 
   const contactTypes = ['Staff', 'Customer', 'Investor', 'Lead', 'Advisor', 'Other'] as const;
-  const companyStatuses = ['active', 'inactive', 'lead', 'prospect'] as const;
+  const companyStatuses = ['customer', 'competitor', 'supplier', 'lead', 'closed'] as const;
 
   useEffect(() => {
     loadData();
@@ -146,7 +145,6 @@ const CRM: React.FC = () => {
       company_name: '',
       job_title: '',
       type: 'Customer',
-      linkedin_url: '',
       crm_company_id: null
     });
     setNewCompany({
@@ -156,7 +154,7 @@ const CRM: React.FC = () => {
       description: '',
       annual_revenue: '',
       employee_count: '',
-      status: 'active'
+      status: 'customer'
     });
   };
 
@@ -380,11 +378,15 @@ const CRM: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        company.status === 'active'
+                        company.status === 'customer'
                           ? 'bg-green-50 text-green-700'
-                          : company.status === 'inactive'
+                          : company.status === 'closed'
                           ? 'bg-gray-100 text-gray-700'
-                          : 'bg-blue-50 text-blue-700'
+                          : company.status === 'competitor'
+                          ? 'bg-red-50 text-red-700'
+                          : company.status === 'supplier'
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'bg-yellow-50 text-yellow-700'
                       }`}>
                         {company.status}
                       </span>
@@ -488,33 +490,24 @@ const CRM: React.FC = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-2">
-                        Type
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={newContact.type}
-                          onChange={(e) => setNewContact({ ...newContact, type: e.target.value as typeof contactTypes[number] })}
-                          className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
-                        >
-                          {contactTypes.map((type) => (
-                            <option key={type} value={type}>{type}</option>
-                          ))}
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                          <ChevronDown size={16} className="text-neutral-400" />
-                        </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Type
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={newContact.type}
+                        onChange={(e) => setNewContact({ ...newContact, type: e.target.value as typeof contactTypes[number] })}
+                        className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
+                      >
+                        {contactTypes.map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <ChevronDown size={16} className="text-neutral-400" />
                       </div>
                     </div>
-                    <Input
-                      label="LinkedIn URL"
-                      type="url"
-                      value={newContact.linkedin_url}
-                      onChange={(e) => setNewContact({ ...newContact, linkedin_url: e.target.value })}
-                      placeholder="https://linkedin.com/in/username"
-                    />
                   </div>
                 </div>
               ) : (
