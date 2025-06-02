@@ -442,12 +442,14 @@ const Insiders: React.FC = () => {
                   >
                     <div className="flex items-start justify-between">
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-medium text-neutral-800 truncate">{sounding.subject}</h3>
-                        <p className="text-sm text-neutral-500 mt-1">{sounding.project_name}</p>
+                        <h3 className="font-bold text-neutral-800 truncate">{sounding.subject}</h3>
+                        <p className="text-sm text-neutral-500 mt-1">
+                          <span className="font-bold">Project:</span> {sounding.project_name}
+                        </p>
                         {sounding.expected_cleanse_date && (
                           <p className="text-xs text-neutral-400 mt-1 flex items-center">
                             <Calendar size={12} className="mr-1" />
-                            Expected cleanse: {new Date(sounding.expected_cleanse_date).toLocaleDateString()}
+                            <span className="font-bold">Expected cleanse:</span> {new Date(sounding.expected_cleanse_date).toLocaleDateString()}
                           </p>
                         )}
                       </div>
