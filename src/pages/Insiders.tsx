@@ -297,6 +297,7 @@ const Insiders: React.FC = () => {
       return;
     }
 
+    setIsSaving(true);
     try {
       const { error: insertError } = await supabase
         .from('insider_soundings')
@@ -327,9 +328,11 @@ const Insiders: React.FC = () => {
       setSelectedContact(null);
       setSelectedSounding(null);
       loadData();
-    } catch (error) {
-      console.error('Error adding insider:', error);
+    } catch (err) {
+      console.error('Error adding insider:', err);
       setError('Failed to add insider. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -540,7 +543,7 @@ const Insiders: React.FC = () => {
                   leftIcon={<Plus size={16} />}
                   onClick={() => setShowAddModal(true)}
                 >
-                  Add to List
+                  Add Insider
                 </Button>
               </div>
             </div>
@@ -1051,5 +1054,3 @@ const Insiders: React.FC = () => {
 };
 
 export default Insiders;
-
-export default Insiders
