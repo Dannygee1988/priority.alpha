@@ -442,13 +442,16 @@ const Insiders: React.FC = () => {
                   >
                     <div className="flex items-start justify-between">
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm text-neutral-500 mb-1">Title:</div>
-                        <h3 className="font-medium text-neutral-800 truncate">{sounding.subject}</h3>
-                        <p className="text-sm text-neutral-500 mt-2">Project: {sounding.project_name}</p>
+                        <div className="text-sm text-neutral-600 mb-1">
+                          <strong>Title:</strong> {sounding.subject}
+                        </div>
+                        <div className="text-sm text-neutral-500">
+                          <strong>Project:</strong> {sounding.project_name}
+                        </div>
                         {sounding.expected_cleanse_date && (
-                          <p className="text-xs text-neutral-400 mt-2">
-                            Expected cleanse: {new Date(sounding.expected_cleanse_date).toLocaleDateString()}
-                          </p>
+                          <div className="text-xs text-neutral-400 mt-2">
+                            <strong>Expected Cleanse:</strong> {new Date(sounding.expected_cleanse_date).toLocaleDateString()}
+                          </div>
                         )}
                       </div>
                       <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
