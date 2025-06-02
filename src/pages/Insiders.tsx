@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText, Wand2 } from 'lucide-react';
+import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText, Wand2 } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -426,6 +426,109 @@ const Insiders: React.FC = () => {
         </div>
       </div>
 
+      {/* Add to Insider List Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-bold text-neutral-800">Add to Insider List</h2>
+                <button
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setSelectedContact(null);
+                    setSelectedSounding(null);
+                  }}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <X size={20} className="text-neutral-500" />
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Select Contact
+                  </label>
+                  <select
+                    value={selectedContact || ''}
+                    onChange={(e) => setSelectedContact(e.target.value)}
+                    className="w-full px-4 py-2 pr-8 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3E%3Cpath stroke=\'%236B7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'m6 8 4 4 4-4\'/%3E%3C/svg%3E')] bg-[length:1.25rem_1.25rem] bg-[position:right_0.5rem_center] bg-no-repeat"
+                  >
+                    <option value="">Select a contact...</option>
+                    {contacts
+                      .filter(contact => !contact.tags?.includes('insider'))
+                      .map((contact) => (
+                        <option key={contact.id} value={contact.id}>
+                          {contact.first_name} {contact.last_name} - {contact.email}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Select Market Sounding
+                  </label>
+                  <select
+                    value={selectedSounding || ''}
+                    onChange={(e) => setSelectedSounding(e.target.value)}
+                    className="w-full px-4 py-2 pr-8 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3E%3Cpath stroke=\'%236B7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'m6 8 4 4 4-4\'/%3E%3C/svg%3E')] bg-[length:1.25rem_1.25rem] bg-[position:right_0.5rem_center] bg-no-repeat"
+                  >
+                    <option value="">Select a market sounding...</option>
+                    {marketSoundings
+                      .filter(sounding => sounding.status === 'Live')
+                      .map((sounding) => (
+                        <option key={sounding.id} value={sounding.id}>
+                          {sounding.subject} ({sounding.project_name})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
+                  <div className="flex">
+                    <AlertCircle className="h-5 w-5 text-warning-500 mt-0.5" />
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-warning-800">Important Notice</h3>
+                      <div className="mt-2 text-sm text-warning-700">
+                        <p>
+                          By adding this contact to the insider list, you confirm that:
+                        </p>
+                        <ul className="list-disc ml-4 mt-2 space-y-1">
+                          <li>The contact has been properly briefed about their insider obligations</li>
+                          <li>They understand the confidential nature of the information</li>
+                          <li>They agree to maintain confidentiality</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setSelectedContact(null);
+                    setSelectedSounding(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddInsider}
+                  disabled={!selectedContact || !selectedSounding}
+                >
+                  Add to Insider List
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add Market Sounding Modal */}
       {showSoundingModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -522,109 +625,6 @@ const Insiders: React.FC = () => {
                   disabled={!newSounding.subject || !newSounding.project_name}
                 >
                   Create Market Sounding
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add to Insider List Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <h2 className="text-xl font-bold text-neutral-800">Add to Insider List</h2>
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setSelectedContact(null);
-                    setSelectedSounding(null);
-                  }}
-                  className="p-1 hover:bg-neutral-100 rounded-full"
-                >
-                  <X size={20} className="text-neutral-500" />
-                </button>
-              </div>
-              
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Select Contact
-                  </label>
-                  <select
-                    value={selectedContact || ''}
-                    onChange={(e) => setSelectedContact(e.target.value)}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  >
-                    <option value="">Select a contact...</option>
-                    {contacts
-                      .filter(contact => !contact.tags?.includes('insider'))
-                      .map((contact) => (
-                        <option key={contact.id} value={contact.id}>
-                          {contact.first_name} {contact.last_name} - {contact.email}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Select Market Sounding
-                  </label>
-                  <select
-                    value={selectedSounding || ''}
-                    onChange={(e) => setSelectedSounding(e.target.value)}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  >
-                    <option value="">Select a market sounding...</option>
-                    {marketSoundings
-                      .filter(sounding => sounding.status === 'Live')
-                      .map((sounding) => (
-                        <option key={sounding.id} value={sounding.id}>
-                          {sounding.subject} ({sounding.project_name})
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
-                  <div className="flex">
-                    <AlertCircle className="h-5 w-5 text-warning-500 mt-0.5" />
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-warning-800">Important Notice</h3>
-                      <div className="mt-2 text-sm text-warning-700">
-                        <p>
-                          By adding this contact to the insider list, you confirm that:
-                        </p>
-                        <ul className="list-disc ml-4 mt-2 space-y-1">
-                          <li>The contact has been properly briefed about their insider obligations</li>
-                          <li>They understand the confidential nature of the information</li>
-                          <li>They agree to maintain confidentiality</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setSelectedContact(null);
-                    setSelectedSounding(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddInsider}
-                  disabled={!selectedContact || !selectedSounding}
-                >
-                  Add to Insider List
                 </Button>
               </div>
             </div>
