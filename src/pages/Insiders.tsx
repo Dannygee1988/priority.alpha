@@ -52,6 +52,7 @@ const Insiders: React.FC = () => {
   const [selectedSounding, setSelectedSounding] = useState<string | null>(null);
   const [isCleansing, setIsCleansing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editedContact, setEditedContact] = useState({
     first_name: '',
     last_name: '',
@@ -302,7 +303,13 @@ const Insiders: React.FC = () => {
   };
 
   const handleAddSounding = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !newSounding.subject || !newSounding.project_name) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
 
     try {
       const companyId = await getUserCompany(user.id);
@@ -332,6 +339,8 @@ const Insiders: React.FC = () => {
     } catch (err) {
       console.error('Error adding market sounding:', err);
       setError('Failed to add market sounding. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -745,6 +754,119 @@ const Insiders: React.FC = () => {
                   isLoading={isDeleting}
                 >
                   Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Market Sounding Modal */}
+      {showSoundingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-bold text-neutral-800">Add Market Sounding</h2>
+                <button
+                  onClick={() => {
+                    setShowSoundingModal(false);
+                    setNewSounding({
+                      subject: '',
+                      description: '',
+                      project_name: ''
+                    });
+                    setError(null);
+                  }}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <X size={20} className="text-neutral-500" />
+                </button>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Subject <span className="text-error-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newSounding.subject}
+                    onChange={(e) => setNewSounding({ ...newSounding, subject: e.target.value })}
+                    required
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                    placeholder="Enter subject"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Project Name <span className="text-error-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={newSounding.project_name}
+                      onChange={(e) => setNewSounding({ ...newSounding, project_name: e.target.value })}
+                      required
+                      
+                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                      placeholder="Enter project name"
+                    />
+                    <button
+                      type="button"
+                      onClick={generateProjectName}
+                      title="Generate random project name"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors"
+                    >
+                      <Wand2 className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Click the magic wand to generate a random project name
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={newSounding.description}
+                    onChange={(e) => setNewSounding({ ...newSounding, description: e.target.value })}
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary h-32 resize-none"
+                    placeholder="Enter a description of the market sounding..."
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowSoundingModal(false);
+                    setNewSounding({
+                      subject: '',
+                      description: '',
+                      project_name: ''
+                    });
+                    setError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddSounding}
+                  disabled={!newSounding.subject || !newSounding.project_name || isSaving}
+                  isLoading={isSaving}
+                >
+                  Create Market Sounding
                 </Button>
               </div>
             </div>
