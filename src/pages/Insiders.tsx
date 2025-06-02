@@ -607,7 +607,7 @@ const Insiders: React.FC = () => {
       {/* Edit Modal */}
       {showEditModal && selectedContact && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
                 <h2 className="text-xl font-bold text-neutral-800">Edit Insider</h2>
@@ -623,23 +623,19 @@ const Insiders: React.FC = () => {
               </div>
 
               <div className="space-y-4">
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <Input
-                      label="First Name"
-                      value={editedContact.first_name}
-                      onChange={(e) => setEditedContact({ ...editedContact, first_name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Input
-                      label="Last Name"
-                      value={editedContact.last_name}
-                      onChange={(e) => setEditedContact({ ...editedContact, last_name: e.target.value })}
-                      required
-                    />
-                  </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="First Name"
+                    value={editedContact.first_name}
+                    onChange={(e) => setEditedContact({ ...editedContact, first_name: e.target.value })}
+                    required
+                  />
+                  <Input
+                    label="Last Name"
+                    value={editedContact.last_name}
+                    onChange={(e) => setEditedContact({ ...editedContact, last_name: e.target.value })}
+                    required
+                  />
                 </div>
 
                 <Input
@@ -656,17 +652,18 @@ const Insiders: React.FC = () => {
                   onChange={(e) => setEditedContact({ ...editedContact, phone: e.target.value })}
                 />
 
-                <Input
-                  label="Company"
-                  value={editedContact.company_name}
-                  onChange={(e) => setEditedContact({ ...editedContact, company_name: e.target.value })}
-                />
-
-                <Input
-                  label="Job Title"
-                  value={editedContact.job_title}
-                  onChange={(e) => setEditedContact({ ...editedContact, job_title: e.target.value })}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="Company"
+                    value={editedContact.company_name}
+                    onChange={(e) => setEditedContact({ ...editedContact, company_name: e.target.value })}
+                  />
+                  <Input
+                    label="Job Title"
+                    value={editedContact.job_title}
+                    onChange={(e) => setEditedContact({ ...editedContact, job_title: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div className="mt-6 flex justify-end space-x-3">
@@ -748,109 +745,6 @@ const Insiders: React.FC = () => {
                   isLoading={isDeleting}
                 >
                   Delete
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Market Sounding Modal */}
-      {showSoundingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <h2 className="text-xl font-bold text-neutral-800">Add Market Sounding</h2>
-                <button
-                  onClick={() => {
-                    setShowSoundingModal(false);
-                    setNewSounding({
-                      subject: '',
-                      description: '',
-                      project_name: ''
-                    });
-                  }}
-                  className="p-1 hover:bg-neutral-100 rounded-full"
-                >
-                  <X size={20} className="text-neutral-500" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Subject
-                  </label>
-                  <input
-                    type="text"
-                    value={newSounding.subject}
-                    onChange={(e) => setNewSounding({ ...newSounding, subject: e.target.value })}
-                    required
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                    placeholder="Enter subject"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Project Name
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={newSounding.project_name}
-                      onChange={(e) => setNewSounding({ ...newSounding, project_name: e.target.value })}
-                      required
-                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                      placeholder="Enter project name"
-                    />
-                    <button
-                      type="button"
-                      onClick={generateProjectName}
-                      title="Generate random project name"
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors"
-                    >
-                      <Wand2 className="h-5 w-5" />
-                    </button>
-                  </div>
-                  <p className="mt-1 text-xs text-neutral-500">
-                    Click the magic wand to generate a random project name
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    value={newSounding.description}
-                    onChange={(e) => setNewSounding({ ...newSounding, description: e.target.value })}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary h-32 resize-none"
-                    placeholder="Enter a description of the market sounding..."
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowSoundingModal(false);
-                    setNewSounding({
-                      subject: '',
-                      description: '',
-                      project_name: ''
-                    });
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddSounding}
-                  disabled={!newSounding.subject || !newSounding.project_name}
-                >
-                  Create Market Sounding
                 </Button>
               </div>
             </div>
