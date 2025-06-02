@@ -294,10 +294,8 @@ const Insiders: React.FC = () => {
                         <h3 className="font-medium text-neutral-800">{sounding.subject}</h3>
                         <div className="flex items-center space-x-2 mt-1">
                           <p className="text-sm text-neutral-500">{sounding.project_name}</p>
-                          <span className="text-sm text-neutral-400">•</span>
-                          <span className="text-sm text-neutral-600 flex items-center">
-                            <Users size={14} className="mr-1" />
-                            {sounding.insider_count} {sounding.insider_count === 1 ? 'Insider' : 'Insiders'}
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                            {sounding.insider_count}
                           </span>
                         </div>
                       </div>
