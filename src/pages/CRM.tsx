@@ -3,7 +3,7 @@ import { Plus, Search, Filter, MoreVertical, Mail, Phone, Building2, X, Tag as T
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
-import { getUserCompany } from '../lib/api';
+import { getUserCompany, getCustomers, getCompanies } from '../lib/api';
 import { supabase } from '../lib/supabase';
 
 interface Contact {
