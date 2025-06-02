@@ -205,8 +205,8 @@ const Insiders: React.FC = () => {
     }
   };
 
-  const handleCleanse = async () => {
-    if (!selectedContact || !user?.id) return;
+  const handleCleanseSounding = async (soundingId: string) => {
+    if (!user?.id) return;
 
     setIsCleansing(true);
     try {
@@ -215,39 +215,75 @@ const Insiders: React.FC = () => {
         throw new Error('No company found');
       }
 
-      // Update all associated soundings to Cleansed status
-      const soundingIds = selectedContact.soundings?.map(s => s.id) || [];
-      if (soundingIds.length > 0) {
-        const { error: soundingError } = await supabase
-          .from('market_soundings')
-          .update({
-            status: 'Cleansed',
-            cleansed_at: new Date().toISOString()
-          })
-          .in('id', soundingIds);
-
-        if (soundingError) throw soundingError;
-      }
-
-      // Remove insider tag from contact
-      const newTags = (selectedContact.tags || []).filter(tag => tag !== 'insider');
-      const { error: contactError } = await supabase
-        .from('crm_customers')
-        .update({ tags: newTags })
-        .eq('id', selectedContact.id)
+      // Update the market sounding status
+      const { error: soundingError } = await supabase
+        .from('market_soundings')
+        .update({
+          status: 'Cleansed',
+          cleansed_at: new Date().toISOString()
+        })
+        .eq('id', soundingId)
         .eq('company_id', companyId);
 
-      if (contactError) throw contactError;
+      if (soundingError) throw soundingError;
 
       // Update local state
-      setContacts(contacts.filter(contact => contact.id !== selectedContact.id));
-      setShowCleanseConfirm(false);
-      setSelectedContact(null);
+      setMarketSoundings(soundings => 
+        soundings.map(sounding =>
+          sounding.id === soundingId
+            ? { ...sounding, status: 'Cleansed', cleansed_at: new Date().toISOString() }
+            : sounding
+        )
+      );
+
+      // Check if any contacts are no longer insiders
+      const { data: insiderSoundings, error: insiderError } = await supabase
+        .from('insider_soundings')
+        .select('insider_id')
+        .eq('sounding_id', soundingId);
+
+      if (insiderError) throw insiderError;
+
+      // For each insider, check if they have any other live soundings
+      for (const { insider_id } of insiderSoundings || []) {
+        const { data: otherSoundings, error: checkError } = await supabase
+          .from('insider_soundings')
+          .select('sounding_id')
+          .eq('insider_id', insider_id)
+          .neq('sounding_id', soundingId);
+
+        if (checkError) throw checkError;
+
+        // If this was their only sounding, remove the insider tag
+        if (!otherSoundings?.length) {
+          const { data: contact, error: contactError } = await supabase
+            .from('crm_customers')
+            .select('tags')
+            .eq('id', insider_id)
+            .single();
+
+          if (contactError) throw contactError;
+
+          const newTags = (contact?.tags || []).filter(tag => tag !== 'insider');
+          
+          const { error: updateError } = await supabase
+            .from('crm_customers')
+            .update({ tags: newTags })
+            .eq('id', insider_id)
+            .eq('company_id', companyId);
+
+          if (updateError) throw updateError;
+        }
+      }
+
+      // Reload data to refresh the UI
+      await loadData();
     } catch (err) {
-      console.error('Error cleansing insider:', err);
-      setError('Failed to cleanse insider. Please try again.');
+      console.error('Error cleansing market sounding:', err);
+      setError('Failed to cleanse market sounding. Please try again.');
     } finally {
       setIsCleansing(false);
+      setShowCleanseConfirm(false);
     }
   };
 
@@ -537,6 +573,19 @@ const Insiders: React.FC = () => {
                             {sounding.insider_count} {sounding.insider_count === 1 ? 'Insider' : 'Insiders'}
                           </span>
                         </div>
+                        {sounding.status === 'Live' && (
+                          <div className="mt-4 flex justify-end">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-success-600 hover:text-success-700"
+                              onClick={() => handleCleanseSounding(sounding.id)}
+                            >
+                              <Check size={16} className="mr-1" />
+                              Cleanse
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -696,18 +745,6 @@ const Insiders: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              leftIcon={<CheckCircle size={16} />}
-                              className="text-success-600 hover:text-success-700"
-                              onClick={() => {
-                                setSelectedContact(insider);
-                                setShowCleanseConfirm(true);
-                              }}
-                            >
-                              Cleanse
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
                               leftIcon={<Trash2 size={16} />}
                               className="text-error-600 hover:text-error-700"
                               onClick={() => {
@@ -781,433 +818,4 @@ const Insiders: React.FC = () => {
                   onChange={(e) => setEditedContact({ ...editedContact, phone: e.target.value })}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Company"
-                    value={editedContact.company_name}
-                    onChange={(e) => setEditedContact({ ...editedContact, company_name: e.target.value })}
-                  />
-                  <Input
-                    label="Job Title"
-                    value={editedContact.job_title}
-                    onChange={(e) => setEditedContact({ ...editedContact, job_title: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setSelectedContact(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSaveEdit}
-                  disabled={!editedContact.first_name || !editedContact.last_name || !editedContact.email}
-                
-                >
-                  Save Changes
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Cleanse Confirmation Modal */}
-      {showCleanseConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-neutral-800 mb-4">Cleanse Insider</h2>
-              <p className="text-neutral-600 mb-6">
-                Are you sure you want to cleanse this insider? This will:
-                <ul className="list-disc ml-6 mt-2">
-                  <li>Mark all associated market soundings as cleansed</li>
-                  <li>Remove insider status from the contact</li>
-                </ul>
-              </p>
-
-              <div className="flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowCleanseConfirm(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="bg-success-600 hover:bg-success-700"
-                  onClick={handleCleanse}
-                  isLoading={isCleansing}
-                >
-                  Confirm Cleanse
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-neutral-800 mb-4">Delete Insider</h2>
-              <p className="text-neutral-600 mb-6">
-                Are you sure you want to delete this insider? This will remove their insider status and all market sounding associations.
-              </p>
-
-              <div className="flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDeleteConfirm(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="bg-error-600 hover:bg-error-700"
-                  onClick={handleDelete}
-                  isLoading={isDeleting}
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Market Sounding Modal */}
-      {showSoundingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <h2 className="text-xl font-bold text-neutral-800">Add Market Sounding</h2>
-                <button
-                  onClick={() => {
-                    setShowSoundingModal(false);
-                    setNewSounding({
-                      subject: '',
-                      description: '',
-                      project_name: '',
-                      expected_cleanse_date: '',
-                      type: 'Inside Information',
-                      files: []
-                    });
-                    setError(null);
-                  }}
-                  className="p-1 hover:bg-neutral-100 rounded-full"
-                >
-                  <X size={20} className="text-neutral-500" />
-                </button>
-              </div>
-
-              {error && (
-                <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Type <span className="text-error-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={newSounding.type}
-                      onChange={(e) => setNewSounding({ ...newSounding, type: e.target.value as SoundingType })}
-                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
-                      required
-                    >
-                      {soundingTypes.map((type) => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDown size={16} className="text-neutral-400" />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Subject <span className="text-error-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={newSounding.subject}
-                    onChange={(e) => setNewSounding({ ...newSounding, subject: e.target.value })}
-                    required
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                    placeholder="Enter subject"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Project Name <span className="text-error-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={newSounding.project_name}
-                      onChange={(e) => setNewSounding({ ...newSounding, project_name: e.target.value })}
-                      required
-                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                      placeholder="Enter project name"
-                    />
-                    <button
-                      type="button"
-                      onClick={generateProjectName}
-                      title="Generate random project name"
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors"
-                    >
-                      <Wand2 className="h-5 w-5" />
-                    </button>
-                  </div>
-                  <p className="mt-1 text-xs text-neutral-500">
-                    Click the magic wand to generate a random project name
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Expected Cleanse Date
-                  </label>
-                  <input
-                    type="date"
-                    value={newSounding.expected_cleanse_date}
-                    onChange={(e) => setNewSounding({ ...newSounding, expected_cleanse_date: e.target.value })}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                    min={new Date().toISOString().split('T')[0]}
-                    style={{ colorScheme: 'light' }}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    value={newSounding.description}
-                    onChange={(e) => setNewSounding({ ...newSounding, description: e.target.value })}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary h-32 resize-none"
-                    placeholder="Enter a description of the market sounding..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Supporting Documents
-                  </label>
-                  <div className="border-2 border-dashed border-neutral-200 rounded-lg p-4">
-                    <div className="flex flex-col items-center justify-center">
-                      <Upload className="h-8 w-8 text-neutral-400 mb-2" />
-                      <p className="text-sm text-neutral-600 mb-2">
-                        Drag & drop files here or click to browse
-                      </p>
-                      <input
-                        type="file"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                        multiple
-                        id="file-upload"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => document.getElementById('file-upload')?.click()}
-                      >
-                        Browse Files
-                      </Button>
-                    </div>
-
-                    {newSounding.files.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        {newSounding.files.map((file, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between bg-neutral-50 p-2 rounded-md"
-                          >
-                            <div className="flex items-center">
-                              <FileText size={16} className="text-neutral-500 mr-2" />
-                              <span className="text-sm text-neutral-700">{file.name}</span>
-                            </div>
-                            <button
-                              onClick={() => handleRemoveFile(index)}
-                              className="text-neutral-400 hover:text-error-600"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowSoundingModal(false);
-                    setNewSounding({
-                      subject: '',
-                      description: '',
-                      project_name: '',
-                      expected_cleanse_date: '',
-                      type: 'Inside Information',
-                      files: []
-                    });
-                    setError(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddSounding}
-                  disabled={!newSounding.subject || !newSounding.project_name || isSaving}
-                  isLoading={isSaving}
-                >
-                  Create Market Sounding
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Insider Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <h2 className="text-xl font-bold text-neutral-800">Add to Insider List</h2>
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setSelectedContact(null);
-                    setSelectedSounding(null);
-                    setError(null);
-                  }}
-                  className="p-1 hover:bg-neutral-100 rounded-full"
-                >
-                  <X size={20} className="text-neutral-500" />
-                </button>
-              </div>
-              
-              {error && (
-                <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Select Contact
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={selectedContact || ''}
-                      onChange={(e) => setSelectedContact(e.target.value)}
-                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
-                    >
-                      <option value="">Select a contact...</option>
-                      {contacts
-                        .filter(contact => !contact.tags?.includes('insider'))
-                        .map((contact) => (
-                          <option key={contact.id} value={contact.id}>
-                            {contact.first_name} {contact.last_name} - {contact.email}
-                          </option>
-                        ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDown size={16} className="text-neutral-400" />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Select Market Sounding
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={selectedSounding || ''}
-                      onChange={(e) => setSelectedSounding(e.target.value)}
-                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
-                    >
-                      <option value="">Select a market sounding...</option>
-                      {marketSoundings
-                        .filter(sounding => sounding.status === 'Live')
-                        .map((sounding) => (
-                          <option key={sounding.id} value={sounding.id}>
-                            {sounding.subject} ({sounding.project_name})
-                          </option>
-                        ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDown size={16} className="text-neutral-400" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
-                  <div className="flex">
-                    <AlertCircle className="h-5 w-5 text-warning-500 mt-0.5" />
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-warning-800">Important Notice</h3>
-                      <div className="mt-2 text-sm text-warning-700">
-                        <p>
-                          By adding this contact to the insider list, you confirm that:
-                        </p>
-                        <ul className="list-disc ml-4 mt-2 space-y-1">
-                          <li>The contact has been properly briefed about their insider obligations</li>
-                          <li>They understand the confidential nature of the information</li>
-                          <li>They agree to maintain confidentiality</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setSelectedContact(null);
-                    setSelectedSounding(null);
-                    setError(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddInsider}
-                  disabled={!selectedContact || !selectedSounding || isSaving}
-                  isLoading={isSaving}
-                >
-                  Add to Insider List
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default Insiders;
+                <div className="grid gri
