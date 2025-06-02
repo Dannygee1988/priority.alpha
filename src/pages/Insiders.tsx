@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText, Wand2 } from 'lucide-react';
+import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText, Wand2, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -109,6 +109,27 @@ const Insiders: React.FC = () => {
       setError('Failed to load data. Please try again later.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async (accountId: string) => {
+    if (!user?.id) return;
+
+    setIsDeletingAccount(true);
+    try {
+      const { error } = await supabase
+        .from('social_accounts')
+        .delete()
+        .eq('id', accountId);
+
+      if (error) throw error;
+
+      setSocialAccounts(accounts => accounts.filter(acc => acc.id !== accountId));
+    } catch (err) {
+      console.error('Error deleting social account:', err);
+      setError('Failed to delete social account');
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
@@ -450,40 +471,50 @@ const Insiders: React.FC = () => {
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Select Contact
                   </label>
-                  <select
-                    value={selectedContact || ''}
-                    onChange={(e) => setSelectedContact(e.target.value)}
-                    className="w-full px-4 py-2 pr-8 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3E%3Cpath stroke=\'%236B7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'m6 8 4 4 4-4\'/%3E%3C/svg%3E')] bg-[length:1.25rem_1.25rem] bg-[position:right_0.5rem_center] bg-no-repeat"
-                  >
-                    <option value="">Select a contact...</option>
-                    {contacts
-                      .filter(contact => !contact.tags?.includes('insider'))
-                      .map((contact) => (
-                        <option key={contact.id} value={contact.id}>
-                          {contact.first_name} {contact.last_name} - {contact.email}
-                        </option>
-                      ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={selectedContact || ''}
+                      onChange={(e) => setSelectedContact(e.target.value)}
+                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
+                    >
+                      <option value="">Select a contact...</option>
+                      {contacts
+                        .filter(contact => !contact.tags?.includes('insider'))
+                        .map((contact) => (
+                          <option key={contact.id} value={contact.id}>
+                            {contact.first_name} {contact.last_name} - {contact.email}
+                          </option>
+                        ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDown size={16} className="text-neutral-400" />
+                    </div>
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Select Market Sounding
                   </label>
-                  <select
-                    value={selectedSounding || ''}
-                    onChange={(e) => setSelectedSounding(e.target.value)}
-                    className="w-full px-4 py-2 pr-8 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 20 20\'%3E%3Cpath stroke=\'%236B7280\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'1.5\' d=\'m6 8 4 4 4-4\'/%3E%3C/svg%3E')] bg-[length:1.25rem_1.25rem] bg-[position:right_0.5rem_center] bg-no-repeat"
-                  >
-                    <option value="">Select a market sounding...</option>
-                    {marketSoundings
-                      .filter(sounding => sounding.status === 'Live')
-                      .map((sounding) => (
-                        <option key={sounding.id} value={sounding.id}>
-                          {sounding.subject} ({sounding.project_name})
-                        </option>
-                      ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={selectedSounding || ''}
+                      onChange={(e) => setSelectedSounding(e.target.value)}
+                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
+                    >
+                      <option value="">Select a market sounding...</option>
+                      {marketSoundings
+                        .filter(sounding => sounding.status === 'Live')
+                        .map((sounding) => (
+                          <option key={sounding.id} value={sounding.id}>
+                            {sounding.subject} ({sounding.project_name})
+                          </option>
+                        ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDown size={16} className="text-neutral-400" />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
