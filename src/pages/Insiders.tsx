@@ -35,6 +35,7 @@ interface MarketSounding {
   created_at: string;
   cleansed_at: string | null;
   expected_cleanse_date?: string;
+  type: string;
 }
 
 const soundingTypes = [
@@ -452,7 +453,7 @@ const Insiders: React.FC = () => {
           </div>
           <div className="p-4">
             {marketSoundings.length > 0 ? (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 {marketSoundings.map((sounding) => (
                   <div
                     key={sounding.id}
@@ -463,6 +464,9 @@ const Insiders: React.FC = () => {
                         <h3 className="font-bold text-neutral-800 truncate">{sounding.subject}</h3>
                         <p className="text-sm text-neutral-500 mt-1">
                           <span className="font-bold">Project:</span> {sounding.project_name}
+                        </p>
+                        <p className="text-xs text-neutral-400 mt-1">
+                          <span className="font-bold">Type:</span> {sounding.type}
                         </p>
                         {sounding.expected_cleanse_date && (
                           <p className="text-xs text-neutral-400 mt-1 flex items-center">
@@ -815,6 +819,7 @@ const Insiders: React.FC = () => {
                 >
                   Delete
                 </Button>
+              
               </div>
             </div>
           </div>
