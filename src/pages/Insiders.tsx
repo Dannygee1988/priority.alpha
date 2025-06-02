@@ -292,13 +292,33 @@ const Insiders: React.FC = () => {
   };
 
   const handleAddInsider = async () => {
-    if (!selectedContact || !selectedSounding) {
+    if (!selectedContact || !selectedSounding || !user?.id) {
       setError('Please select both a contact and a market sounding');
       return;
     }
 
     setIsSaving(true);
+    setError(null);
+
     try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      // First check if the association already exists
+      const { data: existingAssociation } = await supabase
+        .from('insider_soundings')
+        .select('*')
+        .eq('insider_id', selectedContact)
+        .eq('sounding_id', selectedSounding)
+        .single();
+
+      if (existingAssociation) {
+        throw new Error('This contact is already an insider for this market sounding');
+      }
+
+      // Create the insider-sounding association
       const { error: insertError } = await supabase
         .from('insider_soundings')
         .insert({
@@ -308,29 +328,41 @@ const Insiders: React.FC = () => {
 
       if (insertError) throw insertError;
 
-      // Update contact tags
-      const contact = contacts.find(c => c.id === selectedContact);
-      if (contact) {
-        const newTags = [...(contact.tags || [])];
-        if (!newTags.includes('insider')) {
-          newTags.push('insider');
-          
-          const { error: updateError } = await supabase
-            .from('crm_customers')
-            .update({ tags: newTags })
-            .eq('id', selectedContact);
+      // Get the contact's current data
+      const { data: contactData, error: contactError } = await supabase
+        .from('crm_customers')
+        .select('tags')
+        .eq('id', selectedContact)
+        .single();
 
-          if (updateError) throw updateError;
-        }
+      if (contactError) throw contactError;
+
+      // Update contact tags if 'insider' tag is not present
+      const currentTags = contactData?.tags || [];
+      if (!currentTags.includes('insider')) {
+        const { error: updateError } = await supabase
+          .from('crm_customers')
+          .update({ 
+            tags: [...currentTags, 'insider'],
+            type: 'Investor'  // Ensure the contact is marked as an Investor
+          })
+          .eq('id', selectedContact)
+          .eq('company_id', companyId);
+
+        if (updateError) throw updateError;
       }
 
+      // Reload data to refresh the UI
+      await loadData();
+
+      // Reset form and close modal
       setShowAddModal(false);
       setSelectedContact(null);
       setSelectedSounding(null);
-      loadData();
+      setError(null);
     } catch (err) {
       console.error('Error adding insider:', err);
-      setError('Failed to add insider. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to add insider. Please try again.');
     } finally {
       setIsSaving(false);
     }
