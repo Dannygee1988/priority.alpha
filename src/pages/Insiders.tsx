@@ -37,6 +37,21 @@ interface MarketSounding {
   expected_cleanse_date?: string;
 }
 
+const soundingTypes = [
+  'Financial Results',
+  'Acquisitions and Disposals',
+  'Dividend Announcements',
+  'Corporate Governance Changes',
+  'Share Issuance and Buybacks',
+  'Regulatory Compliance',
+  'Inside Information',
+  'Strategic Updates',
+  'Risk Factors',
+  'Sustainability and Corporate Social Responsibility'
+] as const;
+
+type SoundingType = typeof soundingTypes[number];
+
 const Insiders: React.FC = () => {
   const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -68,6 +83,7 @@ const Insiders: React.FC = () => {
     description: '',
     project_name: '',
     expected_cleanse_date: '',
+    type: 'Inside Information' as SoundingType,
     files: [] as File[]
   });
 
@@ -329,6 +345,7 @@ const Insiders: React.FC = () => {
           description: newSounding.description,
           project_name: newSounding.project_name,
           expected_cleanse_date: newSounding.expected_cleanse_date || null,
+          type: newSounding.type,
           status: 'Live'
         })
         .select()
@@ -364,6 +381,7 @@ const Insiders: React.FC = () => {
         description: '',
         project_name: '',
         expected_cleanse_date: '',
+        type: 'Inside Information',
         files: []
       });
     } catch (err) {
@@ -818,6 +836,7 @@ const Insiders: React.FC = () => {
                       description: '',
                       project_name: '',
                       expected_cleanse_date: '',
+                      type: 'Inside Information',
                       files: []
                     });
                     setError(null);
@@ -835,6 +854,27 @@ const Insiders: React.FC = () => {
               )}
 
               <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Type <span className="text-error-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={newSounding.type}
+                      onChange={(e) => setNewSounding({ ...newSounding, type: e.target.value as SoundingType })}
+                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
+                      required
+                    >
+                      {soundingTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDown size={16} className="text-neutral-400" />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Subject <span className="text-error-500">*</span>
@@ -963,6 +1003,7 @@ const Insiders: React.FC = () => {
                       description: '',
                       project_name: '',
                       expected_cleanse_date: '',
+                      type: 'Inside Information',
                       files: []
                     });
                     setError(null);
