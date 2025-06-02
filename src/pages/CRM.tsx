@@ -3,7 +3,7 @@ import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, 
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
-import { getUserCompany, getCustomers, getCompanies } from '../lib/api';
+import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
 
 interface Contact {
@@ -490,7 +490,7 @@ const CRM: React.FC = () => {
                     />
                   </div>
 
-                  <div>
+                  <div className="w-1/3">
                     <label className="block text-sm font-medium text-neutral-700 mb-2">
                       Type
                     </label>
