@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, MoreVertical, Mail, Phone, Building2, UserRound, ChevronDown, Globe, MapPin, Users, DollarSign, Briefcase, X } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, Mail, Phone, Building2, X, Tag as TagIcon, Trash2, Users, DollarSign, Briefcase, ChevronDown, Globe, MapPin, UserRound } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -67,8 +67,11 @@ const CRM: React.FC = () => {
   });
 
   const contactTypes = ['Staff', 'Customer', 'Investor', 'Lead', 'Advisor', 'Other'] as const;
-  const contactStatuses = ['prospect', 'lead', 'customer', 'inactive'] as const;
   const companyStatuses = ['active', 'inactive', 'lead', 'prospect'] as const;
+
+  useEffect(() => {
+    loadData();
+  }, [user, activeView]);
 
   const loadData = async () => {
     if (!user) return;
@@ -170,10 +173,6 @@ const CRM: React.FC = () => {
       setIsSaving(false);
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, [user, activeView]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -369,6 +368,7 @@ const CRM: React.FC = () => {
         )}
       </div>
 
+      {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl">
@@ -426,18 +426,23 @@ const CRM: React.FC = () => {
                       <label className="block text-sm font-medium text-neutral-700 mb-2">
                         Associated Company
                       </label>
-                      <select
-                        value={newContact.crm_company_id || ''}
-                        onChange={(e) => setNewContact({ ...newContact, crm_company_id: e.target.value || null })}
-                        className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                      >
-                        <option value="">No company</option>
-                        {companies.map((company) => (
-                          <option key={company.id} value={company.id}>
-                            {company.name}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={newContact.crm_company_id || ''}
+                          onChange={(e) => setNewContact({ ...newContact, crm_company_id: e.target.value || null })}
+                          className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
+                        >
+                          <option value="">No company</option>
+                          {companies.map((company) => (
+                            <option key={company.id} value={company.id}>
+                              {company.name}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                          <ChevronDown size={16} className="text-neutral-400" />
+                        </div>
+                      </div>
                     </div>
                     <Input
                       label="Job Title"
@@ -451,15 +456,20 @@ const CRM: React.FC = () => {
                       <label className="block text-sm font-medium text-neutral-700 mb-2">
                         Type
                       </label>
-                      <select
-                        value={newContact.type}
-                        onChange={(e) => setNewContact({ ...newContact, type: e.target.value as typeof contactTypes[number] })}
-                        className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                      >
-                        {contactTypes.map((type) => (
-                          <option key={type} value={type}>{type}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={newContact.type}
+                          onChange={(e) => setNewContact({ ...newContact, type: e.target.value as typeof contactTypes[number] })}
+                          className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
+                        >
+                          {contactTypes.map((type) => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                          <ChevronDown size={16} className="text-neutral-400" />
+                        </div>
+                      </div>
                     </div>
                     <Input
                       label="LinkedIn URL"
@@ -527,15 +537,20 @@ const CRM: React.FC = () => {
                     <label className="block text-sm font-medium text-neutral-700 mb-2">
                       Status
                     </label>
-                    <select
-                      value={newCompany.status}
-                      onChange={(e) => setNewCompany({ ...newCompany, status: e.target.value as typeof companyStatuses[number] })}
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                    >
-                      {companyStatuses.map((status) => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={newCompany.status}
+                        onChange={(e) => setNewCompany({ ...newCompany, status: e.target.value as typeof companyStatuses[number] })}
+                        className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
+                      >
+                        {companyStatuses.map((status) => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <ChevronDown size={16} className="text-neutral-400" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
