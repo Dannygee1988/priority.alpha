@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, MoreVertical, Mail, Phone, Building2, X, Tag as TagIcon, Trash2, Users, DollarSign, Briefcase, ChevronDown, Globe, MapPin, UserRound } from 'lucide-react';
+import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, X, Tag as TagIcon, Trash2, Users, DollarSign, Briefcase, ChevronDown, Globe, MapPin } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -604,7 +604,7 @@ const CRM: React.FC = () => {
                     />
                   </div>
 
-                  <div>
+                  <div className="w-1/3">
                     <label className="block text-sm font-medium text-neutral-700 mb-2">
                       Status
                     </label>
