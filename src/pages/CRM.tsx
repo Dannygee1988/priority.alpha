@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, X, Tag as TagIcon, Trash2, Users, DollarSign, Briefcase, ChevronDown, Globe, MapPin } from 'lucide-react';
+import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, X, Tag as TagIcon, Trash2, Users, DollarSign, Briefcase, ChevronDown, Globe, MapPin, Twitter, Facebook, Linkedin, Instagram } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +30,12 @@ interface Company {
   employee_count: string | null;
   status: string;
   created_at: string;
+  social_links?: {
+    linkedin?: string;
+    twitter?: string;
+    facebook?: string;
+    instagram?: string;
+  };
 }
 
 const getCustomers = async (companyId: string): Promise<Contact[]> => {
@@ -56,7 +62,6 @@ const getCompanies = async (companyId: string): Promise<Company[]> => {
 
 const CRM: React.FC = () => {
   const { user } = useAuth();
-  const [activeView, setActiveView] = useState<'contacts' | 'companies'>('contacts');
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,7 +88,13 @@ const CRM: React.FC = () => {
     description: '',
     annual_revenue: '',
     employee_count: '',
-    status: 'customer' as const
+    status: 'customer' as const,
+    social_links: {
+      linkedin: '',
+      twitter: '',
+      facebook: '',
+      instagram: ''
+    }
   });
 
   const industries = [
@@ -129,7 +140,7 @@ const CRM: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, [user, activeView]);
+  }, [user]);
 
   const loadData = async () => {
     if (!user) return;
@@ -176,7 +187,13 @@ const CRM: React.FC = () => {
       description: '',
       annual_revenue: '',
       employee_count: '',
-      status: 'customer'
+      status: 'customer',
+      social_links: {
+        linkedin: '',
+        twitter: '',
+        facebook: '',
+        instagram: ''
+      }
     });
   };
 
@@ -570,7 +587,7 @@ const CRM: React.FC = () => {
                       placeholder="https://example.com"
                     />
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-neutral-700 mb-2">
@@ -610,6 +627,62 @@ const CRM: React.FC = () => {
                         <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                           <ChevronDown size={16} className="text-neutral-400" />
                         </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Social Media Links
+                    </label>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <Linkedin className="w-5 h-5 text-[#0077B5]" />
+                        <Input
+                          placeholder="LinkedIn URL"
+                          value={newCompany.social_links.linkedin}
+                          onChange={(e) => setNewCompany({
+                            ...newCompany,
+                            social_links: { ...newCompany.social_links, linkedin: e.target.value }
+                          })}
+                          fullWidth
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Twitter className="w-5 h-5 text-[#1DA1F2]" />
+                        <Input
+                          placeholder="X (Twitter) URL"
+                          value={newCompany.social_links.twitter}
+                          onChange={(e) => setNewCompany({
+                            ...newCompany,
+                            social_links: { ...newCompany.social_links, twitter: e.target.value }
+                          })}
+                          fullWidth
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Facebook className="w-5 h-5 text-[#4267B2]" />
+                        <Input
+                          placeholder="Facebook URL"
+                          value={newCompany.social_links.facebook}
+                          onChange={(e) => setNewCompany({
+                            ...newCompany,
+                            social_links: { ...newCompany.social_links, facebook: e.target.value }
+                          })}
+                          fullWidth
+                        />
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Instagram className="w-5 h-5 text-[#E4405F]" />
+                        <Input
+                          placeholder="Instagram URL"
+                          value={newCompany.social_links.instagram}
+                          onChange={(e) => setNewCompany({
+                            ...newCompany,
+                            social_links: { ...newCompany.social_links, instagram: e.target.value }
+                          })}
+                          fullWidth
+                        />
                       </div>
                     </div>
                   </div>
@@ -666,7 +739,7 @@ const CRM: React.FC = () => {
                     isSaving ||
                     (activeView === 'contacts'
                       ? !newContact.first_name || !newContact.last_name || !newContact.email
-                      : !newCompany.name)
+                      :!newCompany.name)
                   }
                 >
                   {isSaving ? 'Saving...' : `Add ${activeView === 'contacts' ? 'Contact' : 'Company'}`}
