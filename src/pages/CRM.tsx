@@ -32,6 +32,28 @@ interface Company {
   created_at: string;
 }
 
+const getCustomers = async (companyId: string): Promise<Contact[]> => {
+  const { data, error } = await supabase
+    .from('crm_customers')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
+
+const getCompanies = async (companyId: string): Promise<Company[]> => {
+  const { data, error } = await supabase
+    .from('crm_companies')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
+
 const CRM: React.FC = () => {
   const { user } = useAuth();
   const [activeView, setActiveView] = useState<'contacts' | 'companies'>('contacts');
