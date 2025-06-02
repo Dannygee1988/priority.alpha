@@ -120,3 +120,8 @@ const Insiders: React.FC = () => {
         `)
         .eq('company_id', companyId)
         .order('created_at', { ascending
+        }
+        )
+    }
+  }
+}
