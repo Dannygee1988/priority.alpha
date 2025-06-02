@@ -3,7 +3,7 @@ import { Plus, Search, Filter, MoreVertical, Mail, Phone, Building2, X, Tag as T
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
-import { getUserCompany, getCustomers, getCompanies } from '../lib/api';
+import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
 
 interface Contact {
@@ -65,6 +65,22 @@ const CRM: React.FC = () => {
     employee_count: '' as string | number,
     status: 'active' as const
   });
+
+  const industries = [
+    'Financial Services',
+    'Retail & E-commerce',
+    'Energy (Oil & Gas, Renewable Energy, Utilities)',
+    'Automotive (Manufacturing & Sales)',
+    'Healthcare & Pharmaceuticals',
+    'Information Technology (IT)',
+    'Artificial Intelligence (AI) & Machine Learning',
+    'Cloud Computing',
+    'Biotechnology',
+    'Telecommunications',
+    'Manufacturing',
+    'Construction',
+    'Agriculture'
+  ];
 
   const contactTypes = ['Staff', 'Customer', 'Investor', 'Lead', 'Advisor', 'Other'] as const;
   const companyStatuses = ['active', 'inactive', 'lead', 'prospect'] as const;
@@ -311,7 +327,7 @@ const CRM: React.FC = () => {
                   <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody>
                 {companies.map((company) => (
                   <tr key={company.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
@@ -490,11 +506,26 @@ const CRM: React.FC = () => {
                   />
                   
                   <div className="grid grid-cols-2 gap-6">
-                    <Input
-                      label="Industry"
-                      value={newCompany.industry}
-                      onChange={(e) => setNewCompany({ ...newCompany, industry: e.target.value })}
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Industry
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={newCompany.industry}
+                          onChange={(e) => setNewCompany({ ...newCompany, industry: e.target.value })}
+                          className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
+                        >
+                          <option value="">Select industry...</option>
+                          {industries.map((industry) => (
+                            <option key={industry} value={industry}>{industry}</option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                          <ChevronDown size={16} className="text-neutral-400" />
+                        </div>
+                      </div>
+                    </div>
                     <Input
                       label="Website"
                       type="url"
