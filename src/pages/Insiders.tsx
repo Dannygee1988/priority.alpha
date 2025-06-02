@@ -341,9 +341,9 @@ const Insiders: React.FC = () => {
     const numbers = ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
 
     const randomWord = (array: string[]) => array[Math.floor(Math.random() * array.length)];
-    const projectName = `${randomWord(adjectives)}.${randomWord(nouns)}.${randomWord(numbers)}`;
+    const newProjectName = `${randomWord(adjectives)}.${randomWord(nouns)}.${randomWord(numbers)}`;
 
-    setNewSounding(prev => ({ ...prev, project_name: projectName }));
+    setNewSounding(prev => ({ ...prev, project_name: newProjectName }));
   };
 
   const insiders = contacts.filter(contact => contact.tags?.includes('insider'));
@@ -604,119 +604,6 @@ const Insiders: React.FC = () => {
         </div>
       </div>
 
-      {/* Add to Insider List Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-6">
-                <h2 className="text-xl font-bold text-neutral-800">Add to Insider List</h2>
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setSelectedContact(null);
-                    setSelectedSounding(null);
-                  }}
-                  className="p-1 hover:bg-neutral-100 rounded-full"
-                >
-                  <X size={20} className="text-neutral-500" />
-                </button>
-              </div>
-              
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Select Contact
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={selectedContact || ''}
-                      onChange={(e) => setSelectedContact(e.target.value)}
-                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
-                    >
-                      <option value="">Select a contact...</option>
-                      {contacts
-                        .filter(contact => !contact.tags?.includes('insider'))
-                        .map((contact) => (
-                          <option key={contact.id} value={contact.id}>
-                            {contact.first_name} {contact.last_name} - {contact.email}
-                          </option>
-                        ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDown size={16} className="text-neutral-400" />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Select Market Sounding
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={selectedSounding || ''}
-                      onChange={(e) => setSelectedSounding(e.target.value)}
-                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
-                    >
-                      <option value="">Select a market sounding...</option>
-                      {marketSoundings
-                        .filter(sounding => sounding.status === 'Live')
-                        .map((sounding) => (
-                          <option key={sounding.id} value={sounding.id}>
-                            {sounding.subject} ({sounding.project_name})
-                          </option>
-                        ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                      <ChevronDown size={16} className="text-neutral-400" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
-                  <div className="flex">
-                    <AlertCircle className="h-5 w-5 text-warning-500 mt-0.5" />
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-warning-800">Important Notice</h3>
-                      <div className="mt-2 text-sm text-warning-700">
-                        <p>
-                          By adding this contact to the insider list, you confirm that:
-                        </p>
-                        <ul className="list-disc ml-4 mt-2 space-y-1">
-                          <li>The contact has been properly briefed about their insider obligations</li>
-                          <li>They understand the confidential nature of the information</li>
-                          <li>They agree to maintain confidentiality</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setSelectedContact(null);
-                    setSelectedSounding(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddInsider}
-                  disabled={!selectedContact || !selectedSounding}
-                >
-                  Add to Insider List
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Edit Modal */}
       {showEditModal && selectedContact && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -736,19 +623,23 @@ const Insiders: React.FC = () => {
               </div>
 
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="First Name"
-                    value={editedContact.first_name}
-                    onChange={(e) => setEditedContact({ ...editedContact, first_name: e.target.value })}
-                    required
-                  />
-                  <Input
-                    label="Last Name"
-                    value={editedContact.last_name}
-                    onChange={(e) => setEditedContact({ ...editedContact, last_name: e.target.value })}
-                    required
-                  />
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Input
+                      label="First Name"
+                      value={editedContact.first_name}
+                      onChange={(e) => setEditedContact({ ...editedContact, first_name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      label="Last Name"
+                      value={editedContact.last_name}
+                      onChange={(e) => setEditedContact({ ...editedContact, last_name: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
 
                 <Input
@@ -916,7 +807,8 @@ const Insiders: React.FC = () => {
                     />
                     <button
                       type="button"
-                      onClick={generateProjectName}
+                      onClick={generateProject
+Name}
                       title="Generate random project name"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors"
                     >
@@ -971,5 +863,3 @@ const Insiders: React.FC = () => {
 };
 
 export default Insiders;
-
-export default Insiders
