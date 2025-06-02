@@ -306,15 +306,17 @@ const Insiders: React.FC = () => {
         throw new Error('No company found');
       }
 
-      // First check if the association already exists
-      const { data: existingAssociation } = await supabase
+      // First check if the association already exists - removed .single() to fix the error
+      const { data: existingAssociation, error: checkError } = await supabase
         .from('insider_soundings')
         .select('*')
         .eq('insider_id', selectedContact)
-        .eq('sounding_id', selectedSounding)
-        .single();
+        .eq('sounding_id', selectedSounding);
 
-      if (existingAssociation) {
+      if (checkError) throw checkError;
+
+      // Check if any associations were found
+      if (existingAssociation && existingAssociation.length > 0) {
         throw new Error('This contact is already an insider for this market sounding');
       }
 
@@ -806,6 +808,7 @@ const Insiders: React.FC = () => {
                 <Button
                   onClick={handleSaveEdit}
                   disabled={!editedContact.first_name || !editedContact.last_name || !editedContact.email}
+                
                 >
                   Save Changes
                 </Button>
