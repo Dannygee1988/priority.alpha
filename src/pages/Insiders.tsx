@@ -494,7 +494,7 @@ const Insiders: React.FC = () => {
                             <span className="font-bold">Expected cleanse:</span> {new Date(sounding.expected_cleanse_date).toLocaleDateString()}
                           </p>
                         )}
-                        <div className="mt-2 flex items-center">
+                        <div className="mt-4 flex items-center">
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                             <UserRound size={12} className="mr-1" />
                             {sounding.insider_count} {sounding.insider_count === 1 ? 'Insider' : 'Insiders'}
@@ -1051,3 +1051,5 @@ const Insiders: React.FC = () => {
 };
 
 export default Insiders;
+
+export default Insiders
