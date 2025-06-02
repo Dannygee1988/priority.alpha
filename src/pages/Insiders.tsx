@@ -807,8 +807,7 @@ const Insiders: React.FC = () => {
                     />
                     <button
                       type="button"
-                      onClick={generateProject
-Name}
+                      onClick={generateProjectName}
                       title="Generate random project name"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors"
                     >
