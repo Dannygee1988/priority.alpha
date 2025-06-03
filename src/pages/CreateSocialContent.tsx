@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
+import ReactMarkdown from 'react-markdown';
 
 interface RNSDocument {
   id: string;
@@ -142,6 +143,77 @@ const CreateSocialContent: React.FC = () => {
     }
   };
 
+  const formatContent = (content: string) => {
+    return content
+      // RNS Number
+      .replace(/^RNS Number:\s*(\d+)$/gm, '**RNS Number:** $1\n')
+      
+      // Company name in all caps
+      .replace(/^([A-Z][A-Z\s&]+(?:PLC|LTD|LIMITED))$/gm, '# $1\n')
+      
+      // Section headers in all caps
+      .replace(/^([A-Z][A-Z\s]+(?:[A-Z]|[&]|[:]))$/gm, '## $1\n')
+      
+      // Subsection headers
+      .replace(/^([A-Za-z][A-Za-z\s]+:)$/gm, '### $1\n')
+      
+      // Contact information blocks
+      .replace(
+        /^([A-Za-z\s]+)$\n^(\+\d{2}\s\(\d\)\s\d{2}\s\d{4}\s\d{4})$/gm, 
+        '**$1**\n$2\n'
+      )
+      
+      // Email addresses
+      .replace(
+        /^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/gm,
+        '[Email]($1)\n'
+      )
+      
+      // Websites
+      .replace(
+        /^(www\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/gm,
+        '[Website](https://$1)\n'
+      )
+      
+      // Joint broker information
+      .replace(
+        /^Joint Broker ([A-Za-z\s&]+) ([A-Za-z\s\/]+) Tel: ([+0-9\s()]+)$/gm,
+        '**Joint Broker:** $1\n**Contact:** $2\n**Tel:** $3\n'
+      )
+      
+      // Monetary values
+      .replace(/\$(\d+(?:\.\d{2})?)/g, '**$$$1**')
+      .replace(/£(\d+(?:\.\d{2})?)/g, '**£$1**')
+      .replace(/(\d+(?:\.\d{2})?)\s*(?:GBP|USD|EUR)/g, '**$1** $2')
+      
+      // Dates
+      .replace(
+        /(\d{1,2}(?:st|nd|rd|th)?\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})/g,
+        '**$1**'
+      )
+      
+      // Percentages
+      .replace(/(\d+(?:\.\d+)?%)/g, '**$1**')
+      
+      // Important phrases
+      .replace(/"([^"]+)"/g, '_"$1"_')
+      
+      // Lists
+      .replace(/^[-•]\s+(.+)$/gm, '- $1')
+      
+      // Horizontal rules
+      .replace(/^-{3,}$/gm, '---\n')
+      
+      // Notes section
+      .replace(/^Notes:$/gm, '## Notes:\n')
+      
+      // Ensure paragraphs are properly spaced
+      .split('\n\n')
+      .map(p => p.trim())
+      .filter(p => p)
+      .join('\n\n');
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
@@ -205,7 +277,9 @@ const CreateSocialContent: React.FC = () => {
                 </div>
                 <div className="prose prose-neutral max-w-none">
                   <div className="bg-neutral-50 rounded-lg p-4 max-h-[300px] overflow-y-auto mb-6">
-                    {document.content}
+                    <ReactMarkdown>
+                      {formatContent(document.content)}
+                    </ReactMarkdown>
                   </div>
                 </div>
               </div>
