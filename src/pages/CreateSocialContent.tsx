@@ -211,7 +211,7 @@ const CreateSocialContent: React.FC = () => {
                   </p>
                 </div>
                 <div className="prose prose-neutral max-w-none">
-                  <div className="bg-neutral-50 rounded-lg p-4 max-h-[300px] overflow-y-auto mb-6">
+                  <div className="bg-neutral-50 rounded-lg p-4 pb-8 max-h-[300px] overflow-y-auto mb-6">
                     {document.content}
                   </div>
                 </div>
