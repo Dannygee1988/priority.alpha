@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Twitter, Facebook, Linkedin, Instagram, Copy, Check, RefreshCw } from 'lucide-react';
+import { Twitter, Facebook, Linkedin, Instagram, Copy, Check, RefreshCw, Wand2 } from 'lucide-react';
 import Button from '../components/Button';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +29,7 @@ const CreateSocialContent: React.FC = () => {
   const [selectedPlatform, setSelectedPlatform] = useState<SocialPost['platform']>('linkedin');
   const [generatedContent, setGeneratedContent] = useState<string>('');
   const [isCopied, setIsCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
 
   const platforms = [
     { 
@@ -122,6 +123,7 @@ const CreateSocialContent: React.FC = () => {
 
       const data = await response.json();
       setGeneratedContent(data.output || data.content || '');
+      setActiveTab('output');
     } catch (err) {
       console.error('Error generating content:', err);
       setError('Failed to generate content. Please try again.');
@@ -159,104 +161,167 @@ const CreateSocialContent: React.FC = () => {
   }
 
   return (
-    <div className="px-4 py-8 animate-fade-in">
+    <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-neutral-800">Create Social Media Content</h1>
         <p className="text-neutral-500">Transform your RNS into engaging social media posts</p>
       </div>
 
-      <div className="grid grid-cols-12 gap-8">
-        {/* Original RNS Content */}
-        <div className="col-span-6">
-          <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
-            <h2 className="text-lg font-semibold text-neutral-800 mb-4">Original RNS</h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium text-neutral-700">{document.title}</h3>
-                <p className="text-sm text-neutral-500">
-                  Published {new Date(document.published_at).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="prose prose-neutral max-w-none">
-                <div className="bg-neutral-50 rounded-lg p-4 max-h-[600px] overflow-y-auto">
-                  {document.content}
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
+        <div className="flex border-b border-neutral-200">
+          <button
+            className={`flex-1 px-6 py-3 text-sm font-medium focus:outline-none ${
+              activeTab === 'input'
+                ? 'text-primary border-b-2 border-primary bg-primary/5'
+                : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
+            }`}
+            onClick={() => setActiveTab('input')}
+          >
+            Input
+          </button>
+          <button
+            className={`flex-1 px-6 py-3 text-sm font-medium focus:outline-none ${
+              activeTab === 'output'
+                ? 'text-primary border-b-2 border-primary bg-primary/5'
+                : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
+            }`}
+            onClick={() => setActiveTab('output')}
+            disabled={!generatedContent && !isGenerating}
+          >
+            Output
+          </button>
         </div>
 
-        {/* Social Media Content */}
-        <div className="col-span-6">
-          <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+        <div className={activeTab === 'input' ? 'block' : 'hidden'}>
+          <div className="p-6">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-neutral-800 mb-4">Social Media Post</h2>
-              
-              <div className="flex space-x-2 mb-6">
-                {platforms.map((platform) => (
-                  <button
-                    key={platform.id}
-                    onClick={() => setSelectedPlatform(platform.id)}
-                    className={`
-                      flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors
-                      ${selectedPlatform === platform.id
-                        ? `${platform.color} text-white`
-                        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                      }
-                    `}
-                  >
-                    <platform.icon size={18} className="mr-2" />
-                    {platform.name}
-                  </button>
-                ))}
+              <h2 className="text-lg font-semibold text-neutral-800 mb-4">Original RNS Content</h2>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium text-neutral-700">{document.title}</h3>
+                  <p className="text-sm text-neutral-500">
+                    Published {new Date(document.published_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="prose prose-neutral max-w-none">
+                  <div className="bg-neutral-50 rounded-lg p-4 max-h-[300px] overflow-y-auto mb-6">
+                    {document.content}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-neutral-700 mb-2">Select Platform</h3>
+                <div className="flex flex-wrap gap-2">
+                  {platforms.map((platform) => (
+                    <button
+                      key={platform.id}
+                      onClick={() => setSelectedPlatform(platform.id)}
+                      className={`
+                        flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                        ${selectedPlatform === platform.id
+                          ? `${platform.color} text-white`
+                          : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                        }
+                      `}
+                    >
+                      <platform.icon size={18} className="mr-2" />
+                      {platform.name}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-sm text-neutral-500">
+                  Maximum length: {platforms.find(p => p.id === selectedPlatform)?.maxLength} characters
+                </p>
               </div>
 
               {error && (
-                <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-lg text-sm">
+                <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
                   {error}
                 </div>
               )}
 
-              <div className="relative">
-                <textarea
-                  value={generatedContent}
-                  onChange={(e) => setGeneratedContent(e.target.value)}
-                  className="w-full h-[400px] p-4 border border-neutral-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary resize-none"
-                  placeholder="Generated content will appear here..."
-                />
-                
-                <div className="absolute bottom-4 right-4 flex space-x-2">
+              <Button
+                onClick={generateContent}
+                isLoading={isGenerating}
+                leftIcon={<Wand2 size={18} />}
+                fullWidth
+              >
+                Generate Social Media Post
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className={activeTab === 'output' ? 'block' : 'hidden'}>
+          <div className="p-6">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-neutral-800">Generated Post</h2>
+              <p className="text-sm text-neutral-500">
+                Your AI-generated social media post for {platforms.find(p => p.id === selectedPlatform)?.name}
+              </p>
+            </div>
+
+            {isGenerating ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-neutral-600">Generating your social media post...</p>
+                  <p className="text-sm text-neutral-500 mt-2">This may take a few moments</p>
+                </div>
+              </div>
+            ) : generatedContent ? (
+              <div>
+                <div className="relative">
+                  <textarea
+                    value={generatedContent}
+                    onChange={(e) => setGeneratedContent(e.target.value)}
+                    className="w-full h-[300px] p-4 border border-neutral-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary resize-none"
+                  />
+                  
+                  <div className="mt-2 flex items-center justify-between text-sm text-neutral-500">
+                    <span>
+                      {generatedContent.length} / {platforms.find(p => p.id === selectedPlatform)?.maxLength} characters
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end space-x-3">
                   <Button
                     variant="outline"
-                    size="sm"
-                    onClick={handleCopy}
-                    leftIcon={isCopied ? <Check size={16} /> : <Copy size={16} />}
-                    className={isCopied ? 'text-success-600 border-success-600' : ''}
+                    onClick={() => setActiveTab('input')}
                   >
-                    {isCopied ? 'Copied!' : 'Copy'}
+                    Back to Input
                   </Button>
                   <Button
-                    size="sm"
+                    variant="outline"
+                    onClick={handleCopy}
+                    leftIcon={isCopied ? <Check size={18} /> : <Copy size={18} />}
+                    className={isCopied ? 'text-success-600 border-success-600' : ''}
+                  >
+                    {isCopied ? 'Copied!' : 'Copy to Clipboard'}
+                  </Button>
+                  <Button
                     onClick={generateContent}
-                    isLoading={isGenerating}
-                    leftIcon={<RefreshCw size={16} />}
+                    leftIcon={<RefreshCw size={18} />}
                   >
                     Regenerate
                   </Button>
                 </div>
               </div>
-
-              {selectedPlatform && (
-                <div className="mt-4 flex items-center justify-between text-sm text-neutral-500">
-                  <span>
-                    Platform: {platforms.find(p => p.id === selectedPlatform)?.name}
-                  </span>
-                  <span>
-                    {generatedContent.length} / {platforms.find(p => p.id === selectedPlatform)?.maxLength} characters
-                  </span>
-                </div>
-              )}
-            </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-neutral-500 text-sm italic mb-4">
+                  Generated content will appear here...
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => setActiveTab('input')}
+                >
+                  Go to Input
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
