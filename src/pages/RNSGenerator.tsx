@@ -6,6 +6,18 @@ import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
 
+type RNSType = 
+  | 'Financial Results'
+  | 'Acquisitions and Disposals'
+  | 'Dividend Announcements'
+  | 'Corporate Governance Changes'
+  | 'Share Issuance and Buybacks'
+  | 'Regulatory Compliance'
+  | 'Inside Information'
+  | 'Strategic Updates'
+  | 'Risk Factors'
+  | 'Sustainability and Corporate Social Responsibility';
+
 const RNSGenerator: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
@@ -15,6 +27,7 @@ const RNSGenerator: React.FC = () => {
   const [description, setDescription] = useState('');
   const [keywords, setKeywords] = useState('');
   const [rnsType, setRnsType] = useState<'RNS' | 'RNS Reach'>('RNS');
+  const [announcementType, setAnnouncementType] = useState<RNSType>('Inside Information');
   const [assistantId, setAssistantId] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +36,19 @@ const RNSGenerator: React.FC = () => {
   const [editableContent, setEditableContent] = useState('');
   const [isApproved, setIsApproved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const announcementTypes: RNSType[] = [
+    'Financial Results',
+    'Acquisitions and Disposals',
+    'Dividend Announcements',
+    'Corporate Governance Changes',
+    'Share Issuance and Buybacks',
+    'Regulatory Compliance',
+    'Inside Information',
+    'Strategic Updates',
+    'Risk Factors',
+    'Sustainability and Corporate Social Responsibility'
+  ];
 
   useEffect(() => {
     const fetchAssistantId = async () => {
@@ -81,7 +107,8 @@ const RNSGenerator: React.FC = () => {
           description,
           keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
           assistant_id: assistantId,
-          rns_type: rnsType
+          rns_type: rnsType,
+          announcement_type: announcementType
         })
       });
 
@@ -156,6 +183,7 @@ const RNSGenerator: React.FC = () => {
           subject,
           description,
           project_name: projectName,
+          type: announcementType,
           status: 'Live'
         })
         .select()
@@ -289,6 +317,29 @@ const RNSGenerator: React.FC = () => {
                   </div>
                   <p className="mt-1 text-sm text-neutral-500">
                     Select the type of regulatory announcement
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-neutral-700 text-sm font-medium mb-1">
+                    Announcement Type <span className="text-error-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={announcementType}
+                      onChange={(e) => setAnnouncementType(e.target.value as RNSType)}
+                      className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
+                    >
+                      {announcementTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <ChevronDown size={16} className="text-neutral-400" />
+                    </div>
+                  </div>
+                  <p className="mt-1 text-sm text-neutral-500">
+                    Select the category of announcement
                   </p>
                 </div>
 
