@@ -38,6 +38,7 @@ const PublishedRNS: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<RNSDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -146,11 +147,8 @@ const PublishedRNS: React.FC = () => {
     if (!selectedDocument) return;
 
     try {
-      // Here you would implement the actual sharing functionality
-      // For now, we'll just copy the LSE URL to clipboard if available
       if (selectedDocument.lse_url) {
         await navigator.clipboard.writeText(selectedDocument.lse_url);
-        // You could show a success message here
       }
       setShowShareModal(false);
       setSelectedDocument(null);
@@ -158,6 +156,27 @@ const PublishedRNS: React.FC = () => {
       console.error('Error sharing document:', err);
       setError('Failed to share document. Please try again.');
     }
+  };
+
+  const renderMarkdown = (content: string) => {
+    return content
+      .replace(/^RNS Number: (.+)$/gm, '<div class="text-sm text-neutral-600 mb-2"><strong>RNS Number:</strong> $1</div>')
+      .replace(/^([A-Z][A-Z\s&]+PLC)$/gm, '<h1 class="text-xl font-bold text-primary mb-2">$1</h1>')
+      .replace(/^([A-Z\s:]+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$2</h2>')
+      .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-neutral-800 mb-3 mt-5">$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-neutral-800 mb-6 mt-8">$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
+      .split('\n\n')
+      .map(paragraph => {
+        if (paragraph.trim() === '') return '';
+        if (paragraph.includes('<h1>') || paragraph.includes('<h2>') || paragraph.includes('<hr>')) {
+          return paragraph;
+        }
+        return `<p class="mb-4 leading-relaxed">${paragraph}</p>`;
+      })
+      .join('');
   };
 
   const filteredDocuments = documents.filter(doc =>
@@ -266,7 +285,10 @@ const PublishedRNS: React.FC = () => {
                             variant="ghost"
                             size="sm"
                             leftIcon={<Eye size={16} />}
-                            onClick={() => navigate(`/pr/rns/view/${doc.id}`)}
+                            onClick={() => {
+                              setSelectedDocument(doc);
+                              setShowViewModal(true);
+                            }}
                           >
                             View
                           </Button>
@@ -303,6 +325,79 @@ const PublishedRNS: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* View Modal */}
+      {showViewModal && selectedDocument && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-neutral-200 flex justify-between items-start">
+              <div>
+                <h2 className="text-xl font-bold text-neutral-800">{selectedDocument.title}</h2>
+                <div className="flex items-center space-x-4 mt-2">
+                  <span className="text-sm text-neutral-500">
+                    Published {formatDate(selectedDocument.published_at)}
+                  </span>
+                  <span className="text-sm text-neutral-500">
+                    Type: {selectedDocument.type}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  setSelectedDocument(null);
+                }}
+                className="p-1 hover:bg-neutral-100 rounded-full"
+              >
+                <X size={20} className="text-neutral-500" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1">
+              <div 
+                className="prose prose-neutral max-w-none"
+                dangerouslySetInnerHTML={{ 
+                  __html: renderMarkdown(selectedDocument.content) 
+                }}
+              />
+            </div>
+
+            <div className="p-6 border-t border-neutral-200 flex justify-between items-center">
+              {selectedDocument.lse_url && (
+                <a
+                  href={selectedDocument.lse_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:text-primary-700 flex items-center"
+                >
+                  <LinkIcon size={16} className="mr-2" />
+                  View on London Stock Exchange
+                </a>
+              )}
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedDocument(null);
+                  }}
+                >
+                  Close
+                </Button>
+                <Button
+                  leftIcon={<Share2 size={18} />}
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setShowShareModal(true);
+                  }}
+                >
+                  Share
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add RNS Modal */}
       {showAddModal && (
