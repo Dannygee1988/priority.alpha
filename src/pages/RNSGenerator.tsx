@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wand2, Copy, CheckCircle, Check } from 'lucide-react';
+import { Wand2, Copy, CheckCircle, Check, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
