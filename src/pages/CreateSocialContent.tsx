@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Twitter, Facebook, Linkedin, Instagram, Copy, Check, RefreshCw, Wand2, Image } from 'lucide-react';
+import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Copy, Check, RefreshCw, Wand2, Image } from 'lucide-react';
 import Button from '../components/Button';
+import Input from '../components/Input';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
@@ -37,7 +37,7 @@ const CreateSocialContent: React.FC = () => {
     { 
       id: 'linkedin' as const, 
       name: 'LinkedIn',
-      icon: Linkedin,
+      icon: LinkedIn,
       color: 'bg-[#0A66C2]/80',
       hoverColor: 'hover:bg-[#0A66C2]/90',
       maxLength: 3000
@@ -215,9 +215,8 @@ const CreateSocialContent: React.FC = () => {
                     {document.content}
                   </div>
                 </div>
-              </div>
 
-              <div className="mb-6">
+              <div className="mb-6 mt-8">
                 <h3 className="text-sm font-medium text-neutral-700 mb-2">Select Platform</h3>
                 <div className="flex flex-wrap gap-2">
                   {platforms.map((platform) => (
@@ -285,6 +284,7 @@ const CreateSocialContent: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
 
         <div className={activeTab === 'output' ? 'block' : 'hidden'}>
           <div className="p-6">
