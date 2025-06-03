@@ -168,6 +168,18 @@ const CreateSocialContent: React.FC = () => {
     );
   }
 
+  // Function to get preview content
+  const getPreviewContent = (content: string, maxLength: number = 300) => {
+    const lines = content.split('\n').filter(line => line.trim());
+    let preview = lines.slice(0, 3).join('\n');
+    if (preview.length > maxLength) {
+      preview = preview.substring(0, maxLength) + '...';
+    } else if (lines.length > 3) {
+      preview += '\n...';
+    }
+    return preview;
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in">
       <div className="mb-8">
@@ -212,8 +224,10 @@ const CreateSocialContent: React.FC = () => {
                   </p>
                 </div>
                 <div className="prose prose-neutral max-w-none">
-                  <div className="bg-neutral-50 rounded-lg p-4 pb-8 max-h-[300px] overflow-y-auto mb-6">
-                    {document.content}
+                  <div className="bg-neutral-50 rounded-lg p-4 mb-8">
+                    <p className="text-neutral-600 whitespace-pre-wrap">
+                      {getPreviewContent(document.content)}
+                    </p>
                   </div>
                 </div>
 
