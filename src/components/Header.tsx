@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Bell, User, LogOut, Settings, ChevronDown, Sun, Moon } from 'lucide-react';
+import { Bell, User, LogOut, Settings, ChevronDown, Sun, Moon, ArrowLeft } from 'lucide-react';
 import Button from './Button';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Header: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const toggleUserMenu = () => {
     setShowUserMenu(!showUserMenu);
@@ -17,11 +20,25 @@ const Header: React.FC = () => {
     // You would implement actual dark mode switching here
   };
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
+  const showBackButton = location.pathname !== '/dashboard';
+
   return (
     <header className="bg-white border-b border-neutral-200 sticky top-0 z-10">
       <div className="h-16 px-6 flex items-center justify-between">
         <div className="flex items-center">
-          {/* Title removed from here */}
+          {showBackButton && (
+            <button
+              onClick={handleBack}
+              className="mr-4 p-2 rounded-full text-neutral-600 hover:text-primary hover:bg-primary/5 transition-colors"
+              title="Go back"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
         </div>
         
         <div className="flex items-center space-x-4">
