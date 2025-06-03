@@ -241,14 +241,16 @@ const CreateSocialContent: React.FC = () => {
                 </div>
               )}
 
-              <Button
-                onClick={generateContent}
-                isLoading={isGenerating}
-                leftIcon={<Wand2 size={18} />}
-                fullWidth
-              >
-                Generate Social Media Post
-              </Button>
+              <div className="flex justify-center">
+                <Button
+                  onClick={generateContent}
+                  isLoading={isGenerating}
+                  leftIcon={<Wand2 size={18} />}
+                  className="w-64"
+                >
+                  Generate Social Media Post
+                </Button>
+              </div>
             </div>
           </div>
         </div>
