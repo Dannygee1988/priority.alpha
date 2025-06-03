@@ -246,7 +246,7 @@ const CreateSocialContent: React.FC = () => {
                   onClick={generateContent}
                   isLoading={isGenerating}
                   leftIcon={<Wand2 size={18} />}
-                  className="w-32"
+                  className="w-48"
                 >
                   Create Post
                 </Button>
