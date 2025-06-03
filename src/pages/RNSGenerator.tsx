@@ -16,7 +16,8 @@ type RNSType =
   | 'Inside Information'
   | 'Strategic Updates'
   | 'Risk Factors'
-  | 'Sustainability and Corporate Social Responsibility';
+  | 'Sustainability and Corporate Social Responsibility'
+  | 'Fundraising';
 
 const RNSGenerator: React.FC = () => {
   const { user } = useAuth();
@@ -47,7 +48,8 @@ const RNSGenerator: React.FC = () => {
     'Inside Information',
     'Strategic Updates',
     'Risk Factors',
-    'Sustainability and Corporate Social Responsibility'
+    'Sustainability and Corporate Social Responsibility',
+    'Fundraising'
   ];
 
   useEffect(() => {
