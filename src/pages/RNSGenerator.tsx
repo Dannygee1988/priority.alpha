@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Wand2, Copy, CheckCircle, Check, ChevronDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { Wand2, Copy, CheckCircle, Check, ChevronDown, X } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -26,7 +26,8 @@ const RNSGenerator: React.FC = () => {
   const [projectName, setProjectName] = useState('');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
-  const [keywords, setKeywords] = useState('');
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [currentKeyword, setCurrentKeyword] = useState('');
   const [rnsType, setRnsType] = useState<'RNS' | 'RNS Reach'>('RNS');
   const [announcementType, setAnnouncementType] = useState<RNSType>('Inside Information');
   const [assistantId, setAssistantId] = useState<string | null>(null);
@@ -52,29 +53,19 @@ const RNSGenerator: React.FC = () => {
     'Fundraising'
   ];
 
-  useEffect(() => {
-    const fetchAssistantId = async () => {
-      if (!user?.id) return;
-
-      try {
-        const companyId = await getUserCompany(user.id);
-        if (!companyId) return;
-
-        const { data, error } = await supabase
-          .from('company_profiles')
-          .select('assistant_id')
-          .eq('id', companyId)
-          .single();
-
-        if (error) throw error;
-        setAssistantId(data?.assistant_id);
-      } catch (err) {
-        console.error('Error fetching assistant ID:', err);
+  const handleKeywordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && currentKeyword.trim()) {
+      e.preventDefault();
+      if (!keywords.includes(currentKeyword.trim())) {
+        setKeywords([...keywords, currentKeyword.trim()]);
       }
-    };
+      setCurrentKeyword('');
+    }
+  };
 
-    fetchAssistantId();
-  }, [user]);
+  const removeKeyword = (keywordToRemove: string) => {
+    setKeywords(keywords.filter(k => k !== keywordToRemove));
+  };
 
   const generateProjectName = () => {
     const adjectives = ['Blue', 'Red', 'Green', 'Silver', 'Gold', 'Crystal', 'Swift', 'Bright', 'Alpha', 'Nova'];
@@ -107,7 +98,7 @@ const RNSGenerator: React.FC = () => {
           project_name: projectName,
           subject,
           description,
-          keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+          keywords,
           assistant_id: assistantId,
           rns_type: rnsType,
           announcement_type: announcementType
@@ -401,14 +392,34 @@ const RNSGenerator: React.FC = () => {
                   <label className="block text-neutral-700 text-sm font-medium mb-1">
                     Keywords <span className="text-neutral-500">(optional)</span>
                   </label>
-                  <Input
-                    placeholder="Enter keywords separated by commas"
-                    value={keywords}
-                    onChange={(e) => setKeywords(e.target.value)}
-                    fullWidth
-                  />
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2 min-h-8">
+                      {keywords.map((keyword, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm bg-primary-50 text-primary-700"
+                        >
+                          {keyword}
+                          <button
+                            type="button"
+                            onClick={() => removeKeyword(keyword)}
+                            className="ml-1 hover:text-error-600"
+                          >
+                            <X size={14} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <Input
+                      placeholder="Type a keyword and press Enter"
+                      value={currentKeyword}
+                      onChange={(e) => setCurrentKeyword(e.target.value)}
+                      onKeyDown={handleKeywordKeyDown}
+                      fullWidth
+                    />
+                  </div>
                   <p className="mt-1 text-sm text-neutral-500">
-                    Keywords to emphasize in the press release
+                    Press Enter to add each keyword
                   </p>
                 </div>
               </div>
