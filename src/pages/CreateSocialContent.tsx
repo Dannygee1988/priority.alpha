@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Copy, Check, RefreshCw, Wand2, Image } from 'lucide-react';
+import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Copy, Check, RefreshCw, Wand2, Image, ChevronDown, ChevronUp } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { supabase } from '../lib/supabase';
@@ -33,6 +33,7 @@ const CreateSocialContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
   const [generateImage, setGenerateImage] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [showFullContent, setShowFullContent] = useState(false);
 
   const platforms = [
     { 
@@ -150,24 +151,6 @@ const CreateSocialContent: React.FC = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!document) {
-    return (
-      <div className="p-8">
-        <div className="bg-error-50 text-error-700 p-4 rounded-lg">
-          Document not found or access denied.
-        </div>
-      </div>
-    );
-  }
-
   // Function to get preview content
   const getPreviewContent = (content: string, maxLength: number = 300) => {
     const lines = content.split('\n').filter(line => line.trim());
@@ -218,16 +201,30 @@ const CreateSocialContent: React.FC = () => {
               <h2 className="text-lg font-semibold text-neutral-800 mb-4">Original RNS Content</h2>
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-medium text-neutral-700">{document.title}</h3>
+                  <h3 className="font-medium text-neutral-700">{document?.title}</h3>
                   <p className="text-sm text-neutral-500">
-                    Published {new Date(document.published_at).toLocaleDateString()}
+                    Published {new Date(document?.published_at || '').toLocaleDateString()}
                   </p>
                 </div>
                 <div className="prose prose-neutral max-w-none">
                   <div className="bg-neutral-50 rounded-lg p-4 mb-8">
                     <p className="text-neutral-600 whitespace-pre-wrap">
-                      {getPreviewContent(document.content)}
+                      {showFullContent ? document?.content : getPreviewContent(document?.content || '')}
                     </p>
+                    <button
+                      onClick={() => setShowFullContent(!showFullContent)}
+                      className="mt-2 flex items-center text-primary hover:text-primary-700 text-sm font-medium"
+                    >
+                      {showFullContent ? (
+                        <>
+                          Show less <ChevronUp size={16} className="ml-1" />
+                        </>
+                      ) : (
+                        <>
+                          Show more <ChevronDown size={16} className="ml-1" />
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
 
