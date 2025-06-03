@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, UserRound, Mail, Phone, Building2, MoreVertical, X, AlertCircle, Check, FileText, Wand2, ChevronDown, Trash2, Users } from 'lucide-react';
+import { Plus, Eye, MoreVertical, Search, Filter, X, PenLine, Trash2, Users, UserPlus, Archive, ChevronDown, AlertCircle, Check, UserRound, Mail, Phone, Building2 } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -53,6 +53,8 @@ const Insiders: React.FC = () => {
   const [selectedSounding, setSelectedSounding] = useState<string | null>(null);
   const [soundingToDelete, setSoundingToDelete] = useState<MarketSounding | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'live' | 'archive'>('live');
+  const [showArchiveDetails, setShowArchiveDetails] = useState<string | null>(null);
   const [newSounding, setNewSounding] = useState({
     subject: '',
     description: '',
@@ -76,7 +78,6 @@ const Insiders: React.FC = () => {
         return;
       }
 
-      // Load contacts with their associated soundings
       const { data: contactsData, error: contactsError } = await supabase
         .from('crm_customers')
         .select(`
@@ -95,7 +96,6 @@ const Insiders: React.FC = () => {
 
       if (contactsError) throw contactsError;
 
-      // Transform the data to match our Contact interface
       const transformedContacts = contactsData?.map(contact => ({
         ...contact,
         soundings: contact.soundings?.map((s: any) => s.sounding)
@@ -103,7 +103,6 @@ const Insiders: React.FC = () => {
 
       setContacts(transformedContacts);
 
-      // Load market soundings with insider counts
       const { data: soundingsData, error: soundingsError } = await supabase
         .from('market_soundings')
         .select(`
@@ -115,7 +114,6 @@ const Insiders: React.FC = () => {
 
       if (soundingsError) throw soundingsError;
 
-      // Transform the data to include insider count
       const soundingsWithCounts = soundingsData?.map(sounding => ({
         ...sounding,
         insider_count: sounding.insiders?.[0]?.count || 0
@@ -146,7 +144,6 @@ const Insiders: React.FC = () => {
 
       if (insertError) throw insertError;
 
-      // Update contact tags
       const contact = contacts.find(c => c.id === selectedContact);
       if (contact) {
         const newTags = [...(contact.tags || [])];
@@ -230,7 +227,6 @@ const Insiders: React.FC = () => {
       setShowDeleteConfirm(false);
       setSoundingToDelete(null);
       
-      // Reload data to update insider associations
       loadData();
     } catch (err) {
       console.error('Error deleting market sounding:', err);
@@ -259,6 +255,9 @@ const Insiders: React.FC = () => {
     insider.company_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const liveSoundings = marketSoundings.filter(s => s.status === 'Live');
+  const archivedSoundings = marketSoundings.filter(s => s.status === 'Cleansed');
+
   return (
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
@@ -271,83 +270,190 @@ const Insiders: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
           <div className="p-4 border-b border-neutral-200">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-neutral-800">Market Soundings</h2>
-              <Button
-                size="sm"
-                leftIcon={<Plus size={16} />}
-                onClick={() => setShowSoundingModal(true)}
-              >
-                Add
-              </Button>
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => setActiveTab('live')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'live'
+                      ? 'bg-primary text-white'
+                      : 'text-neutral-600 hover:bg-neutral-50'
+                  }`}
+                >
+                  Live Soundings
+                </button>
+                <button
+                  onClick={() => setActiveTab('archive')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === 'archive'
+                      ? 'bg-primary text-white'
+                      : 'text-neutral-600 hover:bg-neutral-50'
+                  }`}
+                >
+                  Archive
+                </button>
+              </div>
+              {activeTab === 'live' && (
+                <Button
+                  size="sm"
+                  leftIcon={<Plus size={16} />}
+                  onClick={() => setShowSoundingModal(true)}
+                >
+                  Add
+                </Button>
+              )}
             </div>
           </div>
           <div className="p-4">
-            {marketSoundings.length > 0 ? (
-              <div className="space-y-2">
-                {marketSoundings.map((sounding) => (
-                  <div
-                    key={sounding.id}
-                    className="p-3 rounded-lg border border-neutral-200 hover:bg-neutral-50"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-medium text-neutral-800">{sounding.subject}</h3>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <p className="text-sm text-neutral-500">{sounding.project_name}</p>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                            {sounding.insider_count}
+            {activeTab === 'live' ? (
+              liveSoundings.length > 0 ? (
+                <div className="space-y-2">
+                  {liveSoundings.map((sounding) => (
+                    <div
+                      key={sounding.id}
+                      className="p-3 rounded-lg border border-neutral-200 hover:bg-neutral-50"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-medium text-neutral-800">{sounding.subject}</h3>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <p className="text-sm text-neutral-500">{sounding.project_name}</p>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                              {sounding.insider_count}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${
+                            sounding.status === 'Live'
+                              ? 'bg-success-50 text-success-700'
+                              : 'bg-neutral-100 text-neutral-700'
+                          }`}>
+                            {sounding.status}
                           </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-error-600 hover:text-error-700"
+                            onClick={() => {
+                              setSoundingToDelete(sounding);
+                              setShowDeleteConfirm(true);
+                            }}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${
-                          sounding.status === 'Live'
-                            ? 'bg-success-50 text-success-700'
-                            : 'bg-neutral-100 text-neutral-700'
-                        }`}>
-                          {sounding.status}
+                      {sounding.description && (
+                        <p className="text-sm text-neutral-600 mt-2 line-clamp-2">
+                          {sounding.description}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-100">
+                        <span className="text-xs text-neutral-500">
+                          Created {new Date(sounding.created_at).toLocaleDateString()}
                         </span>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-neutral-500">
+                            Type: {sounding.type}
+                          </span>
+                          {sounding.expected_cleanse_date && (
+                            <span className="text-xs text-neutral-500">
+                              Expected Cleanse: {new Date(sounding.expected_cleanse_date).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <AlertCircle className="mx-auto h-8 w-8 text-neutral-300" />
+                  <p className="mt-2 text-sm text-neutral-500">No live market soundings</p>
+                </div>
+              )
+            ) : (
+              archivedSoundings.length > 0 ? (
+                <div className="space-y-2">
+                  {archivedSoundings.map((sounding) => (
+                    <div
+                      key={sounding.id}
+                      className="p-3 rounded-lg border border-neutral-200 hover:bg-neutral-50"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-medium text-neutral-800">{sounding.subject}</h3>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <p className="text-sm text-neutral-500">{sounding.project_name}</p>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700">
+                              Cleansed
+                            </span>
+                          </div>
+                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-error-600 hover:text-error-700"
-                          onClick={() => {
-                            setSoundingToDelete(sounding);
-                            setShowDeleteConfirm(true);
-                          }}
+                          onClick={() => setShowArchiveDetails(showArchiveDetails === sounding.id ? null : sounding.id)}
                         >
-                          <Trash2 size={16} />
+                          <ChevronDown
+                            size={16}
+                            className={`transition-transform ${
+                              showArchiveDetails === sounding.id ? 'rotate-180' : ''
+                            }`}
+                          />
                         </Button>
                       </div>
-                    </div>
-                    {sounding.description && (
-                      <p className="text-sm text-neutral-600 mt-2 line-clamp-2">
-                        {sounding.description}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-100">
-                      <span className="text-xs text-neutral-500">
-                        Created {new Date(sounding.created_at).toLocaleDateString()}
-                      </span>
-                      <div className="flex items-center space-x-2">
+                      
+                      {showArchiveDetails === sounding.id && (
+                        <div className="mt-4 pt-4 border-t border-neutral-100">
+                          <h4 className="text-sm font-medium text-neutral-700 mb-2">Previous Insiders</h4>
+                          {contacts
+                            .filter(contact => contact.soundings?.some(s => s.id === sounding.id))
+                            .map(contact => (
+                              <div
+                                key={contact.id}
+                                className="flex items-center justify-between py-2"
+                              >
+                                <div className="flex items-center">
+                                  <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                                    <UserRound size={16} />
+                                  </div>
+                                  <div className="ml-3">
+                                    <p className="text-sm font-medium text-neutral-800">
+                                      {contact.first_name} {contact.last_name}
+                                    </p>
+                                    <p className="text-xs text-neutral-500">
+                                      {contact.email}
+                                    </p>
+                                  </div>
+                                </div>
+                                {contact.company_name && (
+                                  <span className="text-sm text-neutral-600">
+                                    {contact.company_name}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-100">
+                        <span className="text-xs text-neutral-500">
+                          Cleansed {new Date(sounding.cleansed_at || '').toLocaleDateString()}
+                        </span>
                         <span className="text-xs text-neutral-500">
                           Type: {sounding.type}
                         </span>
-                        {sounding.expected_cleanse_date && (
-                          <span className="text-xs text-neutral-500">
-                            Expected Cleanse: {new Date(sounding.expected_cleanse_date).toLocaleDateString()}
-                          </span>
-                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <FileText className="mx-auto h-8 w-8 text-neutral-300" />
-                <p className="mt-2 text-sm text-neutral-500">No market soundings</p>
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Archive className="mx-auto h-8 w-8 text-neutral-300" />
+                  <p className="mt-2 text-sm text-neutral-500">No archived market soundings</p>
+                </div>
+              )
             )}
           </div>
         </div>
@@ -674,7 +780,7 @@ const Insiders: React.FC = () => {
                       title="Generate random project name"
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors"
                     >
-                      <Wand2 className="h-5 w-5" />
+                      <Eye className="h-5 w-5" />
                     </button>
                   </div>
                   <p className="mt-1 text-xs text-neutral-500">
@@ -689,109 +795,4 @@ const Insiders: React.FC = () => {
                   <select
                     value={newSounding.type}
                     onChange={(e) => setNewSounding({ ...newSounding, type: e.target.value })}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  >
-                    <option value="Inside Information">Inside Information</option>
-                    <option value="Financial Results">Financial Results</option>
-                    <option value="Acquisitions and Disposals">Acquisitions and Disposals</option>
-                    <option value="Dividend Announcements">Dividend Announcements</option>
-                    <option value="Corporate Governance Changes">Corporate Governance Changes</option>
-                    <option value="Share Issuance and Buybacks">Share Issuance and Buybacks</option>
-                    <option value="Regulatory Compliance">Regulatory Compliance</option>
-                    <option value="Strategic Updates">Strategic Updates</option>
-                    <option value="Risk Factors">Risk Factors</option>
-                    <option value="Sustainability and Corporate Social Responsibility">Sustainability and CSR</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Expected Cleanse Date
-                  </label>
-                  <input
-                    type="date"
-                    value={newSounding.expected_cleanse_date}
-                    onChange={(e) => setNewSounding({ ...newSounding, expected_cleanse_date: e.target.value })}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    value={newSounding.description}
-                    onChange={(e) => setNewSounding({ ...newSounding, description: e.target.value })}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary h-32 resize-none"
-                    placeholder="Enter a description of the market sounding..."
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowSoundingModal(false);
-                    setNewSounding({
-                      subject: '',
-                      description: '',
-                      project_name: '',
-                      type: 'Inside Information',
-                      expected_cleanse_date: ''
-                    });
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddSounding}
-                  disabled={!newSounding.subject || !newSounding.project_name}
-                >
-                  Create Market Sounding
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-6">
-              <h2 className="text-xl font-bold text-neutral-800 mb-4">Delete Market Sounding</h2>
-              <p className="text-neutral-600 mb-6">
-                Are you sure you want to delete this market sounding? This will also remove all insider associations.
-                This action cannot be undone.
-              </p>
-
-              <div className="flex justify-end space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                    setSoundingToDelete(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="bg-error-600 hover:bg-error-700"
-                  onClick={handleDeleteSounding}
-                  isLoading={isDeleting}
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default Insiders;
+                    className="w-full px-4 py-
