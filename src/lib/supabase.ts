@@ -21,13 +21,5 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Test connection
-supabase.from('user_companies').select('count').limit(1).then(({ error }) => {
-  if (error) {
-    console.error('Supabase connection test failed:', error.message);
-  } else {
-    console.log('Supabase connection test successful');
-  }
-}).catch(error => {
-  console.error('Failed to connect to Supabase:', error);
-});
+// Remove the connection test as it's causing unnecessary errors
+// The client will automatically handle connection issues when making requests
