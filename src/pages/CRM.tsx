@@ -71,6 +71,7 @@ const CRM: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [activeView, setActiveView] = useState<'contacts' | 'companies'>('contacts');
   const [noCompanyAssociation, setNoCompanyAssociation] = useState(false);
+  const [showSocialLinks, setShowSocialLinks] = useState(false);
 
   const [newContact, setNewContact] = useState({
     first_name: '',
@@ -199,6 +200,7 @@ const CRM: React.FC = () => {
         instagram: ''
       }
     });
+    setShowSocialLinks(false);
   };
 
   const handleAddItem = async () => {
@@ -685,60 +687,71 @@ const CRM: React.FC = () => {
                   </div>
 
                   <div className="border-t border-neutral-200 pt-6">
-                    <label className="block text-sm font-medium text-neutral-700 mb-4">
-                      Social Media Links
-                    </label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center space-x-3">
-                        <Linkedin className="w-5 h-5 text-[#0077B5]" />
-                        <Input
-                          placeholder="LinkedIn URL"
-                          value={newCompany.social_links.linkedin}
-                          onChange={(e) => setNewCompany({
-                            ...newCompany,
-                            social_links: { ...newCompany.social_links, linkedin: e.target.value }
-                          })}
-                          fullWidth
-                        />
+                    <button
+                      type="button"
+                      onClick={() => setShowSocialLinks(!showSocialLinks)}
+                      className="flex items-center justify-between w-full text-sm font-medium text-neutral-700"
+                    >
+                      <span>Social Media Links</span>
+                      <ChevronDown
+                        size={16}
+                        className={`text-neutral-400 transition-transform ${showSocialLinks ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    
+                    {showSocialLinks && (
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <div className="flex items-center space-x-3">
+                          <Linkedin className="w-5 h-5 text-[#0077B5]" />
+                          <Input
+                            placeholder="LinkedIn URL"
+                            value={newCompany.social_links.linkedin}
+                            onChange={(e) => setNewCompany({
+                              ...newCompany,
+                              social_links: { ...newCompany.social_links, linkedin: e.target.value }
+                            })}
+                            fullWidth
+                          />
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Twitter className="w-5 h-5 text-[#1DA1F2]" />
+                          <Input
+                            placeholder="X (Twitter) URL"
+                            value={newCompany.social_links.twitter}
+                            onChange={(e) => setNewCompany({
+                              ...newCompany,
+                              social_links: { ...newCompany.social_links, twitter: e.target.value }
+                            })}
+                            fullWidth
+                          />
+                
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Facebook className="w-5 h-5 text-[#4267B2]" />
+                          <Input
+                            placeholder="Facebook URL"
+                            value={newCompany.social_links.facebook}
+                            onChange={(e) => setNewCompany({
+                              ...newCompany,
+                              social_links: { ...newCompany.social_links, facebook: e.target.value }
+                            })}
+                            fullWidth
+                          />
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Instagram className="w-5 h-5 text-[#E4405F]" />
+                          <Input
+                            placeholder="Instagram URL"
+                            value={newCompany.social_links.instagram}
+                            onChange={(e) => setNewCompany({
+                              ...newCompany,
+                              social_links: { ...newCompany.social_links, instagram: e.target.value }
+                            })}
+                            fullWidth
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <Twitter className="w-5 h-5 text-[#1DA1F2]" />
-                        <Input
-                          placeholder="X (Twitter) URL"
-                          value={newCompany.social_links.twitter}
-                          onChange={(e) => setNewCompany({
-                            ...newCompany,
-                            social_links: { ...newCompany.social_links, twitter: e.target.value }
-                          })}
-                          fullWidth
-                        />
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Facebook className="w-5 h-5 text-[#4267B2]" />
-                        <Input
-                          placeholder="Facebook URL"
-                          value={newCompany.social_links.facebook}
-                          onChange={(e) => setNewCompany({
-                            ...newCompany,
-                            social_links: { ...newCompany.social_links, facebook: e.target.value }
-                          })}
-                          
-                          fullWidth
-                        />
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Instagram className="w-5 h-5 text-[#E4405F]" />
-                        <Input
-                          placeholder="Instagram URL"
-                          value={newCompany.social_links.instagram}
-                          onChange={(e) => setNewCompany({
-                            ...newCompany,
-                            social_links: { ...newCompany.social_links, instagram: e.target.value }
-                          })}
-                          fullWidth
-                        />
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}
