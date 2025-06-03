@@ -69,6 +69,7 @@ const CRM: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeView, setActiveView] = useState<'contacts' | 'companies'>('contacts');
 
   const [newContact, setNewContact] = useState({
     first_name: '',
