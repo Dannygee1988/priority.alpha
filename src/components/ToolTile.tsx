@@ -107,11 +107,6 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) =
     setShowNestedPopup(showNestedPopup === itemName ? null : itemName);
   };
 
-  const closePopup = () => {
-    setShowPopup(false);
-    setShowNestedPopup(null);
-  };
-
   const getOptions = () => {
     if (title === 'Social Media') return socialMediaOptions;
     if (title === 'Tools') return toolsOptions;
@@ -123,14 +118,6 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) =
 
   return (
     <div className="relative h-full">
-      {/* Overlay that covers the entire screen when popup is open */}
-      {showPopup && (
-        <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-          onClick={closePopup}
-        />
-      )}
-
       <Link 
         to={path}
         onClick={handleClick}
@@ -179,7 +166,10 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) =
                           key={subOption.name}
                           to={subOption.path}
                           className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
-                          onClick={closePopup}
+                          onClick={() => {
+                            setShowPopup(false);
+                            setShowNestedPopup(null);
+                          }}
                         >
                           <subOption.icon size={18} className="mr-3" />
                           {subOption.name}
@@ -192,7 +182,7 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) =
                 <Link
                   to={option.path}
                   className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
-                  onClick={closePopup}
+                  onClick={() => setShowPopup(false)}
                 >
                   <option.icon size={18} className="mr-3" />
                   {option.name}
