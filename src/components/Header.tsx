@@ -21,8 +21,8 @@ const Header: React.FC = () => {
   const showBackButton = location.pathname !== '/dashboard';
 
   return (
-    <header className="bg-white border-b border-neutral-200 sticky top-0 z-10">
-      <div className="h-16 px-6 flex items-center justify-between">
+    <header className="bg-white border-b border-neutral-200 sticky top-0 z-50">
+      <div className="h-16 px-6 flex items-center justify-between relative">
         <div className="flex items-center">
           {showBackButton && (
             <button
@@ -73,7 +73,7 @@ const Header: React.FC = () => {
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-64 rounded-lg shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 z-10 animate-fade-in">
+                <div className="absolute right-0 mt-2 w-64 rounded-lg shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 z-50 animate-fade-in">
                   <div className="px-4 py-3 border-b border-neutral-100">
                     <p className="text-sm font-medium text-neutral-800">{user.name}</p>
                     <p className="text-xs text-neutral-500 truncate">{user.email}</p>
