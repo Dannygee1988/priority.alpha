@@ -49,9 +49,11 @@ import {
   FileEdit,
   FileCheck,
   Brain,
+  ListFilter,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
+  { name: 'Posts', icon: ListFilter, path: '/social-media/posts' },
   { name: 'Create New Post', icon: PenSquare, path: '/social-media/create' },
   { name: 'Generate Captions', icon: MessageSquare, path: '/social-media/captions' },
   { name: 'Create Graphics', icon: Palette, path: '/social-media/graphics' },
