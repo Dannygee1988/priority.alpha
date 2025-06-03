@@ -61,6 +61,20 @@ const Insiders: React.FC = () => {
     expected_cleanse_date: ''
   });
 
+  const soundingTypes = [
+    'Financial Results',
+    'Acquisitions and Disposals',
+    'Dividend Announcements',
+    'Corporate Governance Changes',
+    'Share Issuance and Buybacks',
+    'Regulatory Compliance',
+    'Inside Information',
+    'Strategic Updates',
+    'Risk Factors',
+    'Sustainability and Corporate Social Responsibility',
+    'Fundraising'
+  ] as const;
+
   useEffect(() => {
     loadData();
   }, [user]);
@@ -691,16 +705,9 @@ const Insiders: React.FC = () => {
                     onChange={(e) => setNewSounding({ ...newSounding, type: e.target.value })}
                     className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
                   >
-                    <option value="Inside Information">Inside Information</option>
-                    <option value="Financial Results">Financial Results</option>
-                    <option value="Acquisitions and Disposals">Acquisitions and Disposals</option>
-                    <option value="Dividend Announcements">Dividend Announcements</option>
-                    <option value="Corporate Governance Changes">Corporate Governance Changes</option>
-                    <option value="Share Issuance and Buybacks">Share Issuance and Buybacks</option>
-                    <option value="Regulatory Compliance">Regulatory Compliance</option>
-                    <option value="Strategic Updates">Strategic Updates</option>
-                    <option value="Risk Factors">Risk Factors</option>
-                    <option value="Sustainability and Corporate Social Responsibility">Sustainability and CSR</option>
+                    {soundingTypes.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
                   </select>
                 </div>
 
