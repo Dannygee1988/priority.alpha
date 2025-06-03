@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Search, Filter, Plus, X, ChevronDown, Link as LinkIcon } from 'lucide-react';
+import { Eye, Search, Filter, Plus, X, ChevronDown, Link as LinkIcon, FileEdit, Share2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Button from '../components/Button';
@@ -37,6 +37,8 @@ const PublishedRNS: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<RNSDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
@@ -137,6 +139,24 @@ const PublishedRNS: React.FC = () => {
       setError('Failed to add RNS. Please try again.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!selectedDocument) return;
+
+    try {
+      // Here you would implement the actual sharing functionality
+      // For now, we'll just copy the LSE URL to clipboard if available
+      if (selectedDocument.lse_url) {
+        await navigator.clipboard.writeText(selectedDocument.lse_url);
+        // You could show a success message here
+      }
+      setShowShareModal(false);
+      setSelectedDocument(null);
+    } catch (err) {
+      console.error('Error sharing document:', err);
+      setError('Failed to share document. Please try again.');
     }
   };
 
@@ -241,14 +261,35 @@ const PublishedRNS: React.FC = () => {
                         )}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          leftIcon={<Eye size={16} />}
-                          onClick={() => navigate(`/pr/rns/view/${doc.id}`)}
-                        >
-                          View
-                        </Button>
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            leftIcon={<Eye size={16} />}
+                            onClick={() => navigate(`/pr/rns/view/${doc.id}`)}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            leftIcon={<FileEdit size={16} />}
+                            onClick={() => navigate(`/pr/rns/create-content/${doc.id}`)}
+                          >
+                            Create Content
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            leftIcon={<Share2 size={16} />}
+                            onClick={() => {
+                              setSelectedDocument(doc);
+                              setShowShareModal(true);
+                            }}
+                          >
+                            Share
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -376,6 +417,71 @@ const PublishedRNS: React.FC = () => {
                 >
                   Add RNS
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && selectedDocument && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-bold text-neutral-800">Share RNS</h2>
+                <button
+                  onClick={() => {
+                    setShowShareModal(false);
+                    setSelectedDocument(null);
+                  }}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <X size={20} className="text-neutral-500" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-sm text-neutral-600">
+                  Share this RNS announcement with your team or stakeholders.
+                </p>
+
+                {selectedDocument.lse_url && (
+                  <div className="bg-neutral-50 p-4 rounded-lg">
+                    <p className="text-sm font-medium text-neutral-700 mb-2">LSE Announcement URL</p>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        value={selectedDocument.lse_url}
+                        readOnly
+                        fullWidth
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => navigator.clipboard.writeText(selectedDocument.lse_url || '')}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-6 flex justify-end space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowShareModal(false);
+                      setSelectedDocument(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleShare}
+                    leftIcon={<Share2 size={18} />}
+                  >
+                    Share
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
