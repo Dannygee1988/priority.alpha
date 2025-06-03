@@ -224,73 +224,32 @@ const RNSGenerator: React.FC = () => {
 
   const renderMarkdown = (content: string) => {
     return content
-      // RNS Number
-      .replace(/^RNS Number:\s*(\d+)$/gm, '**RNS Number:** $1\n')
-      
-      // Company name in all caps
-      .replace(/^([A-Z][A-Z\s&]+(?:PLC|LTD|LIMITED))$/gm, '# $1\n')
-      
-      // Section headers in all caps
-      .replace(/^([A-Z][A-Z\s]+(?:[A-Z]|[&]|[:]))$/gm, '## $1\n')
-      
-      // Subsection headers
-      .replace(/^([A-Za-z][A-Za-z\s]+:)$/gm, '### $1\n')
-      
-      // Contact information blocks
-      .replace(
-        /^([A-Za-z\s]+)$\n^(\+\d{2}\s\(\d\)\s\d{2}\s\d{4}\s\d{4})$/gm, 
-        '**$1**\n$2\n'
-      )
-      
-      // Email addresses
-      .replace(
-        /^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/gm,
-        '[Email]($1)\n'
-      )
-      
-      // Websites
-      .replace(
-        /^(www\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/gm,
-        '[Website](https://$1)\n'
-      )
-      
-      // Joint broker information
-      .replace(
-        /^Joint Broker ([A-Za-z\s&]+) ([A-Za-z\s\/]+) Tel: ([+0-9\s()]+)$/gm,
-        '**Joint Broker:** $1\n**Contact:** $2\n**Tel:** $3\n'
-      )
-      
-      // Monetary values
-      .replace(/\$(\d+(?:\.\d{2})?)/g, '**$$$1**')
-      .replace(/£(\d+(?:\.\d{2})?)/g, '**£$1**')
-      .replace(/(\d+(?:\.\d{2})?)\s*(?:GBP|USD|EUR)/g, '**$1** $2')
-      
-      // Dates
-      .replace(
-        /(\d{1,2}(?:st|nd|rd|th)?\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})/g,
-        '**$1**'
-      )
-      
-      // Percentages
-      .replace(/(\d+(?:\.\d+)?%)/g, '**$1**')
-      
-      // Important phrases
-      .replace(/"([^"]+)"/g, '_"$1"_')
-      
-      // Lists
-      .replace(/^[-•]\s+(.+)$/gm, '- $1')
-      
-      // Horizontal rules
-      .replace(/^-{3,}$/gm, '---\n')
-      
-      // Notes section
-      .replace(/^Notes:$/gm, '## Notes:\n')
-      
-      // Ensure paragraphs are properly spaced
+      .replace(/^RNS Number: (.+)$/gm, '<div class="text-sm text-neutral-600 mb-2"><strong>RNS Number:</strong> $1</div>')
+      .replace(/^([A-Z][A-Z\s&]+PLC)$/gm, '<h1 class="text-xl font-bold text-primary mb-2">$1</h1>')
+      .replace(/^([A-Z\s:]+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$2</h2>')
+      .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-neutral-800 mb-3 mt-5">$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-neutral-800 mb-4 mt-6">$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-neutral-800 mb-6 mt-8">$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
+      .replace(/_\"([^"]+)\"_/g, '<em class="italic text-neutral-700">"$1"</em>')
+      .replace(/^- (.+)$/gm, '<li class="ml-6 mb-2 list-disc">$1</li>')
+      .replace(/^---$/gm, '<hr class="my-6 border-neutral-300">')
+      .replace(/^([A-Z][a-zA-Z\s&()]+)$/gm, '<div class="font-semibold text-neutral-800 mt-4 mb-1">$1</div>')
+      .replace(/^(\+\d{2}\s\(\d\)\s\d{2}\s\d{4}\s\d{4})$/gm, '<div class="text-neutral-600 mb-1">$1</div>')
+      .replace(/^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/gm, '<div class="text-primary hover:underline mb-1"><a href="mailto:$1">$1</a></div>')
+      .replace(/^(www\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/gm, '<div class="text-primary hover:underline mb-2"><a href="https://$1" target="_blank">$1</a></div>')
       .split('\n\n')
-      .map(p => p.trim())
-      .filter(p => p)
-      .join('\n\n');
+      .map(paragraph => {
+        if (paragraph.trim() === '') return '';
+        if (paragraph.includes('<h1>') || paragraph.includes('<h2>') || paragraph.includes('<hr>') || paragraph.includes('<div class="font-semibold">')) {
+          return paragraph;
+        }
+        return `<p class="mb-4 leading-relaxed">${paragraph}</p>`;
+      })
+      .join('')
+      .replace(/<p class="mb-4 leading-relaxed">(<h[1-6]|<hr|<div)/g, '$1')
+      .replace(/(<\/h[1-6]>|<\/hr>|<\/div>)<\/p>/g, '$1');
   };
 
   return (
