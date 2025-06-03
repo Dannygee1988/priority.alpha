@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Twitter, Facebook, Linkedin, Instagram, Copy, Check, RefreshCw, Wand2 } from 'lucide-react';
+import { Twitter, Facebook, Linkedin, Instagram, Copy, Check, RefreshCw, Wand2, Image } from 'lucide-react';
 import Button from '../components/Button';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +30,8 @@ const CreateSocialContent: React.FC = () => {
   const [generatedContent, setGeneratedContent] = useState<string>('');
   const [isCopied, setIsCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
+  const [generateImage, setGenerateImage] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
   const platforms = [
     { 
@@ -101,6 +103,7 @@ const CreateSocialContent: React.FC = () => {
 
     setIsGenerating(true);
     setError(null);
+    setGeneratedImageUrl(null);
 
     try {
       const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25e0d499-6af1-4357-8c23-a1b43d7bedb8', {
@@ -113,7 +116,8 @@ const CreateSocialContent: React.FC = () => {
           platform: selectedPlatform,
           type: document.type,
           title: document.title,
-          maxLength: platforms.find(p => p.id === selectedPlatform)?.maxLength
+          maxLength: platforms.find(p => p.id === selectedPlatform)?.maxLength,
+          generateImage: generateImage
         })
       });
 
@@ -123,6 +127,9 @@ const CreateSocialContent: React.FC = () => {
 
       const data = await response.json();
       setGeneratedContent(data.output || data.content || '');
+      if (generateImage && data.imageUrl) {
+        setGeneratedImageUrl(data.imageUrl);
+      }
       setActiveTab('output');
     } catch (err) {
       console.error('Error generating content:', err);
@@ -235,6 +242,30 @@ const CreateSocialContent: React.FC = () => {
                 </p>
               </div>
 
+              <div className="mb-6">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={generateImage}
+                      onChange={(e) => setGenerateImage(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`block w-14 h-8 rounded-full transition-colors ${
+                      generateImage ? 'bg-primary' : 'bg-neutral-200'
+                    }`}>
+                      <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform ${
+                        generateImage ? 'translate-x-6' : 'translate-x-0'
+                      }`} />
+                    </div>
+                  </div>
+                  <span className="text-sm font-medium text-neutral-700">Generate social media image</span>
+                </label>
+                <p className="mt-1 text-sm text-neutral-500 ml-16">
+                  Create an AI-generated image to accompany your post
+                </p>
+              </div>
+
               {error && (
                 <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
                   {error}
@@ -287,6 +318,19 @@ const CreateSocialContent: React.FC = () => {
                     </span>
                   </div>
                 </div>
+
+                {generatedImageUrl && (
+                  <div className="mt-6">
+                    <h3 className="text-sm font-medium text-neutral-700 mb-2">Generated Image</h3>
+                    <div className="relative aspect-[16/9] rounded-lg overflow-hidden bg-neutral-100">
+                      <img
+                        src={generatedImageUrl}
+                        alt="Generated social media image"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-6 flex justify-end space-x-3">
                   <Button
