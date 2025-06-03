@@ -70,6 +70,7 @@ const CRM: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [activeView, setActiveView] = useState<'contacts' | 'companies'>('contacts');
+  const [noCompanyAssociation, setNoCompanyAssociation] = useState(false);
 
   const [newContact, setNewContact] = useState({
     first_name: '',
@@ -149,10 +150,12 @@ const CRM: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
+      setNoCompanyAssociation(false);
 
       const companyId = await getUserCompany(user.id);
       if (!companyId) {
-        throw new Error('No company found for user');
+        setNoCompanyAssociation(true);
+        return;
       }
 
       const [contactsData, companiesData] = await Promise.all([
@@ -248,6 +251,23 @@ const CRM: React.FC = () => {
       setIsSaving(false);
     }
   };
+
+  if (noCompanyAssociation) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+          <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">No Company Association Found</h2>
+          <p className="text-gray-600 mb-6">
+            Your user account is not associated with any company. Please contact your administrator to set up the proper company association.
+          </p>
+          <p className="text-sm text-gray-500">
+            This is required to access the CRM features and manage contacts and companies.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
