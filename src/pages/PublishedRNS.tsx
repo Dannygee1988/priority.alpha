@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Search, Filter, Plus, X, ChevronDown } from 'lucide-react';
+import { Eye, Search, Filter, Plus, X, ChevronDown, Link as LinkIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Button from '../components/Button';
@@ -15,6 +15,7 @@ interface RNSDocument {
   published_at: string;
   created_at: string;
   type: string;
+  lse_url?: string;
 }
 
 type RNSType = 
@@ -43,7 +44,8 @@ const PublishedRNS: React.FC = () => {
     title: '',
     content: '',
     type: 'Inside Information' as RNSType,
-    published_at: new Date().toISOString().split('T')[0]
+    published_at: new Date().toISOString().split('T')[0],
+    lse_url: ''
   });
 
   const announcementTypes: RNSType[] = [
@@ -111,7 +113,8 @@ const PublishedRNS: React.FC = () => {
           status: 'published',
           published_at: new Date(newRNS.published_at).toISOString(),
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          lse_url: newRNS.lse_url
         })
         .select()
         .single();
@@ -124,7 +127,8 @@ const PublishedRNS: React.FC = () => {
         title: '',
         content: '',
         type: 'Inside Information',
-        published_at: new Date().toISOString().split('T')[0]
+        published_at: new Date().toISOString().split('T')[0],
+        lse_url: ''
       });
     } catch (err) {
       console.error('Error adding RNS:', err);
@@ -200,7 +204,7 @@ const PublishedRNS: React.FC = () => {
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Title</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Published Date</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Created Date</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">LSE Link</th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
                   </tr>
                 </thead>
@@ -219,8 +223,20 @@ const PublishedRNS: React.FC = () => {
                       <td className="py-3 px-4 text-sm text-neutral-600">
                         {formatDate(doc.published_at)}
                       </td>
-                      <td className="py-3 px-4 text-sm text-neutral-600">
-                        {formatDate(doc.created_at)}
+                      <td className="py-3 px-4">
+                        {doc.lse_url ? (
+                          <a
+                            href={doc.lse_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:text-primary-700 flex items-center text-sm"
+                          >
+                            <LinkIcon size={14} className="mr-1" />
+                            View on LSE
+                          </a>
+                        ) : (
+                          <span className="text-sm text-neutral-400">No link</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-right">
                         <Button
@@ -259,7 +275,8 @@ const PublishedRNS: React.FC = () => {
                       title: '',
                       content: '',
                       type: 'Inside Information',
-                      published_at: new Date().toISOString().split('T')[0]
+                      published_at: new Date().toISOString().split('T')[0],
+                      lse_url: ''
                     });
                   }}
                   className="p-1 hover:bg-neutral-100 rounded-full"
@@ -311,6 +328,15 @@ const PublishedRNS: React.FC = () => {
                   />
                 </div>
 
+                <Input
+                  label="London Stock Exchange URL"
+                  value={newRNS.lse_url}
+                  onChange={(e) => setNewRNS({ ...newRNS, lse_url: e.target.value })}
+                  placeholder="Enter LSE announcement URL"
+                  leftIcon={<LinkIcon size={18} />}
+                  fullWidth
+                />
+
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Content
@@ -334,7 +360,8 @@ const PublishedRNS: React.FC = () => {
                       title: '',
                       content: '',
                       type: 'Inside Information',
-                      published_at: new Date().toISOString().split('T')[0]
+                      published_at: new Date().toISOString().split('T')[0],
+                      lse_url: ''
                     });
                   }}
                 >
