@@ -38,32 +38,32 @@ const CreateSocialContent: React.FC = () => {
       id: 'linkedin' as const, 
       name: 'LinkedIn',
       icon: Linkedin,
-      color: 'bg-[#0077B5]',
-      hoverColor: 'hover:bg-[#006399]',
+      color: 'bg-[#0A66C2]/80',
+      hoverColor: 'hover:bg-[#0A66C2]/90',
       maxLength: 3000
     },
     { 
       id: 'twitter' as const, 
       name: 'X (Twitter)',
       icon: Twitter,
-      color: 'bg-[#1DA1F2]',
-      hoverColor: 'hover:bg-[#1a94e4]',
+      color: 'bg-[#1DA1F2]/80',
+      hoverColor: 'hover:bg-[#1DA1F2]/90',
       maxLength: 280
     },
     { 
       id: 'facebook' as const, 
       name: 'Facebook',
       icon: Facebook,
-      color: 'bg-[#4267B2]',
-      hoverColor: 'hover:bg-[#385796]',
+      color: 'bg-[#4267B2]/80',
+      hoverColor: 'hover:bg-[#4267B2]/90',
       maxLength: 63206
     },
     { 
       id: 'instagram' as const, 
       name: 'Instagram',
       icon: Instagram,
-      color: 'bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737]',
-      hoverColor: 'hover:opacity-90',
+      color: 'bg-gradient-to-r from-[#833AB4]/80 via-[#FD1D1D]/80 to-[#F77737]/80',
+      hoverColor: 'hover:from-[#833AB4]/90 hover:via-[#FD1D1D]/90 hover:to-[#F77737]/90',
       maxLength: 2200
     }
   ];
@@ -227,7 +227,7 @@ const CreateSocialContent: React.FC = () => {
                       className={`
                         flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors
                         ${selectedPlatform === platform.id
-                          ? `${platform.color} text-white`
+                          ? `${platform.color} text-white ${platform.hoverColor}`
                           : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
                         }
                       `}
