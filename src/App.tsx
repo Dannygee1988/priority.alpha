@@ -8,6 +8,7 @@ import RNSGenerator from './pages/RNSGenerator';
 import ImproveRNS from './pages/ImproveRNS';
 import PublishedRNS from './pages/PublishedRNS';
 import RNSDrafts from './pages/RNSDrafts';
+import CreateSocialContent from './pages/CreateSocialContent';
 import CRM from './pages/CRM';
 import Insiders from './pages/Insiders';
 import Settings from './pages/Settings';
@@ -32,6 +33,7 @@ function App() {
             <Route path="/pr/rns/improve" element={<ImproveRNS />} />
             <Route path="/pr/rns/published" element={<PublishedRNS />} />
             <Route path="/pr/rns/drafts" element={<RNSDrafts />} />
+            <Route path="/pr/rns/create-content/:id" element={<CreateSocialContent />} />
             <Route path="/investors/insiders" element={<Insiders />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/advisor" element={<Advisor />} />
@@ -47,7 +49,7 @@ function App() {
           </Route>
           
           {/* Redirect to login by default */}
-          <Route path="*" element={<Navigate to="/login\" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
