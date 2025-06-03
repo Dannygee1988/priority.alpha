@@ -654,9 +654,41 @@ const CRM: React.FC = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={newCompany.description}
+                      onChange={(e) => setNewCompany({ ...newCompany, description: e.target.value })}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="w-1/3">
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Status
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={newCompany.status}
+                        onChange={(e) => setNewCompany({ ...newCompany, status: e.target.value as typeof companyStatuses[number] })}
+                        className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
+                      >
+                        {companyStatuses.map((status) => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <ChevronDown size={16} className="text-neutral-400" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-neutral-200 pt-6">
+                    <label className="block text-sm font-medium text-neutral-700 mb-4">
                       Social Media Links
                     </label>
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="flex items-center space-x-3">
                         <Linkedin className="w-5 h-5 text-[#0077B5]" />
                         <Input
@@ -690,6 +722,7 @@ const CRM: React.FC = () => {
                             ...newCompany,
                             social_links: { ...newCompany.social_links, facebook: e.target.value }
                           })}
+                          
                           fullWidth
                         />
                       </div>
@@ -704,38 +737,6 @@ const CRM: React.FC = () => {
                           })}
                           fullWidth
                         />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Description
-                    </label>
-                    <textarea
-                      value={newCompany.description}
-                      onChange={(e) => setNewCompany({ ...newCompany, description: e.target.value })}
-                      className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="w-1/3">
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Status
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={newCompany.status}
-                        onChange={(e) => setNewCompany({ ...newCompany, status: e.target.value as typeof companyStatuses[number] })}
-                        className="w-full px-4 py-2 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary appearance-none"
-                      >
-                        {companyStatuses.map((status) => (
-                          <option key={status} value={status}>{status}</option>
-                        ))}
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                        <ChevronDown size={16} className="text-neutral-400" />
                       </div>
                     </div>
                   </div>
