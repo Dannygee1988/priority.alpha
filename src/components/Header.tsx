@@ -1,23 +1,17 @@
 import React, { useState } from 'react';
-import { Bell, User, LogOut, Settings, ChevronDown, Sun, Moon, ArrowLeft } from 'lucide-react';
+import { Bell, User, LogOut, Settings, ChevronDown, ArrowLeft } from 'lucide-react';
 import Button from './Button';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Header: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const toggleUserMenu = () => {
     setShowUserMenu(!showUserMenu);
-  };
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    // You would implement actual dark mode switching here
   };
 
   const handleBack = () => {
@@ -42,14 +36,6 @@ const Header: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-4">
-          <button 
-            onClick={toggleDarkMode} 
-            className="p-2 rounded-full text-neutral-600 hover:text-primary hover:bg-primary/5 transition-colors"
-            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-          
           <div className="relative">
             <button 
               className="p-2 rounded-full text-neutral-600 hover:text-primary hover:bg-primary/5 transition-colors"
