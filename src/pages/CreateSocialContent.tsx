@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Copy, Check, RefreshCw, Wand2, Image, ChevronDown, ChevronUp } from 'lucide-react';
+import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Copy, Check, RefreshCw, Wand2, Image, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { supabase } from '../lib/supabase';
@@ -34,6 +34,8 @@ const CreateSocialContent: React.FC = () => {
   const [generateImage, setGenerateImage] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [showFullContent, setShowFullContent] = useState(false);
+  const [showAdvancedPrompts, setShowAdvancedPrompts] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState('');
 
   const platforms = [
     { 
@@ -119,7 +121,8 @@ const CreateSocialContent: React.FC = () => {
           type: document.type,
           title: document.title,
           maxLength: platforms.find(p => p.id === selectedPlatform)?.maxLength,
-          generateImage: generateImage
+          generateImage: generateImage,
+          customPrompt: showAdvancedPrompts ? customPrompt : undefined
         })
       });
 
@@ -253,7 +256,7 @@ const CreateSocialContent: React.FC = () => {
                 </p>
               </div>
 
-              <div className="mb-6">
+              <div className="space-y-4">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <div className="relative">
                     <input
@@ -272,9 +275,43 @@ const CreateSocialContent: React.FC = () => {
                   </div>
                   <span className="text-sm font-medium text-neutral-700">Generate social media image</span>
                 </label>
-                <p className="mt-1 text-sm text-neutral-500 ml-16">
-                  Create an AI-generated image to accompany your post
-                </p>
+
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={showAdvancedPrompts}
+                      onChange={(e) => setShowAdvancedPrompts(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`block w-14 h-8 rounded-full transition-colors ${
+                      showAdvancedPrompts ? 'bg-primary' : 'bg-neutral-200'
+                    }`}>
+                      <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform ${
+                        showAdvancedPrompts ? 'translate-x-6' : 'translate-x-0'
+                      }`} />
+                    </div>
+                  </div>
+                  <span className="text-sm font-medium text-neutral-700">Advanced AI prompting</span>
+                </label>
+
+                {showAdvancedPrompts && (
+                  <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
+                    <div className="flex items-start mb-3">
+                      <MessageSquare size={18} className="text-primary mt-1 mr-2" />
+                      <p className="text-sm text-neutral-600">
+                        Provide additional instructions to guide the AI in creating your social media content.
+                        You can specify tone, style, key points to emphasize, or any other preferences.
+                      </p>
+                    </div>
+                    <textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      placeholder="Example: Make it more conversational and focus on the growth metrics. Add relevant industry hashtags."
+                      className="w-full h-32 px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary resize-none text-sm"
+                    />
+                  </div>
+                )}
               </div>
 
               {error && (
