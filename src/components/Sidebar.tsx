@@ -49,8 +49,8 @@ import {
   FileEdit,
   FileCheck,
   Brain,
-  ListFilter,
   Bot,
+  MessagesSquare,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
@@ -106,6 +106,7 @@ const prSubmenu = [
 
 const advisorSubmenu = [
   { name: 'GPT', icon: Bot, path: '/gpt' },
+  { name: 'Chats', icon: MessagesSquare, path: '/chats' },
 ];
 
 const navigation = [

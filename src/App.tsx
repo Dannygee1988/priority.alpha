@@ -37,6 +37,7 @@ function App() {
             <Route path="/investors/insiders" element={<Insiders />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/gpt" element={<GPT />} />
+            <Route path="/chats" element={<div className="p-8">Customer Chats page (coming soon)</div>} />
             <Route path="/social-media/gallery" element={<Gallery />} />
             {/* Add more routes as they're developed */}
             <Route path="/analytics" element={<div className="p-8">Analytics page (coming soon)</div>} />
@@ -49,7 +50,7 @@ function App() {
           </Route>
           
           {/* Redirect to login by default */}
-          <Route path="*" element={<Navigate to="/login\" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
