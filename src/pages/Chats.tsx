@@ -20,6 +20,17 @@ interface ChatMessage {
   email: string;
 }
 
+type Platform = 'all' | 'whatsapp' | 'telegram' | 'facebook' | 'instagram' | 'website';
+
+const platforms: { id: Platform; name: string; emoji: string }[] = [
+  { id: 'all', name: 'All Channels', emoji: '📱' },
+  { id: 'whatsapp', name: 'WhatsApp', emoji: '💬' },
+  { id: 'telegram', name: 'Telegram', emoji: '📬' },
+  { id: 'facebook', name: 'Facebook', emoji: '👥' },
+  { id: 'instagram', name: 'Instagram', emoji: '📸' },
+  { id: 'website', name: 'Website', emoji: '🌐' },
+];
+
 const Chats: React.FC = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -28,6 +39,7 @@ const Chats: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
+  const [activePlatform, setActivePlatform] = useState<Platform>('all');
 
   useEffect(() => {
     loadMessages();
@@ -90,31 +102,27 @@ const Chats: React.FC = () => {
   };
 
   const getSourceIcon = (source: ChatMessage['source']) => {
-    switch (source) {
-      case 'website':
-        return '🌐';
-      case 'whatsapp':
-        return '📱';
-      case 'telegram':
-        return '📬';
-      case 'facebook':
-        return '👥';
-      case 'instagram':
-        return '📸';
-      default:
-        return '💬';
-    }
+    const platform = platforms.find(p => p.id === source);
+    return platform?.emoji || '💬';
   };
 
   const filteredMessages = messages.filter(msg => {
     const searchLower = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = 
       msg.content.toLowerCase().includes(searchLower) ||
       msg.email?.toLowerCase().includes(searchLower) ||
       msg.subject?.toLowerCase().includes(searchLower) ||
-      msg.keywords?.some(k => k.toLowerCase().includes(searchLower))
-    );
+      msg.keywords?.some(k => k.toLowerCase().includes(searchLower));
+
+    const matchesPlatform = activePlatform === 'all' || msg.source === activePlatform;
+
+    return matchesSearch && matchesPlatform;
   });
+
+  const getMessageCountByPlatform = (platform: Platform) => {
+    if (platform === 'all') return messages.length;
+    return messages.filter(msg => msg.source === platform).length;
+  };
 
   return (
     <div className="px-4 py-8 animate-fade-in">
@@ -124,6 +132,29 @@ const Chats: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
+        {/* Platform Tabs */}
+        <div className="border-b border-neutral-200">
+          <div className="flex overflow-x-auto">
+            {platforms.map((platform) => (
+              <button
+                key={platform.id}
+                onClick={() => setActivePlatform(platform.id)}
+                className={`flex items-center px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
+                  activePlatform === platform.id
+                    ? 'text-primary border-b-2 border-primary bg-primary/5'
+                    : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
+                }`}
+              >
+                <span className="mr-2">{platform.emoji}</span>
+                {platform.name}
+                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-neutral-100 text-neutral-600">
+                  {getMessageCountByPlatform(platform.id)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <div className="flex-1 max-w-md">
@@ -248,7 +279,9 @@ const Chats: React.FC = () => {
               <MessageSquare className="mx-auto h-12 w-12 text-neutral-300" />
               <h3 className="mt-2 text-sm font-medium text-neutral-900">No messages found</h3>
               <p className="mt-1 text-sm text-neutral-500">
-                No chat messages match your search criteria
+                {activePlatform === 'all'
+                  ? 'No chat messages match your search criteria'
+                  : `No messages found for ${platforms.find(p => p.id === activePlatform)?.name}`}
               </p>
             </div>
           )}
