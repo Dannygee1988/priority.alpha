@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Copy, Check, RefreshCw, Wand2, Image, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
+import { Wand2, Copy, Check, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 interface RNSDocument {
   id: string;
@@ -39,36 +39,32 @@ const CreateSocialContent: React.FC = () => {
 
   const platforms = [
     { 
-      id: 'linkedin' as const, 
+      id: 'linkedin' as const,
       name: 'LinkedIn',
-      icon: LinkedIn,
-      color: 'bg-[#0A66C2]/80',
-      hoverColor: 'hover:bg-[#0A66C2]/90',
-      maxLength: 3000
+      color: '#0A66C2',
+      maxLength: 3000,
+      logo: 'https://res.cloudinary.com/deyzbqzya/image/upload/v1747914532/linkedin_logo_icon_170234_qhsx8u.png'
     },
     { 
-      id: 'twitter' as const, 
+      id: 'twitter' as const,
       name: 'X (Twitter)',
-      icon: Twitter,
-      color: 'bg-[#1DA1F2]/80',
-      hoverColor: 'hover:bg-[#1DA1F2]/90',
-      maxLength: 280
+      color: '#1DA1F2',
+      maxLength: 280,
+      logo: 'https://res.cloudinary.com/deyzbqzya/image/upload/v1747914532/twitter_logo_icon_170229_qhsx8u.png'
     },
     { 
-      id: 'facebook' as const, 
+      id: 'facebook' as const,
       name: 'Facebook',
-      icon: Facebook,
-      color: 'bg-[#4267B2]/80',
-      hoverColor: 'hover:bg-[#4267B2]/90',
-      maxLength: 63206
+      color: '#4267B2',
+      maxLength: 63206,
+      logo: 'https://res.cloudinary.com/deyzbqzya/image/upload/v1747914532/facebook_logo_icon_170237_qhsx8u.png'
     },
     { 
-      id: 'instagram' as const, 
+      id: 'instagram' as const,
       name: 'Instagram',
-      icon: Instagram,
-      color: 'bg-gradient-to-r from-[#833AB4]/80 via-[#FD1D1D]/80 to-[#F77737]/80',
-      hoverColor: 'hover:from-[#833AB4]/90 hover:via-[#FD1D1D]/90 hover:to-[#F77737]/90',
-      maxLength: 2200
+      color: '#E4405F',
+      maxLength: 2200,
+      logo: 'https://res.cloudinary.com/deyzbqzya/image/upload/v1747914532/instagram_logo_icon_170235_qhsx8u.png'
     }
   ];
 
@@ -154,7 +150,6 @@ const CreateSocialContent: React.FC = () => {
     }
   };
 
-  // Function to get preview content
   const getPreviewContent = (content: string, maxLength: number = 300) => {
     const lines = content.split('\n').filter(line => line.trim());
     let preview = lines.slice(0, 3).join('\n');
@@ -231,109 +226,123 @@ const CreateSocialContent: React.FC = () => {
                   </div>
                 </div>
 
-              <div className="mb-6 mt-8">
-                <h3 className="text-sm font-medium text-neutral-700 mb-2">Select Platform</h3>
-                <div className="flex flex-wrap gap-2">
-                  {platforms.map((platform) => (
-                    <button
-                      key={platform.id}
-                      onClick={() => setSelectedPlatform(platform.id)}
-                      className={`
-                        flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors
-                        ${selectedPlatform === platform.id
-                          ? `${platform.color} text-white ${platform.hoverColor}`
-                          : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                        }
-                      `}
-                    >
-                      <platform.icon size={18} className="mr-2" />
-                      {platform.name}
-                    </button>
-                  ))}
+                <div className="mb-6 mt-8">
+                  <h3 className="text-sm font-medium text-neutral-700 mb-4">Select Platform</h3>
+                  <div className="flex justify-center space-x-8">
+                    {platforms.map((platform) => (
+                      <button
+                        key={platform.id}
+                        onClick={() => setSelectedPlatform(platform.id)}
+                        className="group relative"
+                      >
+                        <div className={`
+                          w-16 h-16 rounded-full flex items-center justify-center transition-transform duration-200
+                          ${selectedPlatform === platform.id ? 'ring-4 ring-offset-2' : 'opacity-50 hover:opacity-75'}
+                        `}
+                        style={{ 
+                          backgroundColor: platform.color,
+                          ringColor: platform.color
+                        }}
+                        >
+                          <img
+                            src={platform.logo}
+                            alt={platform.name}
+                            className="w-8 h-8 object-contain"
+                          />
+                        </div>
+                        <div className={`
+                          absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap
+                          text-xs font-medium transition-colors
+                          ${selectedPlatform === platform.id ? 'text-neutral-900' : 'text-neutral-500'}
+                        `}>
+                          {platform.name}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-8 text-sm text-center text-neutral-500">
+                    Maximum length: {platforms.find(p => p.id === selectedPlatform)?.maxLength} characters
+                  </p>
                 </div>
-                <p className="mt-2 text-sm text-neutral-500">
-                  Maximum length: {platforms.find(p => p.id === selectedPlatform)?.maxLength} characters
-                </p>
-              </div>
 
-              <div className="space-y-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={generateImage}
-                      onChange={(e) => setGenerateImage(e.target.checked)}
-                      className="sr-only"
-                    />
-                    <div className={`block w-14 h-8 rounded-full transition-colors ${
-                      generateImage ? 'bg-primary' : 'bg-neutral-200'
-                    }`}>
-                      <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform ${
-                        generateImage ? 'translate-x-6' : 'translate-x-0'
-                      }`} />
+                <div className="space-y-4">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={generateImage}
+                        onChange={(e) => setGenerateImage(e.target.checked)}
+                        className="sr-only"
+                      />
+                      <div className={`block w-14 h-8 rounded-full transition-colors ${
+                        generateImage ? 'bg-primary' : 'bg-neutral-200'
+                      }`}>
+                        <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform ${
+                          generateImage ? 'translate-x-6' : 'translate-x-0'
+                        }`} />
+                      </div>
                     </div>
-                  </div>
-                  <span className="text-sm font-medium text-neutral-700">Generate social media image</span>
-                </label>
+                    <span className="text-sm font-medium text-neutral-700">Generate social media image</span>
+                  </label>
 
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={showAdvancedPrompts}
-                      onChange={(e) => setShowAdvancedPrompts(e.target.checked)}
-                      className="sr-only"
-                    />
-                    <div className={`block w-14 h-8 rounded-full transition-colors ${
-                      showAdvancedPrompts ? 'bg-primary' : 'bg-neutral-200'
-                    }`}>
-                      <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform ${
-                        showAdvancedPrompts ? 'translate-x-6' : 'translate-x-0'
-                      }`} />
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={showAdvancedPrompts}
+                        onChange={(e) => setShowAdvancedPrompts(e.target.checked)}
+                        className="sr-only"
+                      />
+                      <div className={`block w-14 h-8 rounded-full transition-colors ${
+                        showAdvancedPrompts ? 'bg-primary' : 'bg-neutral-200'
+                      }`}>
+                        <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform ${
+                          showAdvancedPrompts ? 'translate-x-6' : 'translate-x-0'
+                        }`} />
+                      </div>
                     </div>
-                  </div>
-                  <span className="text-sm font-medium text-neutral-700">Advanced AI prompting</span>
-                </label>
+                    <span className="text-sm font-medium text-neutral-700">Advanced AI prompting</span>
+                  </label>
 
-                {showAdvancedPrompts && (
-                  <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
-                    <div className="flex items-start mb-3">
-                      <MessageSquare size={18} className="text-primary mt-1 mr-2" />
-                      <p className="text-sm text-neutral-600">
-                        Provide additional instructions to guide the AI in creating your social media content.
-                        You can specify tone, style, key points to emphasize, or any other preferences.
-                      </p>
+                  {showAdvancedPrompts && (
+                    <div className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
+                      <div className="flex items-start mb-3">
+                        <MessageSquare size={18} className="text-primary mt-1 mr-2" />
+                        <p className="text-sm text-neutral-600">
+                          Provide additional instructions to guide the AI in creating your social media content.
+                          You can specify tone, style, key points to emphasize, or any other preferences.
+                        </p>
+                      </div>
+                      <textarea
+                        value={customPrompt}
+                        onChange={(e) => setCustomPrompt(e.target.value)}
+                        placeholder="Example: Make it more conversational and focus on the growth metrics. Add relevant industry hashtags."
+                        className="w-full h-32 px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary resize-none text-sm"
+                      />
                     </div>
-                    <textarea
-                      value={customPrompt}
-                      onChange={(e) => setCustomPrompt(e.target.value)}
-                      placeholder="Example: Make it more conversational and focus on the growth metrics. Add relevant industry hashtags."
-                      className="w-full h-32 px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary resize-none text-sm"
-                    />
+                  )}
+                </div>
+
+                {error && (
+                  <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
+                    {error}
                   </div>
                 )}
-              </div>
 
-              {error && (
-                <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
-                  {error}
+                <div className="flex justify-center">
+                  <Button
+                    onClick={generateContent}
+                    isLoading={isGenerating}
+                    leftIcon={<Wand2 size={18} />}
+                    className="w-48"
+                  >
+                    Create Post
+                  </Button>
                 </div>
-              )}
-
-              <div className="flex justify-center">
-                <Button
-                  onClick={generateContent}
-                  isLoading={isGenerating}
-                  leftIcon={<Wand2 size={18} />}
-                  className="w-48"
-                >
-                  Create Post
-                </Button>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
         <div className={activeTab === 'output' ? 'block' : 'hidden'}>
           <div className="p-6">
@@ -398,7 +407,7 @@ const CreateSocialContent: React.FC = () => {
                   </Button>
                   <Button
                     onClick={generateContent}
-                    leftIcon={<RefreshCw size={18} />}
+                    leftIcon={<Wand2 size={18} />}
                   >
                     Regenerate
                   </Button>
