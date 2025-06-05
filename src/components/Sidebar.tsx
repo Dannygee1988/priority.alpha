@@ -50,6 +50,7 @@ import {
   FileCheck,
   Brain,
   ListFilter,
+  Bot,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
@@ -103,6 +104,10 @@ const prSubmenu = [
   },
 ];
 
+const advisorSubmenu = [
+  { name: 'GPT', icon: Bot, path: '/gpt' },
+];
+
 const navigation = [
   {
     name: 'Social Media',
@@ -141,9 +146,14 @@ const navigation = [
     path: '/tools',
     submenu: toolsSubmenu,
   },
+  {
+    name: 'Advisor',
+    icon: Brain,
+    path: '/advisor',
+    submenu: advisorSubmenu,
+  },
   { name: 'Calendar', icon: Calendar, path: '/calendar' },
   { name: 'Inbox', icon: Inbox, path: '/inbox' },
-  { name: 'GPT', icon: Brain, path: '/gpt' },
 ];
 
 const Sidebar: React.FC = () => {
