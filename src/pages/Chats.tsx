@@ -60,10 +60,23 @@ const Chats: React.FC = () => {
     }
   };
 
-  const getSentimentColor = (score: number) => {
-    if (score >= 0.7) return 'bg-success-50 text-success-700';
-    if (score >= 0.4) return 'bg-warning-50 text-warning-700';
-    return 'bg-error-50 text-error-700';
+  const getSentimentInfo = (score: number) => {
+    if (score > 0.6) {
+      return {
+        label: 'Positive',
+        color: 'bg-success-50 text-success-700'
+      };
+    }
+    if (score >= 0.3) {
+      return {
+        label: 'Balanced',
+        color: 'bg-warning-50 text-warning-700'
+      };
+    }
+    return {
+      label: 'Negative',
+      color: 'bg-error-50 text-error-700'
+    };
   };
 
   const formatDate = (dateString: string) => {
@@ -177,9 +190,9 @@ const Chats: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         {message.sentiment_score !== null && (
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            getSentimentColor(message.sentiment_score)
+                            getSentimentInfo(message.sentiment_score).color
                           }`}>
-                            {Math.round(message.sentiment_score * 100)}% Positive
+                            {getSentimentInfo(message.sentiment_score).label}
                           </span>
                         )}
                         <button
