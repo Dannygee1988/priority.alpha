@@ -143,7 +143,7 @@ const navigation = [
   },
   { name: 'Calendar', icon: Calendar, path: '/calendar' },
   { name: 'Inbox', icon: Inbox, path: '/inbox' },
-  { name: 'Advisor', icon: Brain, path: '/advisor' },
+  { name: 'GPT', icon: Brain, path: '/gpt' },
 ];
 
 const Sidebar: React.FC = () => {

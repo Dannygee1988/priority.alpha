@@ -12,7 +12,7 @@ import CreateSocialContent from './pages/CreateSocialContent';
 import CRM from './pages/CRM';
 import Insiders from './pages/Insiders';
 import Settings from './pages/Settings';
-import Advisor from './pages/Advisor';
+import GPT from './pages/GPT';
 import Gallery from './pages/Gallery';
 import AppLayout from './layouts/AppLayout';
 
@@ -36,7 +36,7 @@ function App() {
             <Route path="/pr/rns/create-content/:id" element={<CreateSocialContent />} />
             <Route path="/investors/insiders" element={<Insiders />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/advisor" element={<Advisor />} />
+            <Route path="/gpt" element={<GPT />} />
             <Route path="/social-media/gallery" element={<Gallery />} />
             {/* Add more routes as they're developed */}
             <Route path="/analytics" element={<div className="p-8">Analytics page (coming soon)</div>} />
@@ -49,7 +49,7 @@ function App() {
           </Route>
           
           {/* Redirect to login by default */}
-          <Route path="*" element={<Navigate to="/login\" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
