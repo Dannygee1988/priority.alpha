@@ -51,6 +51,7 @@ import {
   Brain,
   Bot,
   MessagesSquare,
+  ListFilter,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
