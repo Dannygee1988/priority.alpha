@@ -155,7 +155,6 @@ const navigation = [
     submenu: advisorSubmenu,
   },
   { name: 'Calendar', icon: Calendar, path: '/calendar' },
-  { name: 'Inbox', icon: Inbox, path: '/inbox' },
 ];
 
 const Sidebar: React.FC = () => {
@@ -283,6 +282,7 @@ const Sidebar: React.FC = () => {
       </div>
 
       <div className="p-4 border-t border-neutral-200">
+        <NavLink item={{ name: 'Inbox', icon: Inbox, path: '/inbox' }} />
         <NavLink item={{ name: 'Settings', icon: Settings, path: '/settings' }} />
         <button
           onClick={toggleSidebar}
