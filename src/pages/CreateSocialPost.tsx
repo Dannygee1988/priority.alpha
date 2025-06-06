@@ -39,7 +39,7 @@ const CreateSocialPost: React.FC = () => {
   const [newVariableName, setNewVariableName] = useState('');
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [includeEmojis, setIncludeEmojis] = useState(true);
-  const [includeCallToAction, setIncludeCallToAction] = useState(false);
+  const [includeCallToAction, setIncludeCallToAction] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
   const [isCopied, setIsCopied] = useState(false);
@@ -345,75 +345,42 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                   <Type className="mr-2" size={20} />
                   Content Options
                 </h2>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                  <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg hover:bg-neutral-50">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={includeHashtags}
-                        onChange={(e) => setIncludeHashtags(e.target.checked)}
-                        className="sr-only"
-                      />
-                      <div className={`block w-6 h-6 rounded border-2 transition-colors ${
-                        includeHashtags ? 'bg-primary border-primary' : 'border-neutral-300'
-                      }`}>
-                        {includeHashtags && (
-                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5\" fill="currentColor\" viewBox="0 0 20 20">
-                            <path fillRule="evenodd\" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z\" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <label className="flex items-center space-x-3 cursor-pointer p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={includeHashtags}
+                      onChange={(e) => setIncludeHashtags(e.target.checked)}
+                      className="w-5 h-5 text-primary border-neutral-300 rounded focus:ring-primary focus:ring-2"
+                    />
                     <div className="flex items-center">
-                      <Hash size={16} className="mr-2 text-primary" />
+                      <Hash size={18} className="mr-2 text-primary" />
                       <span className="text-sm font-medium text-neutral-700">Include Hashtags</span>
                     </div>
                   </label>
 
-                  <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg hover:bg-neutral-50">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={includeEmojis}
-                        onChange={(e) => setIncludeEmojis(e.target.checked)}
-                        className="sr-only"
-                      />
-                      <div className={`block w-6 h-6 rounded border-2 transition-colors ${
-                        includeEmojis ? 'bg-primary border-primary' : 'border-neutral-300'
-                      }`}>
-                        {includeEmojis && (
-                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5\" fill="currentColor\" viewBox="0 0 20 20">
-                            <path fillRule="evenodd\" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z\" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
+                  <label className="flex items-center space-x-3 cursor-pointer p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={includeEmojis}
+                      onChange={(e) => setIncludeEmojis(e.target.checked)}
+                      className="w-5 h-5 text-primary border-neutral-300 rounded focus:ring-primary focus:ring-2"
+                    />
                     <div className="flex items-center">
                       <span className="mr-2 text-lg">😊</span>
                       <span className="text-sm font-medium text-neutral-700">Include Emojis</span>
                     </div>
                   </label>
 
-                  <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg hover:bg-neutral-50">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={includeCallToAction}
-                        onChange={(e) => setIncludeCallToAction(e.target.checked)}
-                        className="sr-only"
-                      />
-                      <div className={`block w-6 h-6 rounded border-2 transition-colors ${
-                        includeCallToAction ? 'bg-primary border-primary' : 'border-neutral-300'
-                      }`}>
-                        {includeCallToAction && (
-                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5\" fill="currentColor\" viewBox="0 0 20 20">
-                            <path fillRule="evenodd\" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z\" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                    </div>
+                  <label className="flex items-center space-x-3 cursor-pointer p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={includeCallToAction}
+                      onChange={(e) => setIncludeCallToAction(e.target.checked)}
+                      className="w-5 h-5 text-primary border-neutral-300 rounded focus:ring-primary focus:ring-2"
+                    />
                     <div className="flex items-center">
-                      <TrendingUp size={16} className="mr-2 text-primary" />
+                      <TrendingUp size={18} className="mr-2 text-primary" />
                       <span className="text-sm font-medium text-neutral-700">Call to Action</span>
                     </div>
                   </label>
