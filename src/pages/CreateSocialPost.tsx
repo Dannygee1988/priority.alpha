@@ -13,14 +13,6 @@ interface Platform {
   features: string[];
 }
 
-interface PostVariable {
-  id: string;
-  name: string;
-  value: string;
-  type: 'text' | 'number' | 'date' | 'select';
-  options?: string[];
-}
-
 interface GeneratedPost {
   platform: string;
   content: string;
@@ -35,8 +27,6 @@ const CreateSocialPost: React.FC = () => {
   const [tone, setTone] = useState<string>('');
   const [targetAudience, setTargetAudience] = useState<string>('');
   const [customPrompt, setCustomPrompt] = useState('');
-  const [variables, setVariables] = useState<PostVariable[]>([]);
-  const [newVariableName, setNewVariableName] = useState('');
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [includeEmojis, setIncludeEmojis] = useState(true);
   const [includeCallToAction, setIncludeCallToAction] = useState(true);
@@ -126,31 +116,6 @@ const CreateSocialPost: React.FC = () => {
 
   const selectPlatform = (platformId: string) => {
     setSelectedPlatform(platformId);
-  };
-
-  const addVariable = () => {
-    if (newVariableName.trim()) {
-      const newVariable: PostVariable = {
-        id: Date.now().toString(),
-        name: newVariableName.trim(),
-        value: '',
-        type: 'text'
-      };
-      setVariables([...variables, newVariable]);
-      setNewVariableName('');
-    }
-  };
-
-  const updateVariable = (id: string, field: keyof PostVariable, value: any) => {
-    setVariables(prev =>
-      prev.map(variable =>
-        variable.id === id ? { ...variable, [field]: value } : variable
-      )
-    );
-  };
-
-  const removeVariable = (id: string) => {
-    setVariables(prev => prev.filter(variable => variable.id !== id));
   };
 
   const handleGenerate = async () => {
@@ -402,92 +367,11 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                 </div>
               </div>
 
-              {/* Custom Variables */}
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-800 mb-4 flex items-center">
-                  <MessageSquare className="mr-2" size={20} />
-                  Custom Variables
-                </h2>
-                <div className="space-y-4">
-                  <div className="flex space-x-2">
-                    <Input
-                      placeholder="Variable name (e.g., product_name, event_date)"
-                      value={newVariableName}
-                      onChange={(e) => setNewVariableName(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addVariable();
-                        }
-                      }}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={addVariable}
-                      disabled={!newVariableName.trim()}
-                      leftIcon={<Plus size={18} />}
-                    >
-                      Add
-                    </Button>
-                  </div>
-
-                  {variables.length > 0 && (
-                    <div className="space-y-3">
-                      {variables.map((variable) => (
-                        <div key={variable.id} className="flex items-center space-x-4 p-4 bg-neutral-50 rounded-lg">
-                          <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <div className="lg:col-span-2">
-                              <label className="block text-xs font-medium text-neutral-600 mb-1">
-                                {variable.name}
-                              </label>
-                              <input
-                                type="text"
-                                value={variable.value}
-                                onChange={(e) => updateVariable(variable.id, 'value', e.target.value)}
-                                placeholder={`Enter ${variable.name}`}
-                                className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-neutral-600 mb-1">
-                                Type
-                              </label>
-                              <div className="relative">
-                                <select
-                                  value={variable.type}
-                                  onChange={(e) => updateVariable(variable.id, 'type', e.target.value)}
-                                  className="w-full px-3 py-2 pr-10 text-sm border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary appearance-none"
-                                >
-                                  <option value="text">Text</option>
-                                  <option value="number">Number</option>
-                                  <option value="date">Date</option>
-                                </select>
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                  <ChevronDown size={14} className="text-neutral-400" />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeVariable(variable.id)}
-                            className="text-error-600 hover:text-error-700 flex-shrink-0"
-                          >
-                            <X size={16} />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Custom Prompt */}
               <div>
                 <h2 className="text-lg font-semibold text-neutral-800 mb-4 flex items-center">
                   <Wand2 className="mr-2" size={20} />
-                  Additional Instructions
+                  Prompt
                 </h2>
                 <textarea
                   value={customPrompt}
