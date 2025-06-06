@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Plus, X, Wand2, Image, Hash, Type, MessageSquare, Target, Users, TrendingUp, Copy, Check, RefreshCw } from 'lucide-react';
+import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Plus, X, Wand2, Image, Hash, Type, MessageSquare, Target, Users, TrendingUp, Copy, Check, RefreshCw, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 
@@ -294,48 +294,63 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Post Type
                   </label>
-                  <select
-                    value={postType}
-                    onChange={(e) => setPostType(e.target.value)}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">Select post type...</option>
-                    {postTypes.map((type) => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={postType}
+                      onChange={(e) => setPostType(e.target.value)}
+                      className="w-full px-4 py-2 pr-12 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary appearance-none"
+                    >
+                      <option value="">Select post type...</option>
+                      {postTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                      <ChevronDown size={16} className="text-neutral-400" />
+                    </div>
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Tone
                   </label>
-                  <select
-                    value={tone}
-                    onChange={(e) => setTone(e.target.value)}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">Select tone...</option>
-                    {tones.map((toneOption) => (
-                      <option key={toneOption} value={toneOption}>{toneOption}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={tone}
+                      onChange={(e) => setTone(e.target.value)}
+                      className="w-full px-4 py-2 pr-12 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary appearance-none"
+                    >
+                      <option value="">Select tone...</option>
+                      {tones.map((toneOption) => (
+                        <option key={toneOption} value={toneOption}>{toneOption}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                      <ChevronDown size={16} className="text-neutral-400" />
+                    </div>
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Target Audience
                   </label>
-                  <select
-                    value={targetAudience}
-                    onChange={(e) => setTargetAudience(e.target.value)}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">Select audience...</option>
-                    {audiences.map((audience) => (
-                      <option key={audience} value={audience}>{audience}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={targetAudience}
+                      onChange={(e) => setTargetAudience(e.target.value)}
+                      className="w-full px-4 py-2 pr-12 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary appearance-none"
+                    >
+                      <option value="">Select audience...</option>
+                      {audiences.map((audience) => (
+                        <option key={audience} value={audience}>{audience}</option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                      <ChevronDown size={16} className="text-neutral-400" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -437,15 +452,20 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                               <label className="block text-xs font-medium text-neutral-600 mb-1">
                                 Type
                               </label>
-                              <select
-                                value={variable.type}
-                                onChange={(e) => updateVariable(variable.id, 'type', e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary"
-                              >
-                                <option value="text">Text</option>
-                                <option value="number">Number</option>
-                                <option value="date">Date</option>
-                              </select>
+                              <div className="relative">
+                                <select
+                                  value={variable.type}
+                                  onChange={(e) => updateVariable(variable.id, 'type', e.target.value)}
+                                  className="w-full px-3 py-2 pr-10 text-sm border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary appearance-none"
+                                >
+                                  <option value="text">Text</option>
+                                  <option value="number">Number</option>
+                                  <option value="date">Date</option>
+                                </select>
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                  <ChevronDown size={14} className="text-neutral-400" />
+                                </div>
+                              </div>
                             </div>
                           </div>
                           <Button
