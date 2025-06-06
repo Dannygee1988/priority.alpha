@@ -30,7 +30,7 @@ interface GeneratedPost {
 
 const CreateSocialPost: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('');
   const [postType, setPostType] = useState<string>('');
   const [tone, setTone] = useState<string>('');
   const [targetAudience, setTargetAudience] = useState<string>('');
@@ -43,8 +43,8 @@ const CreateSocialPost: React.FC = () => {
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedPosts, setGeneratedPosts] = useState<GeneratedPost[]>([]);
-  const [copiedPosts, setCopiedPosts] = useState<Set<string>>(new Set());
+  const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
   const platforms: Platform[] = [
     {
@@ -126,12 +126,8 @@ const CreateSocialPost: React.FC = () => {
     'Senior Executives'
   ];
 
-  const togglePlatform = (platformId: string) => {
-    setSelectedPlatforms(prev =>
-      prev.includes(platformId)
-        ? prev.filter(id => id !== platformId)
-        : [...prev, platformId]
-    );
+  const selectPlatform = (platformId: string) => {
+    setSelectedPlatform(platformId);
   };
 
   const addVariable = () => {
@@ -164,19 +160,17 @@ const CreateSocialPost: React.FC = () => {
     
     // Simulate API call - replace with actual implementation later
     setTimeout(() => {
-      const mockPosts: GeneratedPost[] = selectedPlatforms.map(platformId => {
-        const platform = platforms.find(p => p.id === platformId);
-        const mockContent = generateMockContent(platformId, platform?.maxLength || 280);
-        
-        return {
-          platform: platform?.name || platformId,
-          content: mockContent,
-          hashtags: includeHashtags ? ['#business', '#innovation', '#growth'] : undefined,
-          characterCount: mockContent.length
-        };
-      });
+      const platform = platforms.find(p => p.id === selectedPlatform);
+      const mockContent = generateMockContent(selectedPlatform, platform?.maxLength || 280);
       
-      setGeneratedPosts(mockPosts);
+      const mockPost: GeneratedPost = {
+        platform: platform?.name || selectedPlatform,
+        content: mockContent,
+        hashtags: includeHashtags ? ['#business', '#innovation', '#growth'] : undefined,
+        characterCount: mockContent.length
+      };
+      
+      setGeneratedPost(mockPost);
       setIsGenerating(false);
       setActiveTab('output');
     }, 2000);
@@ -192,16 +186,12 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
     return baseContent.slice(0, maxLength - (includeHashtags ? 50 : 0));
   };
 
-  const copyToClipboard = async (content: string, platform: string) => {
+  const copyToClipboard = async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
-      setCopiedPosts(prev => new Set([...prev, platform]));
+      setIsCopied(true);
       setTimeout(() => {
-        setCopiedPosts(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(platform);
-          return newSet;
-        });
+        setIsCopied(false);
       }, 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
@@ -246,7 +236,7 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                   : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
               }`}
               onClick={() => setActiveTab('output')}
-              disabled={!generatedPosts.length && !isGenerating}
+              disabled={!generatedPost && !isGenerating}
             >
               Output
             </button>
@@ -259,16 +249,16 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
               <div>
                 <h2 className="text-lg font-semibold text-neutral-800 mb-4 flex items-center">
                   <Target className="mr-2" size={20} />
-                  Select Platforms
+                  Select Platform
                 </h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {platforms.map((platform) => (
                     <div
                       key={platform.id}
-                      onClick={() => togglePlatform(platform.id)}
+                      onClick={() => selectPlatform(platform.id)}
                       className={`
                         relative cursor-pointer rounded-lg border-2 transition-all duration-200 p-4
-                        ${selectedPlatforms.includes(platform.id)
+                        ${selectedPlatform === platform.id
                           ? 'border-primary bg-primary/5'
                           : 'border-neutral-200 hover:border-neutral-300'
                         }
@@ -288,7 +278,7 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                           ))}
                         </div>
                       </div>
-                      {selectedPlatforms.includes(platform.id) && (
+                      {selectedPlatform === platform.id && (
                         <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
                           <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -370,8 +360,8 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                         includeHashtags ? 'bg-primary border-primary' : 'border-neutral-300'
                       }`}>
                         {includeHashtags && (
-                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5\" fill="currentColor\" viewBox="0 0 20 20">
-                            <path fillRule="evenodd\" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z\" clipRule="evenodd" />
+                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
                       </div>
@@ -394,8 +384,8 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                         includeEmojis ? 'bg-primary border-primary' : 'border-neutral-300'
                       }`}>
                         {includeEmojis && (
-                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5\" fill="currentColor\" viewBox="0 0 20 20">
-                            <path fillRule="evenodd\" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z\" clipRule="evenodd" />
+                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
                       </div>
@@ -418,8 +408,8 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                         includeCallToAction ? 'bg-primary border-primary' : 'border-neutral-300'
                       }`}>
                         {includeCallToAction && (
-                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5\" fill="currentColor\" viewBox="0 0 20 20">
-                            <path fillRule="evenodd\" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z\" clipRule="evenodd" />
+                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
                       </div>
@@ -554,16 +544,16 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                     onClick={handleGenerate}
                     size="lg"
                     leftIcon={<Wand2 size={20} />}
-                    disabled={selectedPlatforms.length === 0}
+                    disabled={!selectedPlatform}
                     isLoading={isGenerating}
                     className="w-64"
                   >
-                    {isGenerating ? 'Generating Posts...' : 'Generate Posts'}
+                    {isGenerating ? 'Generating Post...' : 'Generate Post'}
                   </Button>
                 </div>
-                {selectedPlatforms.length === 0 && (
+                {!selectedPlatform && (
                   <p className="text-center text-sm text-error-600 mt-2">
-                    Please select at least one platform to continue
+                    Please select a platform to continue
                   </p>
                 )}
               </div>
@@ -574,7 +564,7 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
           <div className={activeTab === 'output' ? 'block' : 'hidden'}>
             <div className="p-6">
               <div className="mb-4">
-                <h2 className="text-lg font-semibold text-neutral-800">Generated Posts</h2>
+                <h2 className="text-lg font-semibold text-neutral-800">Generated Post</h2>
                 <p className="text-sm text-neutral-500">Your AI-generated social media content</p>
               </div>
 
@@ -582,67 +572,59 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                 <div className="flex justify-center items-center h-64">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-neutral-600">Generating your social media posts...</p>
+                    <p className="text-neutral-600">Generating your social media post...</p>
                     <p className="text-sm text-neutral-500 mt-2">This may take a few moments</p>
                   </div>
                 </div>
-              ) : generatedPosts.length > 0 ? (
+              ) : generatedPost ? (
                 <div className="space-y-6">
-                  {generatedPosts.map((post, index) => {
-                    const PlatformIcon = getPlatformIcon(post.platform);
-                    const platformColor = getPlatformColor(post.platform);
-                    const isCopied = copiedPosts.has(post.platform);
-                    
-                    return (
-                      <div key={index} className="bg-neutral-50 rounded-lg border border-neutral-200 overflow-hidden">
-                        <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
-                          <div className="flex items-center">
-                            <div className={`w-8 h-8 rounded-lg ${platformColor} flex items-center justify-center text-white mr-3`}>
-                              <PlatformIcon size={18} />
-                            </div>
-                            <div>
-                              <h3 className="font-medium text-neutral-800">{post.platform}</h3>
-                              <p className="text-sm text-neutral-500">
-                                {post.characterCount} characters
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => copyToClipboard(post.content, post.platform)}
-                              leftIcon={isCopied ? <Check size={16} /> : <Copy size={16} />}
-                              className={isCopied ? 'text-success-600 border-success-600' : ''}
-                            >
-                              {isCopied ? 'Copied!' : 'Copy'}
-                            </Button>
-                          </div>
+                  <div className="bg-neutral-50 rounded-lg border border-neutral-200 overflow-hidden">
+                    <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className={`w-8 h-8 rounded-lg ${getPlatformColor(generatedPost.platform)} flex items-center justify-center text-white mr-3`}>
+                          {React.createElement(getPlatformIcon(generatedPost.platform), { size: 18 })}
                         </div>
-                        <div className="p-4">
-                          <div className="bg-white rounded-lg p-4 border border-neutral-200">
-                            <p className="whitespace-pre-wrap text-neutral-700 leading-relaxed">
-                              {post.content}
-                            </p>
-                            {post.hashtags && post.hashtags.length > 0 && (
-                              <div className="mt-3 pt-3 border-t border-neutral-200">
-                                <div className="flex flex-wrap gap-2">
-                                  {post.hashtags.map((hashtag, hashIndex) => (
-                                    <span
-                                      key={hashIndex}
-                                      className="text-primary font-medium text-sm"
-                                    >
-                                      {hashtag}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                        <div>
+                          <h3 className="font-medium text-neutral-800">{generatedPost.platform}</h3>
+                          <p className="text-sm text-neutral-500">
+                            {generatedPost.characterCount} characters
+                          </p>
                         </div>
                       </div>
-                    );
-                  })}
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(generatedPost.content)}
+                          leftIcon={isCopied ? <Check size={16} /> : <Copy size={16} />}
+                          className={isCopied ? 'text-success-600 border-success-600' : ''}
+                        >
+                          {isCopied ? 'Copied!' : 'Copy'}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <div className="bg-white rounded-lg p-4 border border-neutral-200">
+                        <p className="whitespace-pre-wrap text-neutral-700 leading-relaxed">
+                          {generatedPost.content}
+                        </p>
+                        {generatedPost.hashtags && generatedPost.hashtags.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-neutral-200">
+                            <div className="flex flex-wrap gap-2">
+                              {generatedPost.hashtags.map((hashtag, hashIndex) => (
+                                <span
+                                  key={hashIndex}
+                                  className="text-primary font-medium text-sm"
+                                >
+                                  {hashtag}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                   
                   <div className="flex justify-center space-x-3 pt-6 border-t border-neutral-200">
                     <Button
@@ -655,14 +637,14 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                       onClick={handleGenerate}
                       leftIcon={<RefreshCw size={18} />}
                     >
-                      Regenerate Posts
+                      Regenerate Post
                     </Button>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-12">
                   <p className="text-neutral-500 text-sm italic mb-4">
-                    Generated posts will appear here...
+                    Generated post will appear here...
                   </p>
                   <Button
                     variant="outline"
