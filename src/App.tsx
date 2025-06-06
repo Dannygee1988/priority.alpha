@@ -9,6 +9,7 @@ import ImproveRNS from './pages/ImproveRNS';
 import PublishedRNS from './pages/PublishedRNS';
 import RNSDrafts from './pages/RNSDrafts';
 import CreateSocialContent from './pages/CreateSocialContent';
+import CreateSocialPost from './pages/CreateSocialPost';
 import CRM from './pages/CRM';
 import Insiders from './pages/Insiders';
 import Settings from './pages/Settings';
@@ -35,6 +36,7 @@ function App() {
             <Route path="/pr/rns/published" element={<PublishedRNS />} />
             <Route path="/pr/rns/drafts" element={<RNSDrafts />} />
             <Route path="/pr/rns/create-content/:id" element={<CreateSocialContent />} />
+            <Route path="/social-media/create" element={<CreateSocialPost />} />
             <Route path="/investors/insiders" element={<Insiders />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/gpt" element={<GPT />} />
