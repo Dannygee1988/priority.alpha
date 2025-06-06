@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Plus, X, Wand2, Image, Calendar, Hash, Type, MessageSquare, Target, Users, TrendingUp, Copy, Check, RefreshCw } from 'lucide-react';
+import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Plus, X, Wand2, Image, Hash, Type, MessageSquare, Target, Users, TrendingUp, Copy, Check, RefreshCw } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 
@@ -40,8 +40,6 @@ const CreateSocialPost: React.FC = () => {
   const [includeHashtags, setIncludeHashtags] = useState(true);
   const [includeEmojis, setIncludeEmojis] = useState(true);
   const [includeCallToAction, setIncludeCallToAction] = useState(false);
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
   const [isCopied, setIsCopied] = useState(false);
@@ -360,8 +358,8 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                         includeHashtags ? 'bg-primary border-primary' : 'border-neutral-300'
                       }`}>
                         {includeHashtags && (
-                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5\" fill="currentColor\" viewBox="0 0 20 20">
-                            <path fillRule="evenodd\" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z\" clipRule="evenodd" />
+                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
                       </div>
@@ -384,8 +382,8 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                         includeEmojis ? 'bg-primary border-primary' : 'border-neutral-300'
                       }`}>
                         {includeEmojis && (
-                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5\" fill="currentColor\" viewBox="0 0 20 20">
-                            <path fillRule="evenodd\" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z\" clipRule="evenodd" />
+                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
                       </div>
@@ -408,8 +406,8 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                         includeCallToAction ? 'bg-primary border-primary' : 'border-neutral-300'
                       }`}>
                         {includeCallToAction && (
-                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5\" fill="currentColor\" viewBox="0 0 20 20">
-                            <path fillRule="evenodd\" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z\" clipRule="evenodd" />
+                          <svg className="w-4 h-4 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
                       </div>
@@ -513,28 +511,6 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                 <p className="mt-2 text-sm text-neutral-500">
                   The AI will use your company data along with these instructions to create personalized content.
                 </p>
-              </div>
-
-              {/* Scheduling */}
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-800 mb-4 flex items-center">
-                  <Calendar className="mr-2" size={20} />
-                  Schedule Post (Optional)
-                </h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    type="date"
-                    label="Date"
-                    value={scheduledDate}
-                    onChange={(e) => setScheduledDate(e.target.value)}
-                  />
-                  <Input
-                    type="time"
-                    label="Time"
-                    value={scheduledTime}
-                    onChange={(e) => setScheduledTime(e.target.value)}
-                  />
-                </div>
               </div>
 
               {/* Generate Button */}
