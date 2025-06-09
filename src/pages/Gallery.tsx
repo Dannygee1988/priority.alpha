@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Search, Filter, Grid, List, Plus, Image as ImageIcon, MoreVertical, X, Tag as TagIcon, Trash2 } from 'lucide-react';
+import { Upload, Search, Filter, Grid, List, Plus, Image as ImageIcon, MoreVertical, X, Tag as TagIcon, Trash2, Sparkles, Download, Heart } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -16,12 +16,23 @@ interface GalleryImage {
   created_at: string;
 }
 
+interface StockImage {
+  id: string;
+  url: string;
+  thumbnail: string;
+  title: string;
+  tags: string[];
+  photographer: string;
+  source: string;
+}
+
 const Gallery: React.FC = () => {
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showStockPhotoModal, setShowStockPhotoModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [editedTitle, setEditedTitle] = useState('');
   const [newTag, setNewTag] = useState('');
@@ -31,6 +42,13 @@ const Gallery: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Stock photo search states
+  const [stockSearchQuery, setStockSearchQuery] = useState('');
+  const [stockImages, setStockImages] = useState<StockImage[]>([]);
+  const [isSearchingStock, setIsSearchingStock] = useState(false);
+  const [selectedStockImage, setSelectedStockImage] = useState<StockImage | null>(null);
+  const [isDownloadingStock, setIsDownloadingStock] = useState(false);
 
   useEffect(() => {
     loadImages();
@@ -137,6 +155,136 @@ const Gallery: React.FC = () => {
     }
   };
 
+  const handleStockPhotoSearch = async () => {
+    if (!stockSearchQuery.trim()) return;
+
+    setIsSearchingStock(true);
+    try {
+      // Simulate API call to stock photo service
+      // In a real implementation, this would call Unsplash, Pexels, or similar API
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Mock stock images based on search query
+      const mockStockImages: StockImage[] = [
+        {
+          id: '1',
+          url: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=800&h=600&fit=crop',
+          thumbnail: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop',
+          title: `Business meeting - ${stockSearchQuery}`,
+          tags: [stockSearchQuery, 'business', 'meeting', 'professional'],
+          photographer: 'John Doe',
+          source: 'Unsplash'
+        },
+        {
+          id: '2',
+          url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=600&fit=crop',
+          thumbnail: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=200&fit=crop',
+          title: `Technology workspace - ${stockSearchQuery}`,
+          tags: [stockSearchQuery, 'technology', 'workspace', 'modern'],
+          photographer: 'Jane Smith',
+          source: 'Unsplash'
+        },
+        {
+          id: '3',
+          url: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&h=600&fit=crop',
+          thumbnail: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=300&h=200&fit=crop',
+          title: `Team collaboration - ${stockSearchQuery}`,
+          tags: [stockSearchQuery, 'team', 'collaboration', 'office'],
+          photographer: 'Mike Johnson',
+          source: 'Unsplash'
+        },
+        {
+          id: '4',
+          url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop',
+          thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=200&fit=crop',
+          title: `Professional portrait - ${stockSearchQuery}`,
+          tags: [stockSearchQuery, 'portrait', 'professional', 'business'],
+          photographer: 'Sarah Wilson',
+          source: 'Unsplash'
+        },
+        {
+          id: '5',
+          url: 'https://images.unsplash.com/photo-1486312338219-ce68e2c6b7d3?w=800&h=600&fit=crop',
+          thumbnail: 'https://images.unsplash.com/photo-1486312338219-ce68e2c6b7d3?w=300&h=200&fit=crop',
+          title: `Creative workspace - ${stockSearchQuery}`,
+          tags: [stockSearchQuery, 'creative', 'workspace', 'design'],
+          photographer: 'Alex Brown',
+          source: 'Unsplash'
+        },
+        {
+          id: '6',
+          url: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=600&fit=crop',
+          thumbnail: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop',
+          title: `Startup environment - ${stockSearchQuery}`,
+          tags: [stockSearchQuery, 'startup', 'innovation', 'growth'],
+          photographer: 'Emma Davis',
+          source: 'Unsplash'
+        }
+      ];
+
+      setStockImages(mockStockImages);
+    } catch (err) {
+      console.error('Error searching stock photos:', err);
+      setError('Failed to search stock photos. Please try again.');
+    } finally {
+      setIsSearchingStock(false);
+    }
+  };
+
+  const handleDownloadStockImage = async (stockImage: StockImage) => {
+    if (!user?.id) return;
+
+    setIsDownloadingStock(true);
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      // In a real implementation, you would:
+      // 1. Download the image from the stock photo service
+      // 2. Upload it to your storage (Cloudinary, S3, etc.)
+      // 3. Save the reference in your database
+
+      // For now, we'll simulate this process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const { data, error: insertError } = await supabase
+        .from('gallery_images')
+        .insert({
+          company_id: companyId,
+          url: stockImage.url,
+          title: stockImage.title,
+          description: `Stock photo by ${stockImage.photographer} from ${stockImage.source}`,
+          type: 'stock_photo',
+          tags: stockImage.tags
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Update local state
+      setImages([data, ...images]);
+      setShowStockPhotoModal(false);
+      setStockSearchQuery('');
+      setStockImages([]);
+      setSelectedStockImage(null);
+    } catch (err) {
+      console.error('Error downloading stock image:', err);
+      setError('Failed to download stock image. Please try again.');
+    } finally {
+      setIsDownloadingStock(false);
+    }
+  };
+
+  const handleStockSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleStockPhotoSearch();
+    }
+  };
+
   return (
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
@@ -182,6 +330,13 @@ const Gallery: React.FC = () => {
                 leftIcon={<Filter size={18} />}
               >
                 Filter
+              </Button>
+              <Button
+                variant="outline"
+                leftIcon={<Sparkles size={18} />}
+                onClick={() => setShowStockPhotoModal(true)}
+              >
+                Stock Photos
               </Button>
               <Button
                 leftIcon={<Plus size={18} />}
@@ -308,6 +463,183 @@ const Gallery: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Stock Photo Search Modal */}
+      {showStockPhotoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-neutral-200">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-800 flex items-center">
+                    <Sparkles size={24} className="mr-2 text-primary" />
+                    Stock Photo Search
+                  </h2>
+                  <p className="text-sm text-neutral-500 mt-1">
+                    Find professional stock photos using AI-powered search
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowStockPhotoModal(false);
+                    setStockSearchQuery('');
+                    setStockImages([]);
+                    setSelectedStockImage(null);
+                  }}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <X size={20} className="text-neutral-500" />
+                </button>
+              </div>
+
+              {/* Search Input */}
+              <div className="flex space-x-3">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={stockSearchQuery}
+                    onChange={(e) => setStockSearchQuery(e.target.value)}
+                    onKeyDown={handleStockSearchKeyDown}
+                    placeholder="Describe the image you're looking for (e.g., 'business meeting', 'technology', 'teamwork')..."
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+                <Button
+                  onClick={handleStockPhotoSearch}
+                  isLoading={isSearchingStock}
+                  disabled={!stockSearchQuery.trim()}
+                  leftIcon={<Search size={18} />}
+                  className="px-6"
+                >
+                  {isSearchingStock ? 'Searching...' : 'Search'}
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {isSearchingStock ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-neutral-600">Searching for stock photos...</p>
+                    <p className="text-sm text-neutral-500 mt-2">Finding the perfect images for you</p>
+                  </div>
+                </div>
+              ) : stockImages.length > 0 ? (
+                <div>
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-neutral-800">
+                      Search Results for "{stockSearchQuery}"
+                    </h3>
+                    <p className="text-sm text-neutral-500">
+                      {stockImages.length} images found
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {stockImages.map((stockImage) => (
+                      <div
+                        key={stockImage.id}
+                        className={`group relative bg-neutral-50 rounded-lg border-2 overflow-hidden cursor-pointer transition-all ${
+                          selectedStockImage?.id === stockImage.id
+                            ? 'border-primary'
+                            : 'border-neutral-200 hover:border-neutral-300'
+                        }`}
+                        onClick={() => setSelectedStockImage(stockImage)}
+                      >
+                        <div className="aspect-[4/3]">
+                          <img
+                            src={stockImage.thumbnail}
+                            alt={stockImage.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        
+                        {/* Overlay */}
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200" />
+                        
+                        {/* Selection indicator */}
+                        {selectedStockImage?.id === stockImage.id && (
+                          <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                            <Heart size={14} className="text-white fill-current" />
+                          </div>
+                        )}
+                        
+                        {/* Info overlay */}
+                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-200">
+                          <h4 className="font-medium text-sm mb-1">{stockImage.title}</h4>
+                          <p className="text-xs opacity-90">by {stockImage.photographer}</p>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {stockImage.tags.slice(0, 3).map((tag, index) => (
+                              <span key={index} className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : stockSearchQuery ? (
+                <div className="text-center py-12">
+                  <Search size={48} className="mx-auto text-neutral-300 mb-4" />
+                  <p className="text-neutral-500">No results found for "{stockSearchQuery}"</p>
+                  <p className="text-sm text-neutral-400 mt-2">Try different keywords or search terms</p>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Sparkles size={48} className="mx-auto text-neutral-300 mb-4" />
+                  <h3 className="text-lg font-medium text-neutral-800 mb-2">Search Stock Photos</h3>
+                  <p className="text-neutral-500 mb-4">
+                    Enter keywords to find professional stock photos for your content
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {['business', 'technology', 'teamwork', 'office', 'meeting', 'innovation'].map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        onClick={() => {
+                          setStockSearchQuery(suggestion);
+                          handleStockPhotoSearch();
+                        }}
+                        className="px-3 py-1 text-sm bg-neutral-100 text-neutral-700 rounded-full hover:bg-neutral-200 transition-colors"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer with download button */}
+            {selectedStockImage && (
+              <div className="p-6 border-t border-neutral-200 bg-neutral-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <img
+                      src={selectedStockImage.thumbnail}
+                      alt={selectedStockImage.title}
+                      className="w-16 h-12 object-cover rounded-lg"
+                    />
+                    <div>
+                      <h4 className="font-medium text-neutral-800">{selectedStockImage.title}</h4>
+                      <p className="text-sm text-neutral-500">by {selectedStockImage.photographer} • {selectedStockImage.source}</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => handleDownloadStockImage(selectedStockImage)}
+                    isLoading={isDownloadingStock}
+                    leftIcon={<Download size={18} />}
+                  >
+                    {isDownloadingStock ? 'Adding to Gallery...' : 'Add to Gallery'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Upload Modal */}
       {showUploadModal && (
