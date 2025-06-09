@@ -33,6 +33,7 @@ const Gallery: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showStockPhotoModal, setShowStockPhotoModal] = useState(false);
+  const [showAddToGalleryModal, setShowAddToGalleryModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [editedTitle, setEditedTitle] = useState('');
   const [newTag, setNewTag] = useState('');
@@ -49,6 +50,12 @@ const Gallery: React.FC = () => {
   const [isSearchingStock, setIsSearchingStock] = useState(false);
   const [selectedStockImage, setSelectedStockImage] = useState<StockImage | null>(null);
   const [isDownloadingStock, setIsDownloadingStock] = useState(false);
+
+  // Add to gallery modal states
+  const [galleryTitle, setGalleryTitle] = useState('');
+  const [galleryDescription, setGalleryDescription] = useState('');
+  const [galleryTags, setGalleryTags] = useState<string[]>([]);
+  const [newGalleryTag, setNewGalleryTag] = useState('');
 
   useEffect(() => {
     loadImages();
@@ -195,8 +202,35 @@ const Gallery: React.FC = () => {
     }
   };
 
-  const handleDownloadStockImage = async (stockImage: StockImage) => {
-    if (!user?.id) return;
+  const handleStockImageSelect = (stockImage: StockImage) => {
+    setSelectedStockImage(stockImage);
+    // Pre-populate the add to gallery form
+    setGalleryTitle(stockImage.title);
+    setGalleryDescription(`Stock photo by ${stockImage.photographer} from ${stockImage.source}`);
+    setGalleryTags([...stockImage.tags]);
+    setShowAddToGalleryModal(true);
+  };
+
+  const handleAddGalleryTag = () => {
+    if (newGalleryTag.trim() && !galleryTags.includes(newGalleryTag.trim())) {
+      setGalleryTags([...galleryTags, newGalleryTag.trim()]);
+      setNewGalleryTag('');
+    }
+  };
+
+  const handleRemoveGalleryTag = (tagToRemove: string) => {
+    setGalleryTags(galleryTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleGalleryTagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddGalleryTag();
+    }
+  };
+
+  const handleConfirmAddToGallery = async () => {
+    if (!selectedStockImage || !user?.id) return;
 
     setIsDownloadingStock(true);
     try {
@@ -217,11 +251,11 @@ const Gallery: React.FC = () => {
         .from('gallery_images')
         .insert({
           company_id: companyId,
-          url: stockImage.url,
-          title: stockImage.title,
-          description: `Stock photo by ${stockImage.photographer} from ${stockImage.source}`,
+          url: selectedStockImage.url,
+          title: galleryTitle,
+          description: galleryDescription,
           type: 'stock_photo',
-          tags: stockImage.tags
+          tags: galleryTags
         })
         .select()
         .single();
@@ -230,10 +264,17 @@ const Gallery: React.FC = () => {
 
       // Update local state
       setImages([data, ...images]);
+      
+      // Reset all modals and states
+      setShowAddToGalleryModal(false);
       setShowStockPhotoModal(false);
       setStockSearchQuery('');
       setStockImages([]);
       setSelectedStockImage(null);
+      setGalleryTitle('');
+      setGalleryDescription('');
+      setGalleryTags([]);
+      setNewGalleryTag('');
     } catch (err) {
       console.error('Error downloading stock image:', err);
       setError('Failed to download stock image. Please try again.');
@@ -514,7 +555,7 @@ const Gallery: React.FC = () => {
                             ? 'border-primary'
                             : 'border-neutral-200 hover:border-neutral-300'
                         }`}
-                        onClick={() => setSelectedStockImage(stockImage)}
+                        onClick={() => handleStockImageSelect(stockImage)}
                       >
                         <div className="aspect-[4/3]">
                           <img
@@ -580,32 +621,137 @@ const Gallery: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* Footer with download button */}
-            {selectedStockImage && (
-              <div className="p-6 border-t border-neutral-200 bg-neutral-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
+      {/* Add to Gallery Modal */}
+      {showAddToGalleryModal && selectedStockImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-bold text-neutral-800">Add to Gallery</h2>
+                <button
+                  onClick={() => {
+                    setShowAddToGalleryModal(false);
+                    setSelectedStockImage(null);
+                    setGalleryTitle('');
+                    setGalleryDescription('');
+                    setGalleryTags([]);
+                    setNewGalleryTag('');
+                  }}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <X size={20} className="text-neutral-500" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                {/* Image Preview */}
+                <div>
+                  <div className="rounded-lg overflow-hidden mb-4">
                     <img
                       src={selectedStockImage.thumbnail}
                       alt={selectedStockImage.title}
-                      className="w-16 h-12 object-cover rounded-lg"
+                      className="w-full h-auto"
                     />
-                    <div>
-                      <h4 className="font-medium text-neutral-800">{selectedStockImage.title}</h4>
-                      <p className="text-sm text-neutral-500">by {selectedStockImage.photographer} • {selectedStockImage.source}</p>
+                  </div>
+                  <div className="text-sm text-neutral-500">
+                    <p>by {selectedStockImage.photographer}</p>
+                    <p>Source: {selectedStockImage.source}</p>
+                  </div>
+                </div>
+
+                {/* Form */}
+                <div className="space-y-4">
+                  <div>
+                    <Input
+                      label="Title"
+                      value={galleryTitle}
+                      onChange={(e) => setGalleryTitle(e.target.value)}
+                      placeholder="Enter image title"
+                      fullWidth
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={galleryDescription}
+                      onChange={(e) => setGalleryDescription(e.target.value)}
+                      placeholder="Enter image description (optional)"
+                      className="w-full h-20 px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Tags
+                    </label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {galleryTags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm bg-neutral-100"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            className="ml-1 hover:text-error-600"
+                            onClick={() => handleRemoveGalleryTag(tag)}
+                          >
+                            <X size={14} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex space-x-2">
+                      <Input
+                        placeholder="Add a tag..."
+                        value={newGalleryTag}
+                        onChange={(e) => setNewGalleryTag(e.target.value)}
+                        onKeyDown={handleGalleryTagKeyDown}
+                        leftIcon={<TagIcon size={18} />}
+                      />
+                      <Button
+                        onClick={handleAddGalleryTag}
+                        disabled={!newGalleryTag.trim()}
+                      >
+                        Add
+                      </Button>
                     </div>
                   </div>
-                  <Button
-                    onClick={() => handleDownloadStockImage(selectedStockImage)}
-                    isLoading={isDownloadingStock}
-                    leftIcon={<Download size={18} />}
-                  >
-                    {isDownloadingStock ? 'Adding to Gallery...' : 'Add to Gallery'}
-                  </Button>
                 </div>
               </div>
-            )}
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddToGalleryModal(false);
+                    setSelectedStockImage(null);
+                    setGalleryTitle('');
+                    setGalleryDescription('');
+                    setGalleryTags([]);
+                    setNewGalleryTag('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmAddToGallery}
+                  isLoading={isDownloadingStock}
+                  disabled={!galleryTitle.trim()}
+                  leftIcon={<Download size={18} />}
+                >
+                  {isDownloadingStock ? 'Adding to Gallery...' : 'Add to Gallery'}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
