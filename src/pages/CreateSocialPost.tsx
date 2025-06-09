@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Plus, X, Wand2, Image, Hash, Type, MessageSquare, Target, Users, TrendingUp, Copy, Check, RefreshCw, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Plus, X, Wand2, Image, Hash, Type, MessageSquare, Target, Users, TrendingUp, Copy, Check, RefreshCw, ChevronDown, Upload, Sparkles } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import { useAuth } from '../context/AuthContext';
+import { getUserCompany } from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 interface Platform {
   id: 'twitter' | 'facebook' | 'linkedin' | 'instagram';
@@ -20,7 +23,17 @@ interface GeneratedPost {
   characterCount: number;
 }
 
+interface GalleryImage {
+  id: string;
+  url: string;
+  title: string;
+  description: string | null;
+  tags: string[];
+  created_at: string;
+}
+
 const CreateSocialPost: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'input' | 'output'>('input');
   const [selectedPlatform, setSelectedPlatform] = useState<string>('');
   const [postType, setPostType] = useState<string>('');
@@ -33,6 +46,13 @@ const CreateSocialPost: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  
+  // Image selection states
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [isLoadingGallery, setIsLoadingGallery] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
 
   const platforms: Platform[] = [
     {
@@ -114,6 +134,36 @@ const CreateSocialPost: React.FC = () => {
     'Senior Executives'
   ];
 
+  useEffect(() => {
+    if (activeTab === 'output') {
+      loadGalleryImages();
+    }
+  }, [activeTab, user]);
+
+  const loadGalleryImages = async () => {
+    if (!user?.id) return;
+
+    setIsLoadingGallery(true);
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      const { data, error } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(12);
+
+      if (error) throw error;
+      setGalleryImages(data || []);
+    } catch (err) {
+      console.error('Error loading gallery images:', err);
+    } finally {
+      setIsLoadingGallery(false);
+    }
+  };
+
   const selectPlatform = (platformId: string) => {
     setSelectedPlatform(platformId);
   };
@@ -169,6 +219,17 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
   const getPlatformColor = (platformName: string) => {
     const platform = platforms.find(p => p.name === platformName);
     return platform?.color || 'bg-neutral-500';
+  };
+
+  const handleGenerateImage = async () => {
+    setIsGeneratingImage(true);
+    // Simulate image generation
+    setTimeout(() => {
+      // Mock generated image URL
+      const mockImageUrl = `https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=400&h=400&fit=crop&crop=center`;
+      setSelectedImage(mockImageUrl);
+      setIsGeneratingImage(false);
+    }, 3000);
   };
 
   return (
@@ -367,7 +428,7 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                 </div>
               </div>
 
-              {/* Custom Prompt */}
+              {/* Prompt */}
               <div>
                 <h2 className="text-lg font-semibold text-neutral-800 mb-4 flex items-center">
                   <Wand2 className="mr-2" size={20} />
@@ -424,68 +485,158 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                   </div>
                 </div>
               ) : generatedPost ? (
-                <div className="space-y-6">
-                  <div className="bg-neutral-50 rounded-lg border border-neutral-200 overflow-hidden">
-                    <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className={`w-8 h-8 rounded-lg ${getPlatformColor(generatedPost.platform)} flex items-center justify-center text-white mr-3`}>
-                          {React.createElement(getPlatformIcon(generatedPost.platform), { size: 18 })}
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-neutral-800">{generatedPost.platform}</h3>
-                          <p className="text-sm text-neutral-500">
-                            {generatedPost.characterCount} characters
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copyToClipboard(generatedPost.content)}
-                          leftIcon={isCopied ? <Check size={16} /> : <Copy size={16} />}
-                          className={isCopied ? 'text-success-600 border-success-600' : ''}
-                        >
-                          {isCopied ? 'Copied!' : 'Copy'}
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <div className="bg-white rounded-lg p-4 border border-neutral-200">
-                        <p className="whitespace-pre-wrap text-neutral-700 leading-relaxed">
-                          {generatedPost.content}
-                        </p>
-                        {generatedPost.hashtags && generatedPost.hashtags.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-neutral-200">
-                            <div className="flex flex-wrap gap-2">
-                              {generatedPost.hashtags.map((hashtag, hashIndex) => (
-                                <span
-                                  key={hashIndex}
-                                  className="text-primary font-medium text-sm"
-                                >
-                                  {hashtag}
-                                </span>
-                              ))}
-                            </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Generated Post Content */}
+                  <div className="lg:col-span-2">
+                    <div className="bg-neutral-50 rounded-lg border border-neutral-200 overflow-hidden">
+                      <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className={`w-8 h-8 rounded-lg ${getPlatformColor(generatedPost.platform)} flex items-center justify-center text-white mr-3`}>
+                            {React.createElement(getPlatformIcon(generatedPost.platform), { size: 18 })}
                           </div>
-                        )}
+                          <div>
+                            <h3 className="font-medium text-neutral-800">{generatedPost.platform}</h3>
+                            <p className="text-sm text-neutral-500">
+                              {generatedPost.characterCount} characters
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(generatedPost.content)}
+                            leftIcon={isCopied ? <Check size={16} /> : <Copy size={16} />}
+                            className={isCopied ? 'text-success-600 border-success-600' : ''}
+                          >
+                            {isCopied ? 'Copied!' : 'Copy'}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <div className="bg-white rounded-lg p-4 border border-neutral-200">
+                          <p className="whitespace-pre-wrap text-neutral-700 leading-relaxed">
+                            {generatedPost.content}
+                          </p>
+                          {generatedPost.hashtags && generatedPost.hashtags.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-neutral-200">
+                              <div className="flex flex-wrap gap-2">
+                                {generatedPost.hashtags.map((hashtag, hashIndex) => (
+                                  <span
+                                    key={hashIndex}
+                                    className="text-primary font-medium text-sm"
+                                  >
+                                    {hashtag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Selected Image Preview */}
+                          {selectedImage && (
+                            <div className="mt-4 pt-4 border-t border-neutral-200">
+                              <div className="relative">
+                                <img
+                                  src={selectedImage}
+                                  alt="Selected for post"
+                                  className="w-full h-48 object-cover rounded-lg"
+                                />
+                                <button
+                                  onClick={() => setSelectedImage(null)}
+                                  className="absolute top-2 right-2 p-1 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70 transition-colors"
+                                >
+                                  <X size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="flex justify-center space-x-3 pt-6 border-t border-neutral-200">
-                    <Button
-                      variant="outline"
-                      onClick={() => setActiveTab('input')}
-                    >
-                      Back to Input
-                    </Button>
-                    <Button
-                      onClick={handleGenerate}
-                      leftIcon={<RefreshCw size={18} />}
-                    >
-                      Regenerate Post
-                    </Button>
+
+                  {/* Image Selection Panel */}
+                  <div className="lg:col-span-1">
+                    <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
+                      <div className="p-4 border-b border-neutral-200">
+                        <h3 className="font-medium text-neutral-800 flex items-center">
+                          <Image size={18} className="mr-2" />
+                          Add Image
+                        </h3>
+                        <p className="text-sm text-neutral-500 mt-1">
+                          Generate or select an image for your post
+                        </p>
+                      </div>
+
+                      <div className="p-4 space-y-4">
+                        {/* Generate Image Button */}
+                        <Button
+                          onClick={handleGenerateImage}
+                          isLoading={isGeneratingImage}
+                          leftIcon={<Sparkles size={18} />}
+                          fullWidth
+                          variant="outline"
+                        >
+                          {isGeneratingImage ? 'Generating...' : 'Generate Image'}
+                        </Button>
+
+                        {/* Upload Image Button */}
+                        <Button
+                          onClick={() => setShowImageUpload(true)}
+                          leftIcon={<Upload size={18} />}
+                          fullWidth
+                          variant="outline"
+                        >
+                          Upload Image
+                        </Button>
+
+                        {/* Gallery Section */}
+                        <div>
+                          <h4 className="text-sm font-medium text-neutral-700 mb-3">
+                            Select from Gallery
+                          </h4>
+                          
+                          {isLoadingGallery ? (
+                            <div className="flex justify-center items-center h-32">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                            </div>
+                          ) : galleryImages.length > 0 ? (
+                            <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                              {galleryImages.map((image) => (
+                                <div
+                                  key={image.id}
+                                  onClick={() => setSelectedImage(image.url)}
+                                  className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+                                    selectedImage === image.url
+                                      ? 'border-primary'
+                                      : 'border-transparent hover:border-neutral-300'
+                                  }`}
+                                >
+                                  <img
+                                    src={image.url}
+                                    alt={image.title}
+                                    className="w-full h-20 object-cover"
+                                  />
+                                  {selectedImage === image.url && (
+                                    <div className="absolute inset-0 bg-primary bg-opacity-20 flex items-center justify-center">
+                                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                                        <Check size={14} className="text-white" />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-neutral-500">
+                              <Image size={32} className="mx-auto mb-2 text-neutral-300" />
+                              <p className="text-sm">No images in gallery</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -498,6 +649,23 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                     onClick={() => setActiveTab('input')}
                   >
                     Go to Input
+                  </Button>
+                </div>
+              )}
+
+              {generatedPost && (
+                <div className="flex justify-center space-x-3 pt-6 border-t border-neutral-200 mt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setActiveTab('input')}
+                  >
+                    Back to Input
+                  </Button>
+                  <Button
+                    onClick={handleGenerate}
+                    leftIcon={<RefreshCw size={18} />}
+                  >
+                    Regenerate Post
                   </Button>
                 </div>
               )}
