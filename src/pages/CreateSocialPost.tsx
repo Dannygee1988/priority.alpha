@@ -263,11 +263,6 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
 
   return (
     <div className="px-4 py-8 animate-fade-in">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-neutral-800">Create New Post</h1>
-        <p className="text-neutral-500">Generate engaging social media content with AI assistance</p>
-      </div>
-
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
           {/* Tab Navigation */}
@@ -500,11 +495,6 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
           {/* Output Tab */}
           <div className={activeTab === 'output' ? 'block' : 'hidden'}>
             <div className="p-6">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold text-neutral-800">Generated Post</h2>
-                <p className="text-sm text-neutral-500">Your AI-generated social media content</p>
-              </div>
-
               {isGenerating ? (
                 <div className="flex justify-center items-center h-64">
                   <div className="text-center">
