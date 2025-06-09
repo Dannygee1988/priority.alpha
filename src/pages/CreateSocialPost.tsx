@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Plus, X, Wand2, Image, Hash, Type, MessageSquare, Target, Users, TrendingUp, Copy, Check, RefreshCw, ChevronDown, Upload, Sparkles } from 'lucide-react';
+import { Twitter, Facebook, Linkedin as LinkedIn, Instagram, Plus, X, Wand2, Image, Hash, Type, MessageSquare, Target, Users, TrendingUp, Copy, Check, RefreshCw, ChevronDown, Sparkles } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -52,7 +52,6 @@ const CreateSocialPost: React.FC = () => {
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [isLoadingGallery, setIsLoadingGallery] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [showImageUpload, setShowImageUpload] = useState(false);
 
   // Hashtag management states
   const [editableHashtags, setEditableHashtags] = useState<string[]>([]);
@@ -654,16 +653,6 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                           variant="outline"
                         >
                           {isGeneratingImage ? 'Generating...' : 'Generate Image'}
-                        </Button>
-
-                        {/* Upload Image Button */}
-                        <Button
-                          onClick={() => setShowImageUpload(true)}
-                          leftIcon={<Upload size={18} />}
-                          fullWidth
-                          variant="outline"
-                        >
-                          Upload Image
                         </Button>
 
                         {/* Gallery Section */}
