@@ -164,7 +164,7 @@ const Gallery: React.FC = () => {
       // In a real implementation, this would call Unsplash, Pexels, or similar API
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Mock stock images based on search query
+      // Mock stock images based on search query - Only 2 results
       const mockStockImages: StockImage[] = [
         {
           id: '1',
@@ -182,42 +182,6 @@ const Gallery: React.FC = () => {
           title: `Technology workspace - ${stockSearchQuery}`,
           tags: [stockSearchQuery, 'technology', 'workspace', 'modern'],
           photographer: 'Jane Smith',
-          source: 'Unsplash'
-        },
-        {
-          id: '3',
-          url: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&h=600&fit=crop',
-          thumbnail: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=300&h=200&fit=crop',
-          title: `Team collaboration - ${stockSearchQuery}`,
-          tags: [stockSearchQuery, 'team', 'collaboration', 'office'],
-          photographer: 'Mike Johnson',
-          source: 'Unsplash'
-        },
-        {
-          id: '4',
-          url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop',
-          thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=200&fit=crop',
-          title: `Professional portrait - ${stockSearchQuery}`,
-          tags: [stockSearchQuery, 'portrait', 'professional', 'business'],
-          photographer: 'Sarah Wilson',
-          source: 'Unsplash'
-        },
-        {
-          id: '5',
-          url: 'https://images.unsplash.com/photo-1486312338219-ce68e2c6b7d3?w=800&h=600&fit=crop',
-          thumbnail: 'https://images.unsplash.com/photo-1486312338219-ce68e2c6b7d3?w=300&h=200&fit=crop',
-          title: `Creative workspace - ${stockSearchQuery}`,
-          tags: [stockSearchQuery, 'creative', 'workspace', 'design'],
-          photographer: 'Alex Brown',
-          source: 'Unsplash'
-        },
-        {
-          id: '6',
-          url: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=600&fit=crop',
-          thumbnail: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop',
-          title: `Startup environment - ${stockSearchQuery}`,
-          tags: [stockSearchQuery, 'startup', 'innovation', 'growth'],
-          photographer: 'Emma Davis',
           source: 'Unsplash'
         }
       ];
@@ -536,7 +500,7 @@ const Gallery: React.FC = () => {
                     </p>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {stockImages.map((stockImage) => (
                       <div
                         key={stockImage.id}
