@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Search, Filter, Grid, List, Plus, Image as ImageIcon, MoreVertical, X, Tag as TagIcon, Trash2, Sparkles, Download, Heart } from 'lucide-react';
+import { Upload, Search, Filter, Grid, List, Plus, Image as ImageIcon, MoreVertical, X, Tag as TagIcon, Trash2, Sparkles, Download, Heart, RefreshCw } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -167,7 +167,7 @@ const Gallery: React.FC = () => {
       // Mock stock images based on search query - Only 2 results
       const mockStockImages: StockImage[] = [
         {
-          id: '1',
+          id: Math.random().toString(),
           url: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=800&h=600&fit=crop',
           thumbnail: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=300&h=200&fit=crop',
           title: `Business meeting - ${stockSearchQuery}`,
@@ -176,7 +176,7 @@ const Gallery: React.FC = () => {
           source: 'Unsplash'
         },
         {
-          id: '2',
+          id: Math.random().toString(),
           url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=600&fit=crop',
           thumbnail: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=200&fit=crop',
           title: `Technology workspace - ${stockSearchQuery}`,
@@ -491,13 +491,18 @@ const Gallery: React.FC = () => {
                 </div>
               ) : stockImages.length > 0 ? (
                 <div>
-                  <div className="mb-4">
+                  <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-semibold text-neutral-800">
                       Search Results for "{stockSearchQuery}"
                     </h3>
-                    <p className="text-sm text-neutral-500">
-                      {stockImages.length} images found
-                    </p>
+                    <Button
+                      onClick={handleStockPhotoSearch}
+                      variant="outline"
+                      leftIcon={<RefreshCw size={18} />}
+                      disabled={isSearchingStock}
+                    >
+                      Search for More
+                    </Button>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
