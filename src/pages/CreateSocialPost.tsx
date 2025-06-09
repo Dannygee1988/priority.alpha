@@ -54,6 +54,10 @@ const CreateSocialPost: React.FC = () => {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
 
+  // Hashtag management states
+  const [editableHashtags, setEditableHashtags] = useState<string[]>([]);
+  const [newHashtag, setNewHashtag] = useState('');
+
   const platforms: Platform[] = [
     {
       id: 'twitter',
@@ -139,6 +143,13 @@ const CreateSocialPost: React.FC = () => {
       loadGalleryImages();
     }
   }, [activeTab, user]);
+
+  // Update editable hashtags when generated post changes
+  useEffect(() => {
+    if (generatedPost?.hashtags) {
+      setEditableHashtags([...generatedPost.hashtags]);
+    }
+  }, [generatedPost]);
 
   const loadGalleryImages = async () => {
     if (!user?.id) return;
@@ -230,6 +241,25 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
       setSelectedImage(mockImageUrl);
       setIsGeneratingImage(false);
     }, 3000);
+  };
+
+  const handleAddHashtag = () => {
+    if (newHashtag.trim() && !editableHashtags.includes(newHashtag.trim())) {
+      const hashtag = newHashtag.trim().startsWith('#') ? newHashtag.trim() : `#${newHashtag.trim()}`;
+      setEditableHashtags([...editableHashtags, hashtag]);
+      setNewHashtag('');
+    }
+  };
+
+  const handleRemoveHashtag = (hashtagToRemove: string) => {
+    setEditableHashtags(editableHashtags.filter(hashtag => hashtag !== hashtagToRemove));
+  };
+
+  const handleHashtagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddHashtag();
+    }
   };
 
   return (
@@ -518,18 +548,63 @@ ${includeCallToAction ? '\n👉 Learn more at our website!' : ''}`;
                           <p className="whitespace-pre-wrap text-neutral-700 leading-relaxed">
                             {generatedPost.content}
                           </p>
-                          {generatedPost.hashtags && generatedPost.hashtags.length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-neutral-200">
-                              <div className="flex flex-wrap gap-2">
-                                {generatedPost.hashtags.map((hashtag, hashIndex) => (
+                          
+                          {/* Interactive Hashtag Array */}
+                          {includeHashtags && (
+                            <div className="mt-4 pt-4 border-t border-neutral-200">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-sm font-medium text-neutral-700 flex items-center">
+                                  <Hash size={16} className="mr-1" />
+                                  Hashtags
+                                </h4>
+                                <span className="text-xs text-neutral-500">
+                                  {editableHashtags.length} hashtag{editableHashtags.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              
+                              {/* Hashtag Display */}
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                {editableHashtags.map((hashtag, index) => (
                                   <span
-                                    key={hashIndex}
-                                    className="text-primary font-medium text-sm"
+                                    key={index}
+                                    className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors group"
                                   >
                                     {hashtag}
+                                    <button
+                                      onClick={() => handleRemoveHashtag(hashtag)}
+                                      className="ml-2 hover:text-error-600 transition-colors opacity-0 group-hover:opacity-100"
+                                      title="Remove hashtag"
+                                    >
+                                      <X size={14} />
+                                    </button>
                                   </span>
                                 ))}
                               </div>
+                              
+                              {/* Add New Hashtag */}
+                              <div className="flex space-x-2">
+                                <div className="flex-1">
+                                  <input
+                                    type="text"
+                                    value={newHashtag}
+                                    onChange={(e) => setNewHashtag(e.target.value)}
+                                    onKeyDown={handleHashtagKeyDown}
+                                    placeholder="Add hashtag..."
+                                    className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary"
+                                  />
+                                </div>
+                                <Button
+                                  onClick={handleAddHashtag}
+                                  size="sm"
+                                  disabled={!newHashtag.trim()}
+                                  leftIcon={<Plus size={14} />}
+                                >
+                                  Add
+                                </Button>
+                              </div>
+                              <p className="text-xs text-neutral-500 mt-2">
+                                Press Enter or click Add to include a new hashtag
+                              </p>
                             </div>
                           )}
                           
