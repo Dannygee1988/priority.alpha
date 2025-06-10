@@ -52,6 +52,7 @@ import {
   Bot,
   MessagesSquare,
   ListFilter,
+  FileUser,
 } from 'lucide-react';
 
 const socialMediaSubmenu = [
@@ -105,6 +106,13 @@ const prSubmenu = [
   },
 ];
 
+const hrSubmenu = [
+  { name: 'CV Library', icon: FileUser, path: '/hr/cv-library' },
+  { name: 'Job Postings', icon: Newspaper, path: '/hr/job-postings' },
+  { name: 'Interviews', icon: Users, path: '/hr/interviews' },
+  { name: 'Employee Records', icon: UserCircle, path: '/hr/employee-records' },
+];
+
 const advisorSubmenu = [
   { name: 'GPT', icon: Bot, path: '/gpt' },
   { name: 'Chats', icon: MessagesSquare, path: '/chats' },
@@ -139,7 +147,12 @@ const navigation = [
     submenu: communitySubmenu,
   },
   { name: 'Analytics', icon: LineChart, path: '/analytics' },
-  { name: 'Human Resources', icon: UserCog, path: '/hr' },
+  {
+    name: 'Human Resources',
+    icon: UserCog,
+    path: '/hr',
+    submenu: hrSubmenu,
+  },
   { name: 'CRM', icon: UserPlus, path: '/crm' },
   { name: 'Data', icon: Database, path: '/data' },
   {
