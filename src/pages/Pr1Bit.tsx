@@ -401,7 +401,7 @@ const Pr1Bit: React.FC = () => {
                   leftIcon={<Search size={18} />}
                   className="w-64"
                 />
-                <Button variant="outline" leftIcon={<Filter size={18} />}>
+                <Button variant="outline" size="sm" leftIcon={<Filter size={16} />}>
                   Filter
                 </Button>
               </div>
@@ -547,7 +547,7 @@ const Pr1Bit: React.FC = () => {
                   leftIcon={<Search size={18} />}
                   className="w-64"
                 />
-                <Button variant="outline" leftIcon={<Filter size={18} />}>
+                <Button variant="outline" size="sm" leftIcon={<Filter size={16} />}>
                   Filter
                 </Button>
               </div>
