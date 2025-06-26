@@ -18,7 +18,8 @@ import {
   Key,
   TestTube,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
@@ -44,6 +45,7 @@ const Pr1Bit: React.FC = () => {
   const [customerPayments, setCustomerPayments] = useState<CustomerCryptoPayment[]>([]);
   const [reports, setReports] = useState<TreasuryReport[]>([]);
   const [livePrices, setLivePrices] = useState<CryptoPrices>({});
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingPrices, setIsLoadingPrices] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +66,7 @@ const Pr1Bit: React.FC = () => {
       setIsLoadingPrices(true);
       const prices = await getLiveCryptoPrices();
       setLivePrices(prices);
+      setLastUpdated(new Date());
     } catch (err) {
       console.error('Error loading live prices:', err);
     } finally {
@@ -111,6 +114,25 @@ const Pr1Bit: React.FC = () => {
 
   const formatCrypto = (amount: number, symbol: string) => {
     return `${amount.toFixed(8)} ${symbol}`;
+  };
+
+  const formatLastUpdated = (date: Date | null) => {
+    if (!date) return 'Never';
+    
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) {
+      return 'Just now';
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    } else {
+      return date.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
   };
 
   const getCryptoIcon = (symbol: string) => {
@@ -236,7 +258,15 @@ const Pr1Bit: React.FC = () => {
       {/* Live Crypto Prices */}
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 mb-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-neutral-800">Live Crypto Prices</h2>
+          <div className="flex items-center space-x-4">
+            <h2 className="text-lg font-semibold text-neutral-800">Live Crypto Prices</h2>
+            {lastUpdated && (
+              <div className="flex items-center text-sm text-neutral-500">
+                <Clock size={14} className="mr-1" />
+                Last updated {formatLastUpdated(lastUpdated)}
+              </div>
+            )}
+          </div>
           <Button
             variant="outline"
             size="sm"
