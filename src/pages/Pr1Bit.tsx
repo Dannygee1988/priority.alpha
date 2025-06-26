@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bitcoin, TrendingUp, TrendingDown, DollarSign, PieChart, FileText, Users, Download, Plus, Search, Filter, Eye, MoreVertical, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, BarChart3, Calendar, Globe, Shield, AlertTriangle, CheckCircle, Wand2, RefreshCw } from 'lucide-react';
+import { Bitcoin, TrendingUp, TrendingDown, DollarSign, PieChart, FileText, Users, Download, Plus, Search, Filter, Eye, MoreVertical, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, BarChart3, Calendar, Globe, Shield, AlertTriangle, CheckCircle, Wand2, RefreshCw, MapPin, Key, Copy, QrCode } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -20,7 +20,7 @@ import {
 
 const Pr1Bit: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'portfolio' | 'transactions' | 'payments' | 'reports'>('portfolio');
+  const [activeTab, setActiveTab] = useState<'portfolio' | 'transactions' | 'payments' | 'addresses' | 'reports' | 'keys'>('portfolio');
   const [holdings, setHoldings] = useState<CryptoHolding[]>([]);
   const [transactions, setTransactions] = useState<CryptoTransaction[]>([]);
   const [customerPayments, setCustomerPayments] = useState<CustomerCryptoPayment[]>([]);
@@ -37,6 +37,80 @@ const Pr1Bit: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastPriceUpdate, setLastPriceUpdate] = useState<Date | null>(null);
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+
+  // Mock data for addresses and keys
+  const mockAddresses = [
+    {
+      id: '1',
+      symbol: 'BTC',
+      name: 'Bitcoin',
+      address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+      balance: 1.0,
+      type: 'receiving',
+      created_at: '2024-01-15T10:30:00Z'
+    },
+    {
+      id: '2',
+      symbol: 'ETH',
+      name: 'Ethereum',
+      address: '0x742d35Cc6634C0532925a3b8D4C2C4e4C4C4C4C4',
+      balance: 0.0,
+      type: 'receiving',
+      created_at: '2024-01-20T14:15:00Z'
+    },
+    {
+      id: '3',
+      symbol: 'SOL',
+      name: 'Solana',
+      address: 'DRpbCBMxVnDK7maPM5tGv6MvB3v1sRMC7Rt5tbCf1YXJ',
+      balance: 1.0,
+      type: 'receiving',
+      created_at: '2024-02-01T09:45:00Z'
+    },
+    {
+      id: '4',
+      symbol: 'ADA',
+      name: 'Cardano',
+      address: 'addr1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+      balance: 1.0,
+      type: 'receiving',
+      created_at: '2024-02-10T16:20:00Z'
+    }
+  ];
+
+  const mockKeys = [
+    {
+      id: '1',
+      name: 'Master Signing Key',
+      type: 'Hardware Wallet',
+      status: 'active',
+      device: 'Ledger Nano X',
+      fingerprint: 'A1B2C3D4',
+      created_at: '2024-01-01T00:00:00Z',
+      last_used: '2024-01-25T10:30:00Z'
+    },
+    {
+      id: '2',
+      name: 'Backup Signing Key',
+      type: 'Hardware Wallet',
+      status: 'active',
+      device: 'Trezor Model T',
+      fingerprint: 'E5F6G7H8',
+      created_at: '2024-01-01T00:00:00Z',
+      last_used: '2024-01-20T14:15:00Z'
+    },
+    {
+      id: '3',
+      name: 'Emergency Recovery Key',
+      type: 'Paper Wallet',
+      status: 'secure',
+      device: 'Cold Storage',
+      fingerprint: 'I9J0K1L2',
+      created_at: '2024-01-01T00:00:00Z',
+      last_used: null
+    }
+  ];
 
   useEffect(() => {
     loadData();
@@ -138,11 +212,14 @@ const Pr1Bit: React.FC = () => {
     switch (status) {
       case 'completed':
       case 'confirmed':
+      case 'active':
         return 'bg-success-50 text-success-700';
       case 'pending':
         return 'bg-warning-50 text-warning-700';
       case 'failed':
         return 'bg-error-50 text-error-700';
+      case 'secure':
+        return 'bg-primary-50 text-primary-700';
       default:
         return 'bg-neutral-100 text-neutral-700';
     }
@@ -212,6 +289,20 @@ Generated on: ${new Date().toISOString()}`;
       case 'risk': return 'Risk Assessments';
       default: return 'Reports';
     }
+  };
+
+  const handleCopyAddress = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopiedAddress(address);
+      setTimeout(() => setCopiedAddress(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy address:', err);
+    }
+  };
+
+  const truncateAddress = (address: string) => {
+    return `${address.slice(0, 8)}...${address.slice(-8)}`;
   };
 
   const filteredHoldings = holdings.filter(holding =>
@@ -368,16 +459,18 @@ Generated on: ${new Date().toISOString()}`;
       {/* Tab Navigation */}
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
         <div className="border-b border-neutral-200">
-          <div className="flex">
+          <div className="flex overflow-x-auto">
             {[
               { id: 'portfolio', label: 'Portfolio', icon: PieChart },
               { id: 'transactions', label: 'Transactions', icon: BarChart3 },
               { id: 'payments', label: 'Customer Payments', icon: CreditCard },
-              { id: 'reports', label: 'Reports & Governance', icon: FileText }
+              { id: 'addresses', label: 'Addresses', icon: MapPin },
+              { id: 'reports', label: 'Reports & Governance', icon: FileText },
+              { id: 'keys', label: 'Keys', icon: Key }
             ].map((tab) => (
               <button
                 key={tab.id}
-                className={`flex items-center px-6 py-3 text-sm font-medium transition-colors ${
+                className={`flex items-center px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'text-primary border-b-2 border-primary bg-primary/5'
                     : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
@@ -651,6 +744,84 @@ Generated on: ${new Date().toISOString()}`;
           </div>
         )}
 
+        {/* Addresses Tab */}
+        {activeTab === 'addresses' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-neutral-800">Wallet Addresses</h2>
+              <div className="flex space-x-2">
+                <Button variant="outline" leftIcon={<Plus size={18} />}>
+                  Generate Address
+                </Button>
+                <Button variant="outline" leftIcon={<QrCode size={18} />}>
+                  QR Codes
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {mockAddresses.map((address) => (
+                <div key={address.id} className="bg-neutral-50 rounded-lg p-6 border border-neutral-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center mr-3">
+                        <span className="text-orange-600 font-bold text-sm">{address.symbol}</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-neutral-900">{address.name}</h3>
+                        <p className="text-sm text-neutral-500 capitalize">{address.type} address</p>
+                      </div>
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor('active')}`}>
+                      Active
+                    </span>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">Address</label>
+                    <div className="flex items-center bg-white rounded-md border border-neutral-300 p-3">
+                      <code className="flex-1 text-sm font-mono text-neutral-800 break-all">
+                        {address.address}
+                      </code>
+                      <button
+                        onClick={() => handleCopyAddress(address.address)}
+                        className="ml-2 p-1 hover:bg-neutral-100 rounded-full transition-colors"
+                        title="Copy address"
+                      >
+                        {copiedAddress === address.address ? (
+                          <CheckCircle size={16} className="text-success-500" />
+                        ) : (
+                          <Copy size={16} className="text-neutral-400" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-neutral-500">Balance:</span>
+                      <div className="font-medium">{formatCrypto(address.balance, address.symbol)}</div>
+                    </div>
+                    <div>
+                      <span className="text-neutral-500">Created:</span>
+                      <div className="font-medium">{formatDate(address.created_at)}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex space-x-2">
+                    <Button variant="outline" size="sm" leftIcon={<QrCode size={16} />} className="flex-1">
+                      QR Code
+                    </Button>
+                    <Button variant="outline" size="sm" leftIcon={<Globe size={16} />} className="flex-1">
+                      Explorer
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Reports Tab */}
         {activeTab === 'reports' && (
           <div className="p-6">
@@ -780,6 +951,111 @@ Generated on: ${new Date().toISOString()}`;
                   >
                     View
                   </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Keys Tab */}
+        {activeTab === 'keys' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-neutral-800">Cryptographic Keys</h2>
+              <div className="flex space-x-2">
+                <Button variant="outline" leftIcon={<Plus size={18} />}>
+                  Add Key
+                </Button>
+                <Button variant="outline" leftIcon={<Shield size={18} />}>
+                  Security Audit
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {mockKeys.map((key) => (
+                <div key={key.id} className="bg-neutral-50 rounded-lg p-6 border border-neutral-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mr-4">
+                        <Key size={24} className="text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-neutral-900">{key.name}</h3>
+                        <p className="text-sm text-neutral-500">{key.type} • {key.device}</p>
+                      </div>
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(key.status)}`}>
+                      {key.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Fingerprint</label>
+                      <div className="flex items-center">
+                        <code className="text-sm font-mono bg-white px-2 py-1 rounded border">{key.fingerprint}</code>
+                        <button
+                          onClick={() => handleCopyAddress(key.fingerprint)}
+                          className="ml-2 p-1 hover:bg-neutral-100 rounded-full transition-colors"
+                          title="Copy fingerprint"
+                        >
+                          {copiedAddress === key.fingerprint ? (
+                            <CheckCircle size={14} className="text-success-500" />
+                          ) : (
+                            <Copy size={14} className="text-neutral-400" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Created</label>
+                      <p className="text-sm text-neutral-600">{formatDate(key.created_at)}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Last Used</label>
+                      <p className="text-sm text-neutral-600">
+                        {key.last_used ? formatDate(key.last_used) : 'Never'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" leftIcon={<Eye size={16} />}>
+                        View Details
+                      </Button>
+                      <Button variant="outline" size="sm" leftIcon={<Shield size={16} />}>
+                        Test Key
+                      </Button>
+                    </div>
+                    <div className="flex items-center text-sm text-neutral-500">
+                      {key.status === 'active' ? (
+                        <div className="flex items-center">
+                          <CheckCircle size={16} className="text-success-500 mr-1" />
+                          Operational
+                        </div>
+                      ) : (
+                        <div className="flex items-center">
+                          <Shield size={16} className="text-primary mr-1" />
+                          Secure Storage
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 bg-warning-50 border border-warning-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <AlertTriangle className="h-5 w-5 text-warning-500 mt-0.5 mr-3" />
+                <div>
+                  <h3 className="text-sm font-medium text-warning-800">Security Notice</h3>
+                  <p className="text-sm text-warning-700 mt-1">
+                    Keep your hardware wallets and recovery phrases secure. Never share private keys or seed phrases with anyone. 
+                    Regularly test your backup procedures and ensure multiple secure storage locations.
+                  </p>
                 </div>
               </div>
             </div>
