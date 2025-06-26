@@ -549,54 +549,62 @@ const Pr1Bit: React.FC = () => {
         {activeTab === 'reports' && (
           <div className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-gradient-to-br from-primary to-primary-700 text-white rounded-2xl p-6">
+              <div className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Treasury Report</h3>
-                  <FileText size={24} className="text-primary-200" />
+                  <h3 className="text-lg font-semibold text-neutral-800">Treasury Report</h3>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <FileText size={24} className="text-primary" />
+                  </div>
                 </div>
-                <p className="text-primary-100 mb-4">
+                <p className="text-neutral-600 mb-4 leading-relaxed">
                   Generate comprehensive treasury reports for board meetings and compliance.
                 </p>
-                <Button variant="outline" className="text-primary border-white hover:bg-white hover:text-primary">
+                <Button variant="outline" className="w-full">
                   Generate Report
                 </Button>
               </div>
 
-              <div className="bg-gradient-to-br from-success-500 to-success-600 text-white rounded-2xl p-6">
+              <div className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Governance Documents</h3>
-                  <Shield size={24} className="text-success-200" />
+                  <h3 className="text-lg font-semibold text-neutral-800">Governance Documents</h3>
+                  <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center">
+                    <Shield size={24} className="text-neutral-600" />
+                  </div>
                 </div>
-                <p className="text-success-100 mb-4">
+                <p className="text-neutral-600 mb-4 leading-relaxed">
                   Create governance documents and policy frameworks for cryptocurrency holdings.
                 </p>
-                <Button variant="outline" className="text-success-600 border-white hover:bg-white hover:text-success-600">
+                <Button variant="outline" className="w-full">
                   Create Documents
                 </Button>
               </div>
 
-              <div className="bg-gradient-to-br from-warning-500 to-warning-600 text-white rounded-2xl p-6">
+              <div className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Tax Reports</h3>
-                  <Calendar size={24} className="text-warning-200" />
+                  <h3 className="text-lg font-semibold text-neutral-800">Tax Reports</h3>
+                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+                    <Calendar size={24} className="text-accent-600" />
+                  </div>
                 </div>
-                <p className="text-warning-100 mb-4">
+                <p className="text-neutral-600 mb-4 leading-relaxed">
                   Generate tax reports and capital gains calculations for regulatory compliance.
                 </p>
-                <Button variant="outline" className="text-warning-600 border-white hover:bg-white hover:text-warning-600">
+                <Button variant="outline" className="w-full">
                   Generate Tax Report
                 </Button>
               </div>
 
-              <div className="bg-gradient-to-br from-accent to-accent-600 text-white rounded-2xl p-6">
+              <div className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Risk Assessment</h3>
-                  <AlertTriangle size={24} className="text-accent-200" />
+                  <h3 className="text-lg font-semibold text-neutral-800">Risk Assessment</h3>
+                  <div className="w-12 h-12 rounded-xl bg-warning-50 flex items-center justify-center">
+                    <AlertTriangle size={24} className="text-warning-600" />
+                  </div>
                 </div>
-                <p className="text-accent-100 mb-4">
+                <p className="text-neutral-600 mb-4 leading-relaxed">
                   Analyze portfolio risk and generate risk management recommendations.
                 </p>
-                <Button variant="outline" className="text-accent-600 border-white hover:bg-white hover:text-accent-600">
+                <Button variant="outline" className="w-full">
                   Assess Risk
                 </Button>
               </div>
