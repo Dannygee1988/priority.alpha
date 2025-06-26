@@ -393,18 +393,13 @@ const Pr1Bit: React.FC = () => {
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-semibold text-neutral-800">Holdings</h2>
-              <div className="flex space-x-2">
-                <Input
-                  placeholder="Search holdings..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  leftIcon={<Search size={18} />}
-                  className="w-64"
-                />
-                <Button variant="outline" size="sm" leftIcon={<Filter size={16} />}>
-                  Filter
-                </Button>
-              </div>
+              <Input
+                placeholder="Search holdings..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                leftIcon={<Search size={18} />}
+                className="w-64"
+              />
             </div>
 
             <div className="overflow-x-auto">
