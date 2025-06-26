@@ -17,7 +17,8 @@ import {
   MapPin,
   Key,
   TestTube,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
@@ -27,10 +28,12 @@ import {
   getCryptoTransactions, 
   getCustomerCryptoPayments, 
   getTreasuryReports,
+  getLiveCryptoPrices,
   CryptoHolding,
   CryptoTransaction,
   CustomerCryptoPayment,
-  TreasuryReport
+  TreasuryReport,
+  CryptoPrices
 } from '../lib/crypto-api';
 
 const Pr1Bit: React.FC = () => {
@@ -40,13 +43,33 @@ const Pr1Bit: React.FC = () => {
   const [transactions, setTransactions] = useState<CryptoTransaction[]>([]);
   const [customerPayments, setCustomerPayments] = useState<CustomerCryptoPayment[]>([]);
   const [reports, setReports] = useState<TreasuryReport[]>([]);
+  const [livePrices, setLivePrices] = useState<CryptoPrices>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingPrices, setIsLoadingPrices] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
+    loadLivePrices();
+    
+    // Set up interval to refresh prices every 30 seconds
+    const priceInterval = setInterval(loadLivePrices, 30000);
+    
+    return () => clearInterval(priceInterval);
   }, [user]);
+
+  const loadLivePrices = async () => {
+    try {
+      setIsLoadingPrices(true);
+      const prices = await getLiveCryptoPrices();
+      setLivePrices(prices);
+    } catch (err) {
+      console.error('Error loading live prices:', err);
+    } finally {
+      setIsLoadingPrices(false);
+    }
+  };
 
   const loadData = async () => {
     if (!user?.id) return;
@@ -208,6 +231,51 @@ const Pr1Bit: React.FC = () => {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-neutral-800">Pr1Bit Treasury</h1>
         <p className="text-neutral-500">Manage your cryptocurrency treasury and digital assets</p>
+      </div>
+
+      {/* Live Crypto Prices */}
+      <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-neutral-800">Live Crypto Prices</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadLivePrices}
+            isLoading={isLoadingPrices}
+            leftIcon={<RefreshCw size={16} />}
+          >
+            Refresh
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Object.entries(livePrices).map(([symbol, data]) => (
+            <div key={symbol} className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center">
+                  {getCryptoIcon(symbol)}
+                  <span className="ml-2 font-medium text-neutral-900">{symbol}</span>
+                </div>
+                <div className={`flex items-center text-sm ${
+                  data.change_24h >= 0 ? 'text-success-600' : 'text-error-600'
+                }`}>
+                  {data.change_24h >= 0 ? (
+                    <TrendingUp size={14} className="mr-1" />
+                  ) : (
+                    <TrendingDown size={14} className="mr-1" />
+                  )}
+                  {data.change_24h >= 0 ? '+' : ''}{data.change_24h.toFixed(2)}%
+                </div>
+              </div>
+              <div className="text-lg font-bold text-neutral-900">
+                {formatCurrency(data.price_gbp)}
+              </div>
+              <div className="text-sm text-neutral-500">
+                ${data.price_usd.toLocaleString()}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Portfolio Overview */}
