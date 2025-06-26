@@ -3,56 +3,25 @@ import { Bitcoin, TrendingUp, TrendingDown, DollarSign, PieChart, FileText, User
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
-
-interface CryptoHolding {
-  id: string;
-  symbol: string;
-  name: string;
-  amount: number;
-  currentPrice: number;
-  value: number;
-  change24h: number;
-  allocation: number;
-}
-
-interface Transaction {
-  id: string;
-  type: 'buy' | 'sell' | 'receive' | 'send';
-  symbol: string;
-  amount: number;
-  price: number;
-  value: number;
-  date: string;
-  status: 'completed' | 'pending' | 'failed';
-  txHash?: string;
-}
-
-interface CustomerPayment {
-  id: string;
-  customerName: string;
-  amount: number;
-  symbol: string;
-  value: number;
-  date: string;
-  status: 'confirmed' | 'pending' | 'failed';
-  confirmations: number;
-  txHash: string;
-}
-
-interface TreasuryReport {
-  id: string;
-  type: 'treasury' | 'governance' | 'tax' | 'risk';
-  title: string;
-  generatedAt: string;
-  status: 'completed' | 'generating';
-}
+import { getUserCompany } from '../lib/api';
+import {
+  getCryptoHoldings,
+  getCryptoTransactions,
+  getCustomerCryptoPayments,
+  getTreasuryReports,
+  generateTreasuryReport,
+  type CryptoHolding,
+  type CryptoTransaction,
+  type CustomerCryptoPayment,
+  type TreasuryReport
+} from '../lib/crypto-api';
 
 const Pr1Bit: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'portfolio' | 'transactions' | 'payments' | 'reports'>('portfolio');
   const [holdings, setHoldings] = useState<CryptoHolding[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [customerPayments, setCustomerPayments] = useState<CustomerPayment[]>([]);
+  const [transactions, setTransactions] = useState<CryptoTransaction[]>([]);
+  const [customerPayments, setCustomerPayments] = useState<CustomerCryptoPayment[]>([]);
   const [treasuryReports, setTreasuryReports] = useState<TreasuryReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showBuyModal, setShowBuyModal] = useState(false);
@@ -62,126 +31,49 @@ const Pr1Bit: React.FC = () => {
   const [buyAmount, setBuyAmount] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data - in production this would come from APIs
   useEffect(() => {
-    const mockHoldings: CryptoHolding[] = [
-      {
-        id: '1',
-        symbol: 'BTC',
-        name: 'Bitcoin',
-        amount: 2.5,
-        currentPrice: 43250.00,
-        value: 108125.00,
-        change24h: 2.34,
-        allocation: 65.2
-      },
-      {
-        id: '2',
-        symbol: 'ETH',
-        name: 'Ethereum',
-        amount: 15.8,
-        currentPrice: 2580.50,
-        value: 40772.90,
-        change24h: -1.23,
-        allocation: 24.6
-      },
-      {
-        id: '3',
-        symbol: 'ADA',
-        name: 'Cardano',
-        amount: 25000,
-        currentPrice: 0.68,
-        value: 17000.00,
-        change24h: 4.56,
-        allocation: 10.2
+    loadData();
+  }, [user]);
+
+  const loadData = async () => {
+    if (!user?.id) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
       }
-    ];
 
-    const mockTransactions: Transaction[] = [
-      {
-        id: '1',
-        type: 'buy',
-        symbol: 'BTC',
-        amount: 0.5,
-        price: 43100.00,
-        value: 21550.00,
-        date: '2024-01-15T10:30:00Z',
-        status: 'completed',
-        txHash: '1a2b3c4d5e6f7g8h9i0j'
-      },
-      {
-        id: '2',
-        type: 'receive',
-        symbol: 'ETH',
-        amount: 2.3,
-        price: 2590.00,
-        value: 5957.00,
-        date: '2024-01-14T14:22:00Z',
-        status: 'completed',
-        txHash: '9i8h7g6f5e4d3c2b1a0z'
-      }
-    ];
+      const [holdingsData, transactionsData, paymentsData, reportsData] = await Promise.all([
+        getCryptoHoldings(companyId),
+        getCryptoTransactions(companyId),
+        getCustomerCryptoPayments(companyId),
+        getTreasuryReports(companyId)
+      ]);
 
-    const mockPayments: CustomerPayment[] = [
-      {
-        id: '1',
-        customerName: 'Acme Corp Ltd',
-        amount: 0.025,
-        symbol: 'BTC',
-        value: 1081.25,
-        date: '2024-01-15T09:15:00Z',
-        status: 'confirmed',
-        confirmations: 6,
-        txHash: 'abc123def456ghi789'
-      },
-      {
-        id: '2',
-        customerName: 'Tech Solutions Inc',
-        amount: 1.5,
-        symbol: 'ETH',
-        value: 3870.75,
-        date: '2024-01-14T16:45:00Z',
-        status: 'confirmed',
-        confirmations: 12,
-        txHash: 'xyz789uvw456rst123'
-      }
-    ];
+      setHoldings(holdingsData);
+      setTransactions(transactionsData);
+      setCustomerPayments(paymentsData);
+      setTreasuryReports(reportsData);
+    } catch (err) {
+      console.error('Error loading crypto data:', err);
+      setError('Failed to load crypto data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const mockReports: TreasuryReport[] = [
-      {
-        id: '1',
-        type: 'treasury',
-        title: 'Q4 2024 Treasury Report',
-        generatedAt: '2024-01-15T10:30:00Z',
-        status: 'completed'
-      },
-      {
-        id: '2',
-        type: 'governance',
-        title: 'Cryptocurrency Policy Framework',
-        generatedAt: '2024-01-10T14:22:00Z',
-        status: 'completed'
-      },
-      {
-        id: '3',
-        type: 'tax',
-        title: 'Tax Year 2024 Crypto Report',
-        generatedAt: '2024-01-08T09:15:00Z',
-        status: 'completed'
-      }
-    ];
-
-    setHoldings(mockHoldings);
-    setTransactions(mockTransactions);
-    setCustomerPayments(mockPayments);
-    setTreasuryReports(mockReports);
-    setIsLoading(false);
-  }, []);
-
-  const totalPortfolioValue = holdings.reduce((sum, holding) => sum + holding.value, 0);
-  const totalChange24h = holdings.reduce((sum, holding) => sum + (holding.value * holding.change24h / 100), 0);
-  const totalChangePercent = (totalChange24h / totalPortfolioValue) * 100;
+  const totalPortfolioValue = holdings.reduce((sum, holding) => sum + (holding.value || 0), 0);
+  const totalChange24h = holdings.reduce((sum, holding) => {
+    const changeValue = (holding.value || 0) * (holding.change_24h || 0) / 100;
+    return sum + changeValue;
+  }, 0);
+  const totalChangePercent = totalPortfolioValue > 0 ? (totalChange24h / totalPortfolioValue) * 100 : 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-GB', {
@@ -234,21 +126,35 @@ const Pr1Bit: React.FC = () => {
   };
 
   const handleGenerateReport = async (type: 'treasury' | 'governance' | 'tax' | 'risk') => {
+    if (!user?.id) return;
+
     setIsGenerating(type);
     
-    // Simulate report generation
-    setTimeout(() => {
-      const newReport: TreasuryReport = {
-        id: Date.now().toString(),
-        type,
-        title: `${type.charAt(0).toUpperCase() + type.slice(1)} Report - ${new Date().toLocaleDateString()}`,
-        generatedAt: new Date().toISOString(),
-        status: 'completed'
-      };
-      
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      // Generate mock report content
+      const reportTitle = `${type.charAt(0).toUpperCase() + type.slice(1)} Report - ${new Date().toLocaleDateString()}`;
+      const reportContent = `This is a generated ${type} report for your cryptocurrency treasury. 
+
+Portfolio Summary:
+- Total Holdings: ${holdings.length} cryptocurrencies
+- Total Value: ${formatCurrency(totalPortfolioValue)}
+- 24h Change: ${totalChangePercent.toFixed(2)}%
+
+Generated on: ${new Date().toISOString()}`;
+
+      const newReport = await generateTreasuryReport(companyId, type, reportTitle, reportContent);
       setTreasuryReports([newReport, ...treasuryReports]);
+    } catch (err) {
+      console.error('Error generating report:', err);
+      setError('Failed to generate report. Please try again.');
+    } finally {
       setIsGenerating(null);
-    }, 3000);
+    }
   };
 
   const handleViewReports = (type: 'treasury' | 'governance' | 'tax' | 'risk') => {
@@ -257,7 +163,7 @@ const Pr1Bit: React.FC = () => {
   };
 
   const getReportsByType = (type: 'treasury' | 'governance' | 'tax' | 'risk') => {
-    return treasuryReports.filter(report => report.type === type);
+    return treasuryReports.filter(report => report.report_type === type);
   };
 
   const getReportTypeTitle = (type: 'treasury' | 'governance' | 'tax' | 'risk') => {
@@ -269,6 +175,21 @@ const Pr1Bit: React.FC = () => {
       default: return 'Reports';
     }
   };
+
+  const filteredHoldings = holdings.filter(holding =>
+    holding.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    holding.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (isLoading) {
+    return (
+      <div className="px-4 py-8 animate-fade-in">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-8 animate-fade-in">
@@ -297,6 +218,12 @@ const Pr1Bit: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-error-50 text-error-700 rounded-md">
+          {error}
+        </div>
+      )}
 
       {/* Portfolio Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -402,75 +329,88 @@ const Pr1Bit: React.FC = () => {
               />
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-neutral-200">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Asset</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Holdings</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Price</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Value</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">24h Change</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Allocation</th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {holdings.map((holding) => (
-                    <tr key={holding.id} className="border-b border-neutral-100 hover:bg-neutral-50">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mr-3">
-                            <span className="text-orange-600 font-bold text-sm">{holding.symbol}</span>
-                          </div>
-                          <div>
-                            <div className="font-medium text-neutral-900">{holding.name}</div>
-                            <div className="text-sm text-neutral-500">{holding.symbol}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-medium">{formatCrypto(holding.amount, holding.symbol)}</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-medium">{formatCurrency(holding.currentPrice)}</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-medium">{formatCurrency(holding.value)}</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center">
-                          {holding.change24h >= 0 ? (
-                            <TrendingUp size={16} className="mr-1 text-success-500" />
-                          ) : (
-                            <TrendingDown size={16} className="mr-1 text-error-500" />
-                          )}
-                          <span className={`font-medium ${holding.change24h >= 0 ? 'text-success-600' : 'text-error-600'}`}>
-                            {holding.change24h >= 0 ? '+' : ''}{holding.change24h.toFixed(2)}%
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center">
-                          <div className="w-16 bg-neutral-200 rounded-full h-2 mr-2">
-                            <div
-                              className="bg-primary h-2 rounded-full"
-                              style={{ width: `${holding.allocation}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium">{holding.allocation}%</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical size={16} />
-                        </Button>
-                      </td>
+            {filteredHoldings.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-neutral-200">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Asset</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Holdings</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Price</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Value</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">24h Change</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Allocation</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredHoldings.map((holding) => (
+                      <tr key={holding.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mr-3">
+                              <span className="text-orange-600 font-bold text-sm">{holding.symbol}</span>
+                            </div>
+                            <div>
+                              <div className="font-medium text-neutral-900">{holding.name}</div>
+                              <div className="text-sm text-neutral-500">{holding.symbol}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-medium">{formatCrypto(holding.amount, holding.symbol)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-medium">{formatCurrency(holding.current_price || 0)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-medium">{formatCurrency(holding.value || 0)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            {(holding.change_24h || 0) >= 0 ? (
+                              <TrendingUp size={16} className="mr-1 text-success-500" />
+                            ) : (
+                              <TrendingDown size={16} className="mr-1 text-error-500" />
+                            )}
+                            <span className={`font-medium ${(holding.change_24h || 0) >= 0 ? 'text-success-600' : 'text-error-600'}`}>
+                              {(holding.change_24h || 0) >= 0 ? '+' : ''}{(holding.change_24h || 0).toFixed(2)}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <div className="w-16 bg-neutral-200 rounded-full h-2 mr-2">
+                              <div
+                                className="bg-primary h-2 rounded-full"
+                                style={{ width: `${holding.allocation || 0}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium">{(holding.allocation || 0).toFixed(1)}%</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical size={16} />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Bitcoin className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
+                <h3 className="text-lg font-medium text-neutral-900 mb-2">No Holdings Found</h3>
+                <p className="text-neutral-500 mb-4">
+                  {searchQuery ? 'No holdings match your search criteria' : 'Start building your crypto treasury'}
+                </p>
+                <Button leftIcon={<Plus size={18} />} onClick={() => setShowBuyModal(true)}>
+                  Buy Crypto
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -489,45 +429,53 @@ const Pr1Bit: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
-              {transactions.map((transaction) => (
-                <div key={transaction.id} className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mr-4 border border-neutral-200">
-                        {getTransactionIcon(transaction.type)}
-                      </div>
-                      <div>
-                        <div className="flex items-center">
-                          <span className="font-medium text-neutral-900 capitalize">{transaction.type}</span>
-                          <span className="mx-2 text-neutral-400">•</span>
-                          <span className="text-neutral-600">{transaction.symbol}</span>
+            {transactions.length > 0 ? (
+              <div className="space-y-4">
+                {transactions.map((transaction) => (
+                  <div key={transaction.id} className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mr-4 border border-neutral-200">
+                          {getTransactionIcon(transaction.type)}
                         </div>
-                        <div className="text-sm text-neutral-500">{formatDate(transaction.date)}</div>
+                        <div>
+                          <div className="flex items-center">
+                            <span className="font-medium text-neutral-900 capitalize">{transaction.type}</span>
+                            <span className="mx-2 text-neutral-400">•</span>
+                            <span className="text-neutral-600">{transaction.symbol}</span>
+                          </div>
+                          <div className="text-sm text-neutral-500">{formatDate(transaction.created_at)}</div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium text-neutral-900">
-                        {formatCrypto(transaction.amount, transaction.symbol)}
+                      <div className="text-right">
+                        <div className="font-medium text-neutral-900">
+                          {formatCrypto(transaction.amount, transaction.symbol)}
+                        </div>
+                        <div className="text-sm text-neutral-500">
+                          {formatCurrency(transaction.value)}
+                        </div>
                       </div>
-                      <div className="text-sm text-neutral-500">
-                        {formatCurrency(transaction.value)}
+                      <div className="flex items-center ml-4">
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
+                          {transaction.status}
+                        </span>
+                        {transaction.tx_hash && (
+                          <Button variant="ghost" size="sm" className="ml-2">
+                            <Globe size={16} />
+                          </Button>
+                        )}
                       </div>
-                    </div>
-                    <div className="flex items-center ml-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
-                        {transaction.status}
-                      </span>
-                      {transaction.txHash && (
-                        <Button variant="ghost" size="sm" className="ml-2">
-                          <Globe size={16} />
-                        </Button>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <BarChart3 className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
+                <h3 className="text-lg font-medium text-neutral-900 mb-2">No Transactions</h3>
+                <p className="text-neutral-500">Your transaction history will appear here</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -548,69 +496,82 @@ const Pr1Bit: React.FC = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-neutral-200">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Customer</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Amount</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Value</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Date</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Status</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Confirmations</th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customerPayments.map((payment) => (
-                    <tr key={payment.id} className="border-b border-neutral-100 hover:bg-neutral-50">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
-                            <Users size={16} className="text-primary" />
-                          </div>
-                          <span className="font-medium text-neutral-900">{payment.customerName}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-medium">{formatCrypto(payment.amount, payment.symbol)}</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="font-medium">{formatCurrency(payment.value)}</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-sm text-neutral-600">{formatDate(payment.date)}</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
-                          {payment.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center">
-                          {payment.status === 'confirmed' ? (
-                            <CheckCircle size={16} className="text-success-500 mr-1" />
-                          ) : (
-                            <AlertTriangle size={16} className="text-warning-500 mr-1" />
-                          )}
-                          <span className="text-sm">{payment.confirmations}/6</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button variant="ghost" size="sm" leftIcon={<Eye size={16} />}>
-                            View
-                          </Button>
-                          <Button variant="ghost" size="sm" leftIcon={<Globe size={16} />}>
-                            Explorer
-                          </Button>
-                        </div>
-                      </td>
+            {customerPayments.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-neutral-200">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Customer</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Amount</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Value</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Date</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Confirmations</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {customerPayments.map((payment) => (
+                      <tr key={payment.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                              <Users size={16} className="text-primary" />
+                            </div>
+                            <div>
+                              <span className="font-medium text-neutral-900">{payment.customer_name}</span>
+                              {payment.customer_email && (
+                                <div className="text-sm text-neutral-500">{payment.customer_email}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-medium">{formatCrypto(payment.amount, payment.symbol)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-medium">{formatCurrency(payment.value_gbp)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-sm text-neutral-600">{formatDate(payment.created_at)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
+                            {payment.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            {payment.status === 'confirmed' ? (
+                              <CheckCircle size={16} className="text-success-500 mr-1" />
+                            ) : (
+                              <AlertTriangle size={16} className="text-warning-500 mr-1" />
+                            )}
+                            <span className="text-sm">{payment.confirmations}/6</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="ghost" size="sm" leftIcon={<Eye size={16} />}>
+                              View
+                            </Button>
+                            <Button variant="ghost" size="sm" leftIcon={<Globe size={16} />}>
+                              Explorer
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <CreditCard className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
+                <h3 className="text-lg font-medium text-neutral-900 mb-2">No Customer Payments</h3>
+                <p className="text-neutral-500">Customer crypto payments will appear here</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -779,6 +740,7 @@ const Pr1Bit: React.FC = () => {
                     <option value="BTC">Bitcoin (BTC)</option>
                     <option value="ETH">Ethereum (ETH)</option>
                     <option value="ADA">Cardano (ADA)</option>
+                    <option value="SOL">Solana (SOL)</option>
                   </select>
                 </div>
 
@@ -795,7 +757,7 @@ const Pr1Bit: React.FC = () => {
                 <div className="bg-neutral-50 p-4 rounded-lg">
                   <div className="flex justify-between text-sm">
                     <span className="text-neutral-600">Estimated Amount:</span>
-                    <span className="font-medium">0.0234 BTC</span>
+                    <span className="font-medium">0.0234 {selectedCrypto || 'BTC'}</span>
                   </div>
                   <div className="flex justify-between text-sm mt-1">
                     <span className="text-neutral-600">Network Fee:</span>
@@ -853,12 +815,12 @@ const Pr1Bit: React.FC = () => {
                         <div>
                           <h3 className="font-medium text-neutral-900">{report.title}</h3>
                           <p className="text-sm text-neutral-500">
-                            Generated on {formatDate(report.generatedAt)}
+                            Generated on {formatDate(report.generated_at)}
                           </p>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
-                            {report.status}
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-50 text-success-700">
+                            completed
                           </span>
                           <Button variant="ghost" size="sm" leftIcon={<Download size={16} />}>
                             Download
