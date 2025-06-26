@@ -19,7 +19,13 @@ import {
   TestTube,
   AlertTriangle,
   RefreshCw,
-  Clock
+  Clock,
+  Eye,
+  Plus,
+  BarChart3,
+  Building2,
+  UserCheck,
+  ShieldCheck
 } from 'lucide-react';
 import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
@@ -228,6 +234,54 @@ const Pr1Bit: React.FC = () => {
       lastUsed: 'Never'
     }
   ];
+
+  // Mock data for report types with last generated dates
+  const reportTypes = [
+    {
+      id: 'financial',
+      title: 'Financial Statement',
+      description: 'Comprehensive financial overview and treasury position',
+      icon: BarChart3,
+      lastGenerated: '2024-01-15 14:30:00',
+      color: 'bg-blue-500'
+    },
+    {
+      id: 'governance',
+      title: 'Governance',
+      description: 'Corporate governance and compliance reporting',
+      icon: Building2,
+      lastGenerated: '2024-01-12 09:15:00',
+      color: 'bg-purple-500'
+    },
+    {
+      id: 'management',
+      title: 'Management Reports',
+      description: 'Executive summaries and operational insights',
+      icon: UserCheck,
+      lastGenerated: '2024-01-18 16:45:00',
+      color: 'bg-green-500'
+    },
+    {
+      id: 'security',
+      title: 'Security Audit',
+      description: 'Security assessment and risk analysis',
+      icon: ShieldCheck,
+      lastGenerated: '2024-01-10 11:20:00',
+      color: 'bg-red-500'
+    }
+  ];
+
+  const formatReportDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }) + ' at ' + date.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   const tabs = [
     { id: 'holdings', name: 'Holdings', icon: Wallet },
@@ -668,37 +722,79 @@ const Pr1Bit: React.FC = () => {
                 <h2 className="text-lg font-semibold text-neutral-800">Treasury Reports & Governance</h2>
               </div>
 
-              {reports.length > 0 ? (
-                <div className="space-y-4">
-                  {reports.map((report) => (
-                    <div key={report.id} className="bg-neutral-50 rounded-lg border border-neutral-200 p-6">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-lg font-medium text-neutral-900">{report.title}</h3>
-                          <p className="text-sm text-neutral-500 mt-1">
-                            {report.report_type.charAt(0).toUpperCase() + report.report_type.slice(1)} Report
-                          </p>
-                          <p className="text-sm text-neutral-500">
-                            Generated on {new Date(report.generated_at).toLocaleDateString()}
-                          </p>
+              {/* Report Type Tiles */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {reportTypes.map((reportType) => (
+                  <div key={reportType.id} className="bg-white rounded-lg border border-neutral-200 p-6 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center">
+                        <div className={`w-12 h-12 rounded-lg ${reportType.color} flex items-center justify-center text-white`}>
+                          <reportType.icon size={24} />
                         </div>
-                        <Button variant="outline" size="sm">
-                          Download
-                        </Button>
-                      </div>
-                      <div className="mt-4">
-                        <p className="text-sm text-neutral-700 line-clamp-3">
-                          {report.content.slice(0, 200)}...
-                        </p>
+                        <div className="ml-4">
+                          <h3 className="text-lg font-semibold text-neutral-900">{reportType.title}</h3>
+                          <p className="text-sm text-neutral-500 mt-1">{reportType.description}</p>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <FileText className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
-                  <h3 className="text-lg font-medium text-neutral-900 mb-2">No reports generated</h3>
-                  <p className="text-neutral-500 mb-4">Treasury reports will appear here when generated</p>
+
+                    <div className="mb-4">
+                      <div className="flex items-center text-sm text-neutral-500">
+                        <Clock size={14} className="mr-1" />
+                        Last generated: {formatReportDate(reportType.lastGenerated)}
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        leftIcon={<Eye size={16} />}
+                        className="flex-1"
+                      >
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        leftIcon={<Plus size={16} />}
+                        className="flex-1"
+                      >
+                        Generate
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Existing Reports List */}
+              {reports.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-neutral-800 mb-4">Recent Reports</h3>
+                  <div className="space-y-4">
+                    {reports.map((report) => (
+                      <div key={report.id} className="bg-neutral-50 rounded-lg border border-neutral-200 p-6">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-lg font-medium text-neutral-900">{report.title}</h3>
+                            <p className="text-sm text-neutral-500 mt-1">
+                              {report.report_type.charAt(0).toUpperCase() + report.report_type.slice(1)} Report
+                            </p>
+                            <p className="text-sm text-neutral-500">
+                              Generated on {new Date(report.generated_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Button variant="outline" size="sm">
+                            Download
+                          </Button>
+                        </div>
+                        <div className="mt-4">
+                          <p className="text-sm text-neutral-700 line-clamp-3">
+                            {report.content.slice(0, 200)}...
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
