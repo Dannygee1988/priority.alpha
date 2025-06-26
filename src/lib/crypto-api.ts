@@ -45,13 +45,47 @@ export interface TreasuryReport {
   generated_at: string;
 }
 
-// Mock price data - in production this would come from a crypto API
-const MOCK_PRICES: Record<string, { price: number; change_24h: number }> = {
-  BTC: { price: 43250.00, change_24h: 2.34 },
-  SOL: { price: 98.75, change_24h: 3.41 },
-  ADA: { price: 0.48, change_24h: 6.67 },
-  ETH: { price: 2580.50, change_24h: -1.23 }
-};
+export interface CryptoPrices {
+  [symbol: string]: {
+    price_usd: number;
+    price_gbp: number;
+    change_24h: number;
+    market_cap: number;
+    volume_24h: number;
+    last_updated: string;
+  }
+}
+
+// Fetch live crypto prices from our edge function
+export async function getLiveCryptoPrices(): Promise<CryptoPrices> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/crypto-prices?ids=bitcoin,ethereum,solana,cardano`,
+      {
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching live crypto prices:', error);
+    
+    // Fallback to mock data if API fails
+    return {
+      BTC: { price_usd: 43250.00, price_gbp: 34127.50, change_24h: 2.34, market_cap: 0, volume_24h: 0, last_updated: new Date().toISOString() },
+      SOL: { price_usd: 98.75, price_gbp: 78.01, change_24h: 3.41, market_cap: 0, volume_24h: 0, last_updated: new Date().toISOString() },
+      ADA: { price_usd: 0.48, price_gbp: 0.38, change_24h: 6.67, market_cap: 0, volume_24h: 0, last_updated: new Date().toISOString() },
+      ETH: { price_usd: 2580.50, price_gbp: 2038.60, change_24h: -1.23, market_cap: 0, volume_24h: 0, last_updated: new Date().toISOString() }
+    };
+  }
+}
 
 export async function getCryptoHoldings(companyId: string): Promise<CryptoHolding[]> {
   try {
@@ -63,14 +97,17 @@ export async function getCryptoHoldings(companyId: string): Promise<CryptoHoldin
 
     if (error) throw error;
 
+    // Fetch live prices
+    const livePrices = await getLiveCryptoPrices();
+
     // Enhance with current prices and calculations
     const enhancedHoldings = (data || []).map(holding => {
-      const priceData = MOCK_PRICES[holding.symbol] || { price: 0, change_24h: 0 };
-      const currentValue = holding.amount * priceData.price;
+      const priceData = livePrices[holding.symbol] || { price_gbp: 0, change_24h: 0 };
+      const currentValue = holding.amount * priceData.price_gbp;
       
       return {
         ...holding,
-        current_price: priceData.price,
+        current_price: priceData.price_gbp,
         value: currentValue,
         change_24h: priceData.change_24h
       };

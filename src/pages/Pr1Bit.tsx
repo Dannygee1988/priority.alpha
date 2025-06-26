@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bitcoin, TrendingUp, TrendingDown, DollarSign, PieChart, FileText, Users, Download, Plus, Search, Filter, Eye, MoreVertical, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, BarChart3, Calendar, Globe, Shield, AlertTriangle, CheckCircle, Wand2 } from 'lucide-react';
+import { Bitcoin, TrendingUp, TrendingDown, DollarSign, PieChart, FileText, Users, Download, Plus, Search, Filter, Eye, MoreVertical, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, BarChart3, Calendar, Globe, Shield, AlertTriangle, CheckCircle, Wand2, RefreshCw } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -10,10 +10,12 @@ import {
   getCustomerCryptoPayments,
   getTreasuryReports,
   generateTreasuryReport,
+  getLiveCryptoPrices,
   type CryptoHolding,
   type CryptoTransaction,
   type CustomerCryptoPayment,
-  type TreasuryReport
+  type TreasuryReport,
+  type CryptoPrices
 } from '../lib/crypto-api';
 
 const Pr1Bit: React.FC = () => {
@@ -23,7 +25,9 @@ const Pr1Bit: React.FC = () => {
   const [transactions, setTransactions] = useState<CryptoTransaction[]>([]);
   const [customerPayments, setCustomerPayments] = useState<CustomerCryptoPayment[]>([]);
   const [treasuryReports, setTreasuryReports] = useState<TreasuryReport[]>([]);
+  const [livePrices, setLivePrices] = useState<CryptoPrices>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshingPrices, setIsRefreshingPrices] = useState(false);
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [showReportsModal, setShowReportsModal] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'treasury' | 'governance' | 'tax' | 'risk' | null>(null);
@@ -32,9 +36,17 @@ const Pr1Bit: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastPriceUpdate, setLastPriceUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
     loadData();
+    
+    // Set up price refresh interval (every 30 seconds)
+    const priceInterval = setInterval(() => {
+      refreshPrices();
+    }, 30000);
+
+    return () => clearInterval(priceInterval);
   }, [user]);
 
   const loadData = async () => {
@@ -49,22 +61,48 @@ const Pr1Bit: React.FC = () => {
         throw new Error('No company found');
       }
 
-      const [holdingsData, transactionsData, paymentsData, reportsData] = await Promise.all([
+      const [holdingsData, transactionsData, paymentsData, reportsData, pricesData] = await Promise.all([
         getCryptoHoldings(companyId),
         getCryptoTransactions(companyId),
         getCustomerCryptoPayments(companyId),
-        getTreasuryReports(companyId)
+        getTreasuryReports(companyId),
+        getLiveCryptoPrices()
       ]);
 
       setHoldings(holdingsData);
       setTransactions(transactionsData);
       setCustomerPayments(paymentsData);
       setTreasuryReports(reportsData);
+      setLivePrices(pricesData);
+      setLastPriceUpdate(new Date());
     } catch (err) {
       console.error('Error loading crypto data:', err);
       setError('Failed to load crypto data. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const refreshPrices = async () => {
+    if (!user?.id) return;
+
+    try {
+      setIsRefreshingPrices(true);
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      const [pricesData, holdingsData] = await Promise.all([
+        getLiveCryptoPrices(),
+        getCryptoHoldings(companyId)
+      ]);
+
+      setLivePrices(pricesData);
+      setHoldings(holdingsData);
+      setLastPriceUpdate(new Date());
+    } catch (err) {
+      console.error('Error refreshing prices:', err);
+    } finally {
+      setIsRefreshingPrices(false);
     }
   };
 
@@ -201,6 +239,19 @@ Generated on: ${new Date().toISOString()}`;
               Pr1Bit Treasury
             </h1>
             <p className="text-neutral-500">Manage your company's cryptocurrency treasury and payments</p>
+            {lastPriceUpdate && (
+              <div className="flex items-center mt-2 text-sm text-neutral-400">
+                <span>Last updated: {lastPriceUpdate.toLocaleTimeString()}</span>
+                <button
+                  onClick={refreshPrices}
+                  disabled={isRefreshingPrices}
+                  className="ml-2 p-1 hover:bg-neutral-100 rounded-full transition-colors"
+                  title="Refresh prices"
+                >
+                  <RefreshCw size={14} className={`${isRefreshingPrices ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            )}
           </div>
           <div className="flex space-x-3">
             <Button
@@ -218,6 +269,37 @@ Generated on: ${new Date().toISOString()}`;
           {error}
         </div>
       )}
+
+      {/* Live Price Ticker */}
+      <div className="mb-8 bg-white rounded-lg border border-neutral-200 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-neutral-700">Live Prices</h3>
+          <div className="flex items-center text-xs text-neutral-500">
+            <div className={`w-2 h-2 rounded-full mr-2 ${isRefreshingPrices ? 'bg-warning-500 animate-pulse' : 'bg-success-500'}`} />
+            {isRefreshingPrices ? 'Updating...' : 'Live'}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Object.entries(livePrices).map(([symbol, data]) => (
+            <div key={symbol} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+              <div>
+                <div className="font-medium text-neutral-900">{symbol}</div>
+                <div className="text-sm font-semibold">{formatCurrency(data.price_gbp)}</div>
+              </div>
+              <div className={`flex items-center text-sm font-medium ${
+                data.change_24h >= 0 ? 'text-success-600' : 'text-error-600'
+              }`}>
+                {data.change_24h >= 0 ? (
+                  <TrendingUp size={14} className="mr-1" />
+                ) : (
+                  <TrendingDown size={14} className="mr-1" />
+                )}
+                {data.change_24h >= 0 ? '+' : ''}{data.change_24h.toFixed(2)}%
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Portfolio Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -751,7 +833,19 @@ Generated on: ${new Date().toISOString()}`;
                 <div className="bg-neutral-50 p-4 rounded-lg">
                   <div className="flex justify-between text-sm">
                     <span className="text-neutral-600">Estimated Amount:</span>
-                    <span className="font-medium">0.0234 {selectedCrypto || 'BTC'}</span>
+                    <span className="font-medium">
+                      {selectedCrypto && buyAmount && livePrices[selectedCrypto] 
+                        ? (parseFloat(buyAmount) / livePrices[selectedCrypto].price_gbp).toFixed(8)
+                        : '0.0000'} {selectedCrypto || 'BTC'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-1">
+                    <span className="text-neutral-600">Current Price:</span>
+                    <span className="font-medium">
+                      {selectedCrypto && livePrices[selectedCrypto] 
+                        ? formatCurrency(livePrices[selectedCrypto].price_gbp)
+                        : '—'}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm mt-1">
                     <span className="text-neutral-600">Network Fee:</span>
