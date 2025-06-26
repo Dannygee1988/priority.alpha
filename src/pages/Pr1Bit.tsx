@@ -1,55 +1,126 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  Plus, 
-  Download,
-  RefreshCw,
-  DollarSign,
-  PieChart,
-  Activity,
-  Users,
-  CreditCard,
-  FileText,
-  Shield,
-  MapPin,
-  Key,
-  Copy,
-  Check,
-  QrCode,
-  ExternalLink,
-  AlertTriangle
-} from 'lucide-react';
+import { Bitcoin, TrendingUp, TrendingDown, DollarSign, PieChart, FileText, Users, Download, Plus, Search, Filter, Eye, MoreVertical, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, BarChart3, Calendar, Globe, Shield, AlertTriangle, CheckCircle, Wand2, RefreshCw, MapPin, Key, Copy, QrCode } from 'lucide-react';
 import Button from '../components/Button';
+import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
-import { 
-  getCryptoHoldings, 
-  getCryptoTransactions, 
-  getCustomerCryptoPayments, 
+import {
+  getCryptoHoldings,
+  getCryptoTransactions,
+  getCustomerCryptoPayments,
   getTreasuryReports,
-  CryptoHolding,
-  CryptoTransaction,
-  CustomerCryptoPayment,
-  TreasuryReport
+  generateTreasuryReport,
+  getLiveCryptoPrices,
+  type CryptoHolding,
+  type CryptoTransaction,
+  type CustomerCryptoPayment,
+  type TreasuryReport,
+  type CryptoPrices
 } from '../lib/crypto-api';
 
 const Pr1Bit: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('holdings');
+  const [activeTab, setActiveTab] = useState<'portfolio' | 'transactions' | 'payments' | 'addresses' | 'reports' | 'keys'>('portfolio');
   const [holdings, setHoldings] = useState<CryptoHolding[]>([]);
   const [transactions, setTransactions] = useState<CryptoTransaction[]>([]);
   const [customerPayments, setCustomerPayments] = useState<CustomerCryptoPayment[]>([]);
-  const [reports, setReports] = useState<TreasuryReport[]>([]);
+  const [treasuryReports, setTreasuryReports] = useState<TreasuryReport[]>([]);
+  const [livePrices, setLivePrices] = useState<CryptoPrices>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshingPrices, setIsRefreshingPrices] = useState(false);
+  const [showBuyModal, setShowBuyModal] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
+  const [selectedReportType, setSelectedReportType] = useState<'treasury' | 'governance' | 'tax' | 'risk' | null>(null);
+  const [selectedCrypto, setSelectedCrypto] = useState<string>('');
+  const [buyAmount, setBuyAmount] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastPriceUpdate, setLastPriceUpdate] = useState<Date | null>(null);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Mock data for addresses and keys
+  const mockAddresses = [
+    {
+      id: '1',
+      symbol: 'BTC',
+      name: 'Bitcoin',
+      address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+      balance: 1.0,
+      type: 'receiving',
+      created_at: '2024-01-15T10:30:00Z'
+    },
+    {
+      id: '2',
+      symbol: 'ETH',
+      name: 'Ethereum',
+      address: '0x742d35Cc6634C0532925a3b8D4C2C4e4C4C4C4C4',
+      balance: 0.0,
+      type: 'receiving',
+      created_at: '2024-01-20T14:15:00Z'
+    },
+    {
+      id: '3',
+      symbol: 'SOL',
+      name: 'Solana',
+      address: 'DRpbCBMxVnDK7maPM5tGv6MvB3v1sRMC7Rt5tbCf1YXJ',
+      balance: 1.0,
+      type: 'receiving',
+      created_at: '2024-02-01T09:45:00Z'
+    },
+    {
+      id: '4',
+      symbol: 'ADA',
+      name: 'Cardano',
+      address: 'addr1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+      balance: 1.0,
+      type: 'receiving',
+      created_at: '2024-02-10T16:20:00Z'
+    }
+  ];
+
+  const mockKeys = [
+    {
+      id: '1',
+      name: 'Master Signing Key',
+      type: 'Hardware Wallet',
+      status: 'active',
+      device: 'Ledger Nano X',
+      fingerprint: 'A1B2C3D4',
+      created_at: '2024-01-01T00:00:00Z',
+      last_used: '2024-01-25T10:30:00Z'
+    },
+    {
+      id: '2',
+      name: 'Backup Signing Key',
+      type: 'Hardware Wallet',
+      status: 'active',
+      device: 'Trezor Model T',
+      fingerprint: 'E5F6G7H8',
+      created_at: '2024-01-01T00:00:00Z',
+      last_used: '2024-01-20T14:15:00Z'
+    },
+    {
+      id: '3',
+      name: 'Emergency Recovery Key',
+      type: 'Paper Wallet',
+      status: 'secure',
+      device: 'Cold Storage',
+      fingerprint: 'I9J0K1L2',
+      created_at: '2024-01-01T00:00:00Z',
+      last_used: null
+    }
+  ];
 
   useEffect(() => {
     loadData();
+    
+    // Set up price refresh interval (every 30 seconds)
+    const priceInterval = setInterval(() => {
+      refreshPrices();
+    }, 30000);
+
+    return () => clearInterval(priceInterval);
   }, [user]);
 
   const loadData = async () => {
@@ -57,153 +128,187 @@ const Pr1Bit: React.FC = () => {
 
     try {
       setIsLoading(true);
+      setError(null);
+
       const companyId = await getUserCompany(user.id);
       if (!companyId) {
         throw new Error('No company found');
       }
 
-      const [holdingsData, transactionsData, paymentsData, reportsData] = await Promise.all([
+      const [holdingsData, transactionsData, paymentsData, reportsData, pricesData] = await Promise.all([
         getCryptoHoldings(companyId),
         getCryptoTransactions(companyId),
         getCustomerCryptoPayments(companyId),
-        getTreasuryReports(companyId)
+        getTreasuryReports(companyId),
+        getLiveCryptoPrices()
       ]);
 
       setHoldings(holdingsData);
       setTransactions(transactionsData);
       setCustomerPayments(paymentsData);
-      setReports(reportsData);
+      setTreasuryReports(reportsData);
+      setLivePrices(pricesData);
+      setLastPriceUpdate(new Date());
     } catch (err) {
-      console.error('Error loading data:', err);
-      setError('Failed to load treasury data');
+      console.error('Error loading crypto data:', err);
+      setError('Failed to load crypto data. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getCryptoIcon = (symbol: string) => {
-    switch (symbol) {
-      case 'BTC':
-        return (
-          <img 
-            src="https://res.cloudinary.com/deyzbqzya/image/upload/v1750929236/btc_xki9yg.webp" 
-            alt="Bitcoin"
-            className="w-8 h-8"
-          />
-        );
-      case 'ETH':
-        return <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold">ETH</div>;
-      case 'SOL':
-        return <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white text-sm font-bold">SOL</div>;
-      case 'ADA':
-        return <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">ADA</div>;
-      default:
-        return <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white text-sm font-bold">{symbol}</div>;
-    }
-  };
+  const refreshPrices = async () => {
+    if (!user?.id) return;
 
-  const formatCurrency = (amount: number, currency: string = 'GBP') => {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
-  };
-
-  const formatCrypto = (amount: number, symbol: string) => {
-    return `${amount.toFixed(8)} ${symbol}`;
-  };
-
-  const copyToClipboard = async (text: string, type: 'address' | 'key') => {
     try {
-      await navigator.clipboard.writeText(text);
-      if (type === 'address') {
-        setCopiedAddress(text);
-        setTimeout(() => setCopiedAddress(null), 2000);
-      } else {
-        setCopiedKey(text);
-        setTimeout(() => setCopiedKey(null), 2000);
-      }
+      setIsRefreshingPrices(true);
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      const [pricesData, holdingsData] = await Promise.all([
+        getLiveCryptoPrices(),
+        getCryptoHoldings(companyId)
+      ]);
+
+      setLivePrices(pricesData);
+      setHoldings(holdingsData);
+      setLastPriceUpdate(new Date());
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error('Error refreshing prices:', err);
+    } finally {
+      setIsRefreshingPrices(false);
     }
   };
 
   const totalPortfolioValue = holdings.reduce((sum, holding) => sum + (holding.value || 0), 0);
+  const totalChange24h = holdings.reduce((sum, holding) => {
+    const changeValue = (holding.value || 0) * (holding.change_24h || 0) / 100;
+    return sum + changeValue;
+  }, 0);
+  const totalChangePercent = totalPortfolioValue > 0 ? (totalChange24h / totalPortfolioValue) * 100 : 0;
 
-  const tabs = [
-    { id: 'holdings', label: 'Holdings', icon: PieChart },
-    { id: 'transactions', label: 'Transactions', icon: Activity },
-    { id: 'payments', label: 'Customer Payments', icon: CreditCard },
-    { id: 'addresses', label: 'Addresses', icon: MapPin },
-    { id: 'reports', label: 'Reports & Governance', icon: FileText },
-    { id: 'keys', label: 'Keys', icon: Key }
-  ];
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP'
+    }).format(amount);
+  };
 
-  // Mock data for addresses
-  const mockAddresses = [
-    {
-      id: '1',
-      symbol: 'BTC',
-      address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-      balance: 1.25,
-      type: 'Receiving',
-      created: '2024-01-15'
-    },
-    {
-      id: '2', 
-      symbol: 'ETH',
-      address: '0x742d35Cc6634C0532925a3b8D4C0532925a3b8D4',
-      balance: 5.75,
-      type: 'Receiving',
-      created: '2024-01-20'
-    },
-    {
-      id: '3',
-      symbol: 'SOL',
-      address: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU',
-      balance: 12.5,
-      type: 'Receiving', 
-      created: '2024-02-01'
-    },
-    {
-      id: '4',
-      symbol: 'ADA',
-      address: 'addr1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-      balance: 1000.0,
-      type: 'Receiving',
-      created: '2024-02-10'
+  const formatCrypto = (amount: number, symbol: string) => {
+    return `${amount.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${symbol}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+      case 'confirmed':
+      case 'active':
+        return 'bg-success-50 text-success-700';
+      case 'pending':
+        return 'bg-warning-50 text-warning-700';
+      case 'failed':
+        return 'bg-error-50 text-error-700';
+      case 'secure':
+        return 'bg-primary-50 text-primary-700';
+      default:
+        return 'bg-neutral-100 text-neutral-700';
     }
-  ];
+  };
 
-  // Mock data for keys
-  const mockKeys = [
-    {
-      id: '1',
-      device: 'Ledger Nano X',
-      fingerprint: 'A1B2C3D4',
-      status: 'Active',
-      created: '2024-01-10',
-      lastUsed: '2024-12-20'
-    },
-    {
-      id: '2',
-      device: 'Trezor Model T',
-      fingerprint: 'E5F6G7H8',
-      status: 'Active',
-      created: '2024-01-15',
-      lastUsed: '2024-12-18'
-    },
-    {
-      id: '3',
-      device: 'Cold Storage',
-      fingerprint: 'I9J0K1L2',
-      status: 'Secure',
-      created: '2024-01-05',
-      lastUsed: '2024-11-30'
+  const getTransactionIcon = (type: string) => {
+    switch (type) {
+      case 'buy':
+        return <ArrowDownRight size={16} className="text-success-600" />;
+      case 'sell':
+        return <ArrowUpRight size={16} className="text-error-600" />;
+      case 'receive':
+        return <ArrowDownRight size={16} className="text-primary" />;
+      case 'send':
+        return <ArrowUpRight size={16} className="text-warning-600" />;
+      default:
+        return <DollarSign size={16} />;
     }
-  ];
+  };
+
+  const handleGenerateReport = async (type: 'treasury' | 'governance' | 'tax' | 'risk') => {
+    if (!user?.id) return;
+
+    setIsGenerating(type);
+    
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      // Generate mock report content
+      const reportTitle = `${type.charAt(0).toUpperCase() + type.slice(1)} Report - ${new Date().toLocaleDateString()}`;
+      const reportContent = `This is a generated ${type} report for your cryptocurrency treasury. 
+
+Portfolio Summary:
+- Total Holdings: ${holdings.length} cryptocurrencies
+- Total Value: ${formatCurrency(totalPortfolioValue)}
+- 24h Change: ${totalChangePercent.toFixed(2)}%
+
+Generated on: ${new Date().toISOString()}`;
+
+      const newReport = await generateTreasuryReport(companyId, type, reportTitle, reportContent);
+      setTreasuryReports([newReport, ...treasuryReports]);
+    } catch (err) {
+      console.error('Error generating report:', err);
+      setError('Failed to generate report. Please try again.');
+    } finally {
+      setIsGenerating(null);
+    }
+  };
+
+  const handleViewReports = (type: 'treasury' | 'governance' | 'tax' | 'risk') => {
+    setSelectedReportType(type);
+    setShowReportsModal(true);
+  };
+
+  const getReportsByType = (type: 'treasury' | 'governance' | 'tax' | 'risk') => {
+    return treasuryReports.filter(report => report.report_type === type);
+  };
+
+  const getReportTypeTitle = (type: 'treasury' | 'governance' | 'tax' | 'risk') => {
+    switch (type) {
+      case 'treasury': return 'Treasury Reports';
+      case 'governance': return 'Governance Documents';
+      case 'tax': return 'Tax Reports';
+      case 'risk': return 'Risk Assessments';
+      default: return 'Reports';
+    }
+  };
+
+  const handleCopyAddress = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopiedAddress(address);
+      setTimeout(() => setCopiedAddress(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy address:', err);
+    }
+  };
+
+  const truncateAddress = (address: string) => {
+    return `${address.slice(0, 8)}...${address.slice(-8)}`;
+  };
+
+  const filteredHoldings = holdings.filter(holding =>
+    holding.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    holding.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (isLoading) {
     return (
@@ -218,59 +323,136 @@ const Pr1Bit: React.FC = () => {
   return (
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-neutral-800">Pr1Bit Treasury</h1>
-        <p className="text-neutral-500">Manage your cryptocurrency treasury and digital assets</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-800 flex items-center">
+              <Bitcoin className="mr-3 text-orange-500" size={32} />
+              Pr1Bit Treasury
+            </h1>
+            <p className="text-neutral-500">Manage your company's cryptocurrency treasury and payments</p>
+            {lastPriceUpdate && (
+              <div className="flex items-center mt-2 text-sm text-neutral-400">
+                <span>Last updated: {lastPriceUpdate.toLocaleTimeString()}</span>
+                <button
+                  onClick={refreshPrices}
+                  disabled={isRefreshingPrices}
+                  className="ml-2 p-1 hover:bg-neutral-100 rounded-full transition-colors"
+                  title="Refresh prices"
+                >
+                  <RefreshCw size={14} className={`${isRefreshingPrices ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="flex space-x-3">
+            <Button
+              leftIcon={<Plus size={18} />}
+              onClick={() => setShowBuyModal(true)}
+            >
+              Buy Crypto
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* Portfolio Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
-          <div className="flex items-center justify-between">
+      {error && (
+        <div className="mb-6 p-4 bg-error-50 text-error-700 rounded-md">
+          {error}
+        </div>
+      )}
+
+      {/* Live Price Ticker */}
+      <div className="mb-8 bg-white rounded-lg border border-neutral-200 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-neutral-700">Live Prices</h3>
+          <div className="flex items-center text-xs text-neutral-500">
+            <div className={`w-2 h-2 rounded-full mr-2 ${isRefreshingPrices ? 'bg-warning-500 animate-pulse' : 'bg-success-500'}`} />
+            {isRefreshingPrices ? 'Updating...' : 'Live'}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Object.entries(livePrices).map(([symbol, data]) => (
+            <div key={symbol} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+              <div>
+                <div className="font-medium text-neutral-900">{symbol}</div>
+                <div className="text-sm font-semibold">{formatCurrency(data.price_gbp)}</div>
+              </div>
+              <div className={`flex items-center text-sm font-medium ${
+                data.change_24h >= 0 ? 'text-success-600' : 'text-error-600'
+              }`}>
+                {data.change_24h >= 0 ? (
+                  <TrendingUp size={14} className="mr-1" />
+                ) : (
+                  <TrendingDown size={14} className="mr-1" />
+                )}
+                {data.change_24h >= 0 ? '+' : ''}{data.change_24h.toFixed(2)}%
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Portfolio Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl p-6 shadow-lg">
+          <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-neutral-600 text-sm font-medium">Total Portfolio Value</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
+              <p className="text-orange-100 text-sm font-medium">Total Portfolio Value</p>
+              <h3 className="text-2xl font-bold mt-1">
                 {formatCurrency(totalPortfolioValue)}
               </h3>
             </div>
-            <DollarSign className="text-primary" size={24} />
+            <Wallet size={24} className="text-orange-200" />
+          </div>
+          <div className="flex items-center">
+            {totalChangePercent >= 0 ? (
+              <TrendingUp size={16} className="mr-1 text-green-300" />
+            ) : (
+              <TrendingDown size={16} className="mr-1 text-red-300" />
+            )}
+            <span className={`text-sm font-medium ${totalChangePercent >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+              {totalChangePercent >= 0 ? '+' : ''}{totalChangePercent.toFixed(2)}% (24h)
+            </span>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
-          <div className="flex items-center justify-between">
+        <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
+          <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-neutral-600 text-sm font-medium">Total Assets</p>
+              <p className="text-neutral-600 text-sm font-medium">Active Holdings</p>
               <h3 className="text-2xl font-bold text-neutral-800 mt-1">
                 {holdings.length}
               </h3>
             </div>
-            <PieChart className="text-success-500" size={24} />
+            <PieChart size={24} className="text-primary" />
           </div>
+          <p className="text-sm text-neutral-500">Across {holdings.length} cryptocurrencies</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-neutral-600 text-sm font-medium">24h Change</p>
-              <h3 className="text-2xl font-bold text-success-600 mt-1 flex items-center">
-                +2.34%
-                <TrendingUp size={20} className="ml-1" />
-              </h3>
-            </div>
-            <Activity className="text-warning-500" size={24} />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
-          <div className="flex items-center justify-between">
+        <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
+          <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-neutral-600 text-sm font-medium">Customer Payments</p>
               <h3 className="text-2xl font-bold text-neutral-800 mt-1">
                 {customerPayments.length}
               </h3>
             </div>
-            <Users className="text-accent" size={24} />
+            <CreditCard size={24} className="text-success-500" />
           </div>
+          <p className="text-sm text-neutral-500">This month</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <p className="text-neutral-600 text-sm font-medium">Total Transactions</p>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
+                {transactions.length}
+              </h3>
+            </div>
+            <BarChart3 size={24} className="text-accent" />
+          </div>
+          <p className="text-sm text-neutral-500">All time</p>
         </div>
       </div>
 
@@ -278,15 +460,22 @@ const Pr1Bit: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
         <div className="border-b border-neutral-200">
           <div className="flex overflow-x-auto">
-            {tabs.map((tab) => (
+            {[
+              { id: 'portfolio', label: 'Portfolio', icon: PieChart },
+              { id: 'transactions', label: 'Transactions', icon: BarChart3 },
+              { id: 'payments', label: 'Customer Payments', icon: CreditCard },
+              { id: 'addresses', label: 'Addresses', icon: MapPin },
+              { id: 'reports', label: 'Reports & Governance', icon: FileText },
+              { id: 'keys', label: 'Keys', icon: Key }
+            ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`flex items-center px-6 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'text-primary border-b-2 border-primary bg-primary/5'
                     : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
                 }`}
+                onClick={() => setActiveTab(tab.id as any)}
               >
                 <tab.icon size={18} className="mr-2" />
                 {tab.label}
@@ -295,351 +484,712 @@ const Pr1Bit: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-md">
-              {error}
+        {/* Portfolio Tab */}
+        {activeTab === 'portfolio' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-neutral-800">Holdings</h2>
+              <Input
+                placeholder="Search holdings..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                leftIcon={<Search size={18} />}
+                className="w-64"
+              />
             </div>
-          )}
 
-          {/* Holdings Tab */}
-          {activeTab === 'holdings' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-neutral-800">Cryptocurrency Holdings</h2>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    leftIcon={<RefreshCw size={18} />}
-                    onClick={loadData}
-                  >
-                    Refresh
-                  </Button>
-                  <Button leftIcon={<Plus size={18} />}>
-                    Add Asset
-                  </Button>
-                </div>
-              </div>
-
-              {holdings.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-neutral-200">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Asset</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Holdings</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Price</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Value</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">24h Change</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Allocation</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {holdings.map((holding) => (
-                        <tr key={holding.id} className="border-b border-neutral-100 hover:bg-neutral-50">
-                          <td className="py-3 px-4">
-                            <div className="flex items-center">
-                              {getCryptoIcon(holding.symbol)}
-                              <div className="ml-3">
-                                <div className="text-sm font-medium text-neutral-900">{holding.name}</div>
-                                <div className="text-sm text-neutral-500">{holding.symbol}</div>
-                              </div>
+            {filteredHoldings.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-neutral-200">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Asset</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Holdings</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Price</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Value</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">24h Change</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Allocation</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredHoldings.map((holding) => (
+                      <tr key={holding.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mr-3">
+                              <span className="text-orange-600 font-bold text-sm">{holding.symbol}</span>
                             </div>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-neutral-900">
-                            {formatCrypto(holding.amount, holding.symbol)}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-neutral-900">
-                            {holding.current_price ? formatCurrency(holding.current_price) : '—'}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-neutral-900">
-                            {holding.value ? formatCurrency(holding.value) : '—'}
-                          </td>
-                          <td className="py-3 px-4">
-                            {holding.change_24h !== undefined ? (
-                              <div className={`flex items-center text-sm ${
-                                holding.change_24h >= 0 ? 'text-success-600' : 'text-error-600'
-                              }`}>
-                                {holding.change_24h >= 0 ? (
-                                  <ArrowUpRight size={16} className="mr-1" />
-                                ) : (
-                                  <ArrowDownRight size={16} className="mr-1" />
-                                )}
-                                {Math.abs(holding.change_24h).toFixed(2)}%
-                              </div>
+                            <div>
+                              <div className="font-medium text-neutral-900">{holding.name}</div>
+                              <div className="text-sm text-neutral-500">{holding.symbol}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-medium">{formatCrypto(holding.amount, holding.symbol)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-medium">{formatCurrency(holding.current_price || 0)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-medium">{formatCurrency(holding.value || 0)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            {(holding.change_24h || 0) >= 0 ? (
+                              <TrendingUp size={16} className="mr-1 text-success-500" />
                             ) : (
-                              <span className="text-sm text-neutral-500">—</span>
+                              <TrendingDown size={16} className="mr-1 text-error-500" />
                             )}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-neutral-900">
-                            {holding.allocation ? `${holding.allocation.toFixed(1)}%` : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <PieChart className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
-                  <h3 className="text-lg font-medium text-neutral-900 mb-2">No holdings found</h3>
-                  <p className="text-neutral-500 mb-4">Start building your crypto portfolio</p>
-                  <Button leftIcon={<Plus size={18} />}>
-                    Add Your First Asset
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Transactions Tab */}
-          {activeTab === 'transactions' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-neutral-800">Transaction History</h2>
-                <Button leftIcon={<Plus size={18} />}>
-                  Add Transaction
+                            <span className={`font-medium ${(holding.change_24h || 0) >= 0 ? 'text-success-600' : 'text-error-600'}`}>
+                              {(holding.change_24h || 0) >= 0 ? '+' : ''}{(holding.change_24h || 0).toFixed(2)}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <div className="w-16 bg-neutral-200 rounded-full h-2 mr-2">
+                              <div
+                                className="bg-primary h-2 rounded-full"
+                                style={{ width: `${holding.allocation || 0}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium">{(holding.allocation || 0).toFixed(1)}%</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical size={16} />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Bitcoin className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
+                <h3 className="text-lg font-medium text-neutral-900 mb-2">No Holdings Found</h3>
+                <p className="text-neutral-500 mb-4">
+                  {searchQuery ? 'No holdings match your search criteria' : 'Start building your crypto treasury'}
+                </p>
+                <Button leftIcon={<Plus size={18} />} onClick={() => setShowBuyModal(true)}>
+                  Buy Crypto
                 </Button>
               </div>
+            )}
+          </div>
+        )}
 
-              {transactions.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-neutral-200">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Asset</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Amount</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Price</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Value</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Status</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {transactions.map((transaction) => (
-                        <tr key={transaction.id} className="border-b border-neutral-100 hover:bg-neutral-50">
-                          <td className="py-3 px-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              transaction.type === 'buy' ? 'bg-success-50 text-success-700' :
-                              transaction.type === 'sell' ? 'bg-error-50 text-error-700' :
-                              'bg-neutral-50 text-neutral-700'
-                            }`}>
-                              {transaction.type.toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center">
-                              {getCryptoIcon(transaction.symbol)}
-                              <span className="ml-2 text-sm font-medium text-neutral-900">{transaction.symbol}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-neutral-900">
-                            {formatCrypto(transaction.amount, transaction.symbol)}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-neutral-900">
-                            {formatCurrency(transaction.price)}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-neutral-900">
-                            {formatCurrency(transaction.value)}
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              transaction.status === 'completed' ? 'bg-success-50 text-success-700' :
-                              transaction.status === 'pending' ? 'bg-warning-50 text-warning-700' :
-                              'bg-error-50 text-error-700'
-                            }`}>
-                              {transaction.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-neutral-600">
-                            {new Date(transaction.created_at).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Activity className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
-                  <h3 className="text-lg font-medium text-neutral-900 mb-2">No transactions found</h3>
-                  <p className="text-neutral-500 mb-4">Your transaction history will appear here</p>
-                  <Button leftIcon={<Plus size={18} />}>
-                    Add Transaction
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Customer Payments Tab */}
-          {activeTab === 'payments' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-neutral-800">Customer Crypto Payments</h2>
-                <Button leftIcon={<Download size={18} />}>
+        {/* Transactions Tab */}
+        {activeTab === 'transactions' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-neutral-800">Transaction History</h2>
+              <div className="flex space-x-2">
+                <Button variant="outline" leftIcon={<Calendar size={18} />}>
+                  Date Range
+                </Button>
+                <Button variant="outline" leftIcon={<Download size={18} />}>
                   Export
                 </Button>
               </div>
-
-              {customerPayments.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-neutral-200">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Customer</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Amount</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Value (GBP)</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Confirmations</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Status</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {customerPayments.map((payment) => (
-                        <tr key={payment.id} className="border-b border-neutral-100 hover:bg-neutral-50">
-                          <td className="py-3 px-4">
-                            <div>
-                              <div className="text-sm font-medium text-neutral-900">{payment.customer_name}</div>
-                              {payment.customer_email && (
-                                <div className="text-sm text-neutral-500">{payment.customer_email}</div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center">
-                              {getCryptoIcon(payment.symbol)}
-                              <span className="ml-2 text-sm text-neutral-900">
-                                {formatCrypto(payment.amount, payment.symbol)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-neutral-900">
-                            {formatCurrency(payment.value_gbp)}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-neutral-900">
-                            {payment.confirmations}/6
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              payment.status === 'confirmed' ? 'bg-success-50 text-success-700' :
-                              payment.status === 'pending' ? 'bg-warning-50 text-warning-700' :
-                              'bg-error-50 text-error-700'
-                            }`}>
-                              {payment.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-neutral-600">
-                            {new Date(payment.created_at).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <CreditCard className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
-                  <h3 className="text-lg font-medium text-neutral-900 mb-2">No payments received</h3>
-                  <p className="text-neutral-500">Customer crypto payments will appear here</p>
-                </div>
-              )}
             </div>
-          )}
 
-          {/* Addresses Tab */}
-          {activeTab === 'addresses' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-neutral-800">Wallet Addresses</h2>
-                <div className="flex space-x-2">
-                  <Button variant="outline" leftIcon={<QrCode size={18} />}>
-                    Generate QR
-                  </Button>
-                  <Button leftIcon={<Plus size={18} />}>
-                    New Address
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {mockAddresses.map((address) => (
-                  <div key={address.id} className="bg-neutral-50 rounded-lg border border-neutral-200 p-6">
-                    <div className="flex items-start justify-between mb-4">
+            {transactions.length > 0 ? (
+              <div className="space-y-4">
+                {transactions.map((transaction) => (
+                  <div key={transaction.id} className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        {getCryptoIcon(address.symbol)}
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-neutral-900">{address.symbol} Address</h3>
-                          <p className="text-xs text-neutral-500">{address.type} • Created {address.created}</p>
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mr-4 border border-neutral-200">
+                          {getTransactionIcon(transaction.type)}
+                        </div>
+                        <div>
+                          <div className="flex items-center">
+                            <span className="font-medium text-neutral-900 capitalize">{transaction.type}</span>
+                            <span className="mx-2 text-neutral-400">•</span>
+                            <span className="text-neutral-600">{transaction.symbol}</span>
+                          </div>
+                          <div className="text-sm text-neutral-500">{formatDate(transaction.created_at)}</div>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => copyToClipboard(address.address, 'address')}
-                          className="p-2 hover:bg-neutral-200 rounded-full transition-colors"
-                          title="Copy address"
-                        >
-                          {copiedAddress === address.address ? (
-                            <Check size={16} className="text-success-600" />
-                          ) : (
-                            <Copy size={16} className="text-neutral-500" />
-                          )}
-                        </button>
-                        <button
-                          className="p-2 hover:bg-neutral-200 rounded-full transition-colors"
-                          title="View on blockchain explorer"
-                        >
-                          <ExternalLink size={16} className="text-neutral-500" />
-                        </button>
+                      <div className="text-right">
+                        <div className="font-medium text-neutral-900">
+                          {formatCrypto(transaction.amount, transaction.symbol)}
+                        </div>
+                        <div className="text-sm text-neutral-500">
+                          {formatCurrency(transaction.value)}
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="bg-white rounded-md p-3 mb-4">
-                      <p className="text-xs font-mono text-neutral-700 break-all">
-                        {address.address}
-                      </p>
-                    </div>
-                    
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-neutral-600">Balance:</span>
-                      <span className="font-medium text-neutral-900">
-                        {formatCrypto(address.balance, address.symbol)}
-                      </span>
+                      <div className="flex items-center ml-4">
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
+                          {transaction.status}
+                        </span>
+                        {transaction.tx_hash && (
+                          <Button variant="ghost" size="sm" className="ml-2">
+                            <Globe size={16} />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-12">
+                <BarChart3 className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
+                <h3 className="text-lg font-medium text-neutral-900 mb-2">No Transactions</h3>
+                <p className="text-neutral-500">Your transaction history will appear here</p>
+              </div>
+            )}
+          </div>
+        )}
 
-          {/* Reports & Governance Tab */}
-          {activeTab === 'reports' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-neutral-800">Reports & Governance</h2>
-                <Button leftIcon={<FileText size={18} />}>
-                  Generate Report
+        {/* Customer Payments Tab */}
+        {activeTab === 'payments' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-neutral-800">Customer Payments</h2>
+              <div className="flex space-x-2">
+                <Input
+                  placeholder="Search payments..."
+                  leftIcon={<Search size={18} />}
+                  className="w-64"
+                />
+                <Button variant="outline" size="sm" leftIcon={<Filter size={16} />}>
+                  Filter
                 </Button>
               </div>
+            </div>
 
-              {reports.length > 0 ? (
-                <div className="space-y-4">
-                  {reports.map((report) => (
-                    <div key={report.id} className="bg-neutral-50 rounded-lg border border-neutral-200 p-6">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-lg font-medium text-neutral-900 mb-2">{report.title}</h3>
-                          <div className="flex items-center space-x-4 text-sm text-neutral-600">
-                            <span className="capitalize">{report.report_type} Report</span>
-                            <span>Generated {new Date(report.generated_at).toLocaleDateString()}</span>
+            {customerPayments.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-neutral-200">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Customer</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Amount</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Value</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Date</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Confirmations</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customerPayments.map((payment) => (
+                      <tr key={payment.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                              <Users size={16} className="text-primary" />
+                            </div>
+                            <div>
+                              <span className="font-medium text-neutral-900">{payment.customer_name}</span>
+                              {payment.customer_email && (
+                                <div className="text-sm text-neutral-500">{payment.customer_email}</div>
+                              )}
+                            </div>
                           </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-medium">{formatCrypto(payment.amount, payment.symbol)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-medium">{formatCurrency(payment.value_gbp)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-sm text-neutral-600">{formatDate(payment.created_at)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
+                            {payment.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            {payment.status === 'confirmed' ? (
+                              <CheckCircle size={16} className="text-success-500 mr-1" />
+                            ) : (
+                              <AlertTriangle size={16} className="text-warning-500 mr-1" />
+                            )}
+                            <span className="text-sm">{payment.confirmations}/6</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="ghost" size="sm" leftIcon={<Eye size={16} />}>
+                              View
+                            </Button>
+                            <Button variant="ghost" size="sm" leftIcon={<Globe size={16} />}>
+                              Explorer
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <CreditCard className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
+                <h3 className="text-lg font-medium text-neutral-900 mb-2">No Customer Payments</h3>
+                <p className="text-neutral-500">Customer crypto payments will appear here</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Addresses Tab */}
+        {activeTab === 'addresses' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-neutral-800">Wallet Addresses</h2>
+              <div className="flex space-x-2">
+                <Button variant="outline" leftIcon={<Plus size={18} />}>
+                  Generate Address
+                </Button>
+                <Button variant="outline" leftIcon={<QrCode size={18} />}>
+                  QR Codes
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {mockAddresses.map((address) => (
+                <div key={address.id} className="bg-neutral-50 rounded-lg p-6 border border-neutral-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center mr-3">
+                        <span className="text-orange-600 font-bold text-sm">{address.symbol}</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-neutral-900">{address.name}</h3>
+                        <p className="text-sm text-neutral-500 capitalize">{address.type} address</p>
+                      </div>
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor('active')}`}>
+                      Active
+                    </span>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">Address</label>
+                    <div className="flex items-center bg-white rounded-md border border-neutral-300 p-3">
+                      <code className="flex-1 text-sm font-mono text-neutral-800 break-all">
+                        {address.address}
+                      </code>
+                      <button
+                        onClick={() => handleCopyAddress(address.address)}
+                        className="ml-2 p-1 hover:bg-neutral-100 rounded-full transition-colors"
+                        title="Copy address"
+                      >
+                        {copiedAddress === address.address ? (
+                          <CheckCircle size={16} className="text-success-500" />
+                        ) : (
+                          <Copy size={16} className="text-neutral-400" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-neutral-500">Balance:</span>
+                      <div className="font-medium">{formatCrypto(address.balance, address.symbol)}</div>
+                    </div>
+                    <div>
+                      <span className="text-neutral-500">Created:</span>
+                      <div className="font-medium">{formatDate(address.created_at)}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex space-x-2">
+                    <Button variant="outline" size="sm" leftIcon={<QrCode size={16} />} className="flex-1">
+                      QR Code
+                    </Button>
+                    <Button variant="outline" size="sm" leftIcon={<Globe size={16} />} className="flex-1">
+                      Explorer
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Reports Tab */}
+        {activeTab === 'reports' && (
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-neutral-800">Treasury Report</h3>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <FileText size={24} className="text-primary" />
+                  </div>
+                </div>
+                <p className="text-neutral-600 mb-6 leading-relaxed">
+                  Generate comprehensive treasury reports for board meetings and compliance.
+                </p>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Wand2 size={16} />}
+                    onClick={() => handleGenerateReport('treasury')}
+                    isLoading={isGenerating === 'treasury'}
+                    disabled={isGenerating === 'treasury'}
+                  >
+                    {isGenerating === 'treasury' ? 'Generating...' : 'Generate'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Eye size={16} />}
+                    onClick={() => handleViewReports('treasury')}
+                  >
+                    View
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-neutral-800">Governance Documents</h3>
+                  <div className="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center">
+                    <Shield size={24} className="text-neutral-600" />
+                  </div>
+                </div>
+                <p className="text-neutral-600 mb-6 leading-relaxed">
+                  Create governance documents and policy frameworks for cryptocurrency holdings.
+                </p>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Wand2 size={16} />}
+                    onClick={() => handleGenerateReport('governance')}
+                    isLoading={isGenerating === 'governance'}
+                    disabled={isGenerating === 'governance'}
+                  >
+                    {isGenerating === 'governance' ? 'Generating...' : 'Generate'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Eye size={16} />}
+                    onClick={() => handleViewReports('governance')}
+                  >
+                    View
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-neutral-800">Tax Reports</h3>
+                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+                    <Calendar size={24} className="text-accent-600" />
+                  </div>
+                </div>
+                <p className="text-neutral-600 mb-6 leading-relaxed">
+                  Generate tax reports and capital gains calculations for regulatory compliance.
+                </p>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Wand2 size={16} />}
+                    onClick={() => handleGenerateReport('tax')}
+                    isLoading={isGenerating === 'tax'}
+                    disabled={isGenerating === 'tax'}
+                  >
+                    {isGenerating === 'tax' ? 'Generating...' : 'Generate'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Eye size={16} />}
+                    onClick={() => handleViewReports('tax')}
+                  >
+                    View
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-neutral-800">Risk Assessment</h3>
+                  <div className="w-12 h-12 rounded-xl bg-warning-50 flex items-center justify-center">
+                    <AlertTriangle size={24} className="text-warning-600" />
+                  </div>
+                </div>
+                <p className="text-neutral-600 mb-6 leading-relaxed">
+                  Analyze portfolio risk and generate risk management recommendations.
+                </p>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Wand2 size={16} />}
+                    onClick={() => handleGenerateReport('risk')}
+                    isLoading={isGenerating === 'risk'}
+                    disabled={isGenerating === 'risk'}
+                  >
+                    {isGenerating === 'risk' ? 'Generating...' : 'Generate'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Eye size={16} />}
+                    onClick={() => handleViewReports('risk')}
+                  >
+                    View
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Keys Tab */}
+        {activeTab === 'keys' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-neutral-800">Cryptographic Keys</h2>
+              <div className="flex space-x-2">
+                <Button variant="outline" leftIcon={<Plus size={18} />}>
+                  Add Key
+                </Button>
+                <Button variant="outline" leftIcon={<Shield size={18} />}>
+                  Security Audit
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {mockKeys.map((key) => (
+                <div key={key.id} className="bg-neutral-50 rounded-lg p-6 border border-neutral-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mr-4">
+                        <Key size={24} className="text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-neutral-900">{key.name}</h3>
+                        <p className="text-sm text-neutral-500">{key.type} • {key.device}</p>
+                      </div>
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(key.status)}`}>
+                      {key.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Fingerprint</label>
+                      <div className="flex items-center">
+                        <code className="text-sm font-mono bg-white px-2 py-1 rounded border">{key.fingerprint}</code>
+                        <button
+                          onClick={() => handleCopyAddress(key.fingerprint)}
+                          className="ml-2 p-1 hover:bg-neutral-100 rounded-full transition-colors"
+                          title="Copy fingerprint"
+                        >
+                          {copiedAddress === key.fingerprint ? (
+                            <CheckCircle size={14} className="text-success-500" />
+                          ) : (
+                            <Copy size={14} className="text-neutral-400" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Created</label>
+                      <p className="text-sm text-neutral-600">{formatDate(key.created_at)}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Last Used</label>
+                      <p className="text-sm text-neutral-600">
+                        {key.last_used ? formatDate(key.last_used) : 'Never'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" leftIcon={<Eye size={16} />}>
+                        View Details
+                      </Button>
+                      <Button variant="outline" size="sm" leftIcon={<Shield size={16} />}>
+                        Test Key
+                      </Button>
+                    </div>
+                    <div className="flex items-center text-sm text-neutral-500">
+                      {key.status === 'active' ? (
+                        <div className="flex items-center">
+                          <CheckCircle size={16} className="text-success-500 mr-1" />
+                          Operational
                         </div>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" leftIcon={<Download size={16} />}>
+                      ) : (
+                        <div className="flex items-center">
+                          <Shield size={16} className="text-primary mr-1" />
+                          Secure Storage
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 bg-warning-50 border border-warning-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <AlertTriangle className="h-5 w-5 text-warning-500 mt-0.5 mr-3" />
+                <div>
+                  <h3 className="text-sm font-medium text-warning-800">Security Notice</h3>
+                  <p className="text-sm text-warning-700 mt-1">
+                    Keep your hardware wallets and recovery phrases secure. Never share private keys or seed phrases with anyone. 
+                    Regularly test your backup procedures and ensure multiple secure storage locations.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Buy Crypto Modal */}
+      {showBuyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-bold text-neutral-800">Buy Cryptocurrency</h2>
+                <button
+                  onClick={() => setShowBuyModal(false)}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <MoreVertical size={20} className="text-neutral-500" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Cryptocurrency
+                  </label>
+                  <select
+                    value={selectedCrypto}
+                    onChange={(e) => setSelectedCrypto(e.target.value)}
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">Select cryptocurrency...</option>
+                    <option value="BTC">Bitcoin (BTC)</option>
+                    <option value="ETH">Ethereum (ETH)</option>
+                    <option value="ADA">Cardano (ADA)</option>
+                    <option value="SOL">Solana (SOL)</option>
+                  </select>
+                </div>
+
+                <Input
+                  label="Amount (GBP)"
+                  type="number"
+                  value={buyAmount}
+                  onChange={(e) => setBuyAmount(e.target.value)}
+                  placeholder="0.00"
+                  leftIcon={<DollarSign size={18} />}
+                  fullWidth
+                />
+
+                <div className="bg-neutral-50 p-4 rounded-lg">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-neutral-600">Estimated Amount:</span>
+                    <span className="font-medium">
+                      {selectedCrypto && buyAmount && livePrices[selectedCrypto] 
+                        ? (parseFloat(buyAmount) / livePrices[selectedCrypto].price_gbp).toFixed(8)
+                        : '0.0000'} {selectedCrypto || 'BTC'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-1">
+                    <span className="text-neutral-600">Current Price:</span>
+                    <span className="font-medium">
+                      {selectedCrypto && livePrices[selectedCrypto] 
+                        ? formatCurrency(livePrices[selectedCrypto].price_gbp)
+                        : '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-1">
+                    <span className="text-neutral-600">Network Fee:</span>
+                    <span className="font-medium">£2.50</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowBuyModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={!selectedCrypto || !buyAmount}
+                  leftIcon={<Bitcoin size={18} />}
+                >
+                  Buy Crypto
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Reports Modal */}
+      {showReportsModal && selectedReportType && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-neutral-200">
+              <div className="flex justify-between items-start">
+                <h2 className="text-xl font-bold text-neutral-800">
+                  {getReportTypeTitle(selectedReportType)}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowReportsModal(false);
+                    setSelectedReportType(null);
+                  }}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <MoreVertical size={20} className="text-neutral-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {getReportsByType(selectedReportType).length > 0 ? (
+                <div className="space-y-4">
+                  {getReportsByType(selectedReportType).map((report) => (
+                    <div key={report.id} className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-neutral-900">{report.title}</h3>
+                          <p className="text-sm text-neutral-500">
+                            Generated on {formatDate(report.generated_at)}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-50 text-success-700">
+                            completed
+                          </span>
+                          <Button variant="ghost" size="sm" leftIcon={<Download size={16} />}>
                             Download
                           </Button>
-                          <Button variant="outline" size="sm" leftIcon={<ExternalLink size={16} />}>
+                          <Button variant="ghost" size="sm" leftIcon={<Eye size={16} />}>
                             View
                           </Button>
                         </div>
@@ -650,102 +1200,40 @@ const Pr1Bit: React.FC = () => {
               ) : (
                 <div className="text-center py-12">
                   <FileText className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
-                  <h3 className="text-lg font-medium text-neutral-900 mb-2">No reports generated</h3>
-                  <p className="text-neutral-500 mb-4">Generate treasury and governance reports</p>
-                  <Button leftIcon={<FileText size={18} />}>
-                    Generate Your First Report
+                  <h3 className="text-lg font-medium text-neutral-900 mb-2">
+                    No {getReportTypeTitle(selectedReportType)} Found
+                  </h3>
+                  <p className="text-neutral-500 mb-4">
+                    You haven't generated any {selectedReportType} reports yet.
+                  </p>
+                  <Button
+                    leftIcon={<Wand2 size={18} />}
+                    onClick={() => {
+                      setShowReportsModal(false);
+                      setSelectedReportType(null);
+                      handleGenerateReport(selectedReportType);
+                    }}
+                  >
+                    Generate First Report
                   </Button>
                 </div>
               )}
             </div>
-          )}
 
-          {/* Keys Tab */}
-          {activeTab === 'keys' && (
-            <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-neutral-800">Cryptographic Keys</h2>
-                <div className="flex space-x-2">
-                  <Button variant="outline" leftIcon={<Shield size={18} />}>
-                    Security Audit
-                  </Button>
-                  <Button leftIcon={<Plus size={18} />}>
-                    Add Key
-                  </Button>
-                </div>
-              </div>
-
-              {/* Security Notice */}
-              <div className="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-6">
-                <div className="flex">
-                  <AlertTriangle className="h-5 w-5 text-warning-500 mt-0.5" />
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-warning-800">Important Security Notice</h3>
-                    <div className="mt-2 text-sm text-warning-700">
-                      <p>
-                        Never share your private keys or seed phrases. Always verify hardware wallet authenticity and keep firmware updated.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {mockKeys.map((key) => (
-                  <div key={key.id} className="bg-neutral-50 rounded-lg border border-neutral-200 p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                          <Key size={20} />
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-neutral-900">{key.device}</h3>
-                          <p className="text-xs text-neutral-500">Created {key.created}</p>
-                        </div>
-                      </div>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        key.status === 'Active' ? 'bg-success-50 text-success-700' : 'bg-neutral-50 text-neutral-700'
-                      }`}>
-                        {key.status}
-                      </span>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-neutral-600">Fingerprint:</span>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-mono text-neutral-900">{key.fingerprint}</span>
-                          <button
-                            onClick={() => copyToClipboard(key.fingerprint, 'key')}
-                            className="p-1 hover:bg-neutral-200 rounded transition-colors"
-                          >
-                            {copiedKey === key.fingerprint ? (
-                              <Check size={14} className="text-success-600" />
-                            ) : (
-                              <Copy size={14} className="text-neutral-500" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-neutral-600">Last Used:</span>
-                        <span className="text-sm text-neutral-900">{key.lastUsed}</span>
-                      </div>
-                      
-                      <div className="pt-3 border-t border-neutral-200">
-                        <Button variant="outline" size="sm" fullWidth>
-                          Test Key
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="p-6 border-t border-neutral-200 flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowReportsModal(false);
+                  setSelectedReportType(null);
+                }}
+              >
+                Close
+              </Button>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
