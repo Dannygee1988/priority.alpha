@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bitcoin, TrendingUp, TrendingDown, DollarSign, PieChart, FileText, Users, Download, Plus, Search, Filter, Eye, MoreVertical, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, BarChart3, Calendar, Globe, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Bitcoin, TrendingUp, TrendingDown, DollarSign, PieChart, FileText, Users, Download, Plus, Search, Filter, Eye, MoreVertical, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, BarChart3, Calendar, Globe, Shield, AlertTriangle, CheckCircle, Wand2 } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -39,17 +39,29 @@ interface CustomerPayment {
   txHash: string;
 }
 
+interface TreasuryReport {
+  id: string;
+  type: 'treasury' | 'governance' | 'tax' | 'risk';
+  title: string;
+  generatedAt: string;
+  status: 'completed' | 'generating';
+}
+
 const Pr1Bit: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'portfolio' | 'transactions' | 'payments' | 'reports'>('portfolio');
   const [holdings, setHoldings] = useState<CryptoHolding[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [customerPayments, setCustomerPayments] = useState<CustomerPayment[]>([]);
+  const [treasuryReports, setTreasuryReports] = useState<TreasuryReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showBuyModal, setShowBuyModal] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
+  const [selectedReportType, setSelectedReportType] = useState<'treasury' | 'governance' | 'tax' | 'risk' | null>(null);
   const [selectedCrypto, setSelectedCrypto] = useState<string>('');
   const [buyAmount, setBuyAmount] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isGenerating, setIsGenerating] = useState<string | null>(null);
 
   // Mock data - in production this would come from APIs
   useEffect(() => {
@@ -136,9 +148,34 @@ const Pr1Bit: React.FC = () => {
       }
     ];
 
+    const mockReports: TreasuryReport[] = [
+      {
+        id: '1',
+        type: 'treasury',
+        title: 'Q4 2024 Treasury Report',
+        generatedAt: '2024-01-15T10:30:00Z',
+        status: 'completed'
+      },
+      {
+        id: '2',
+        type: 'governance',
+        title: 'Cryptocurrency Policy Framework',
+        generatedAt: '2024-01-10T14:22:00Z',
+        status: 'completed'
+      },
+      {
+        id: '3',
+        type: 'tax',
+        title: 'Tax Year 2024 Crypto Report',
+        generatedAt: '2024-01-08T09:15:00Z',
+        status: 'completed'
+      }
+    ];
+
     setHoldings(mockHoldings);
     setTransactions(mockTransactions);
     setCustomerPayments(mockPayments);
+    setTreasuryReports(mockReports);
     setIsLoading(false);
   }, []);
 
@@ -193,6 +230,43 @@ const Pr1Bit: React.FC = () => {
         return <ArrowUpRight size={16} className="text-warning-600" />;
       default:
         return <DollarSign size={16} />;
+    }
+  };
+
+  const handleGenerateReport = async (type: 'treasury' | 'governance' | 'tax' | 'risk') => {
+    setIsGenerating(type);
+    
+    // Simulate report generation
+    setTimeout(() => {
+      const newReport: TreasuryReport = {
+        id: Date.now().toString(),
+        type,
+        title: `${type.charAt(0).toUpperCase() + type.slice(1)} Report - ${new Date().toLocaleDateString()}`,
+        generatedAt: new Date().toISOString(),
+        status: 'completed'
+      };
+      
+      setTreasuryReports([newReport, ...treasuryReports]);
+      setIsGenerating(null);
+    }, 3000);
+  };
+
+  const handleViewReports = (type: 'treasury' | 'governance' | 'tax' | 'risk') => {
+    setSelectedReportType(type);
+    setShowReportsModal(true);
+  };
+
+  const getReportsByType = (type: 'treasury' | 'governance' | 'tax' | 'risk') => {
+    return treasuryReports.filter(report => report.type === type);
+  };
+
+  const getReportTypeTitle = (type: 'treasury' | 'governance' | 'tax' | 'risk') => {
+    switch (type) {
+      case 'treasury': return 'Treasury Reports';
+      case 'governance': return 'Governance Documents';
+      case 'tax': return 'Tax Reports';
+      case 'risk': return 'Risk Assessments';
+      default: return 'Reports';
     }
   };
 
@@ -556,12 +630,29 @@ const Pr1Bit: React.FC = () => {
                     <FileText size={24} className="text-primary" />
                   </div>
                 </div>
-                <p className="text-neutral-600 mb-4 leading-relaxed">
+                <p className="text-neutral-600 mb-6 leading-relaxed">
                   Generate comprehensive treasury reports for board meetings and compliance.
                 </p>
-                <Button variant="outline" className="w-full">
-                  Generate Report
-                </Button>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Wand2 size={16} />}
+                    onClick={() => handleGenerateReport('treasury')}
+                    isLoading={isGenerating === 'treasury'}
+                    disabled={isGenerating === 'treasury'}
+                  >
+                    {isGenerating === 'treasury' ? 'Generating...' : 'Generate'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Eye size={16} />}
+                    onClick={() => handleViewReports('treasury')}
+                  >
+                    View
+                  </Button>
+                </div>
               </div>
 
               <div className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
@@ -571,12 +662,29 @@ const Pr1Bit: React.FC = () => {
                     <Shield size={24} className="text-neutral-600" />
                   </div>
                 </div>
-                <p className="text-neutral-600 mb-4 leading-relaxed">
+                <p className="text-neutral-600 mb-6 leading-relaxed">
                   Create governance documents and policy frameworks for cryptocurrency holdings.
                 </p>
-                <Button variant="outline" className="w-full">
-                  Create Documents
-                </Button>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Wand2 size={16} />}
+                    onClick={() => handleGenerateReport('governance')}
+                    isLoading={isGenerating === 'governance'}
+                    disabled={isGenerating === 'governance'}
+                  >
+                    {isGenerating === 'governance' ? 'Generating...' : 'Generate'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Eye size={16} />}
+                    onClick={() => handleViewReports('governance')}
+                  >
+                    View
+                  </Button>
+                </div>
               </div>
 
               <div className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
@@ -586,12 +694,29 @@ const Pr1Bit: React.FC = () => {
                     <Calendar size={24} className="text-accent-600" />
                   </div>
                 </div>
-                <p className="text-neutral-600 mb-4 leading-relaxed">
+                <p className="text-neutral-600 mb-6 leading-relaxed">
                   Generate tax reports and capital gains calculations for regulatory compliance.
                 </p>
-                <Button variant="outline" className="w-full">
-                  Generate Tax Report
-                </Button>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Wand2 size={16} />}
+                    onClick={() => handleGenerateReport('tax')}
+                    isLoading={isGenerating === 'tax'}
+                    disabled={isGenerating === 'tax'}
+                  >
+                    {isGenerating === 'tax' ? 'Generating...' : 'Generate'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Eye size={16} />}
+                    onClick={() => handleViewReports('tax')}
+                  >
+                    View
+                  </Button>
+                </div>
               </div>
 
               <div className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
@@ -601,12 +726,29 @@ const Pr1Bit: React.FC = () => {
                     <AlertTriangle size={24} className="text-warning-600" />
                   </div>
                 </div>
-                <p className="text-neutral-600 mb-4 leading-relaxed">
+                <p className="text-neutral-600 mb-6 leading-relaxed">
                   Analyze portfolio risk and generate risk management recommendations.
                 </p>
-                <Button variant="outline" className="w-full">
-                  Assess Risk
-                </Button>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Wand2 size={16} />}
+                    onClick={() => handleGenerateReport('risk')}
+                    isLoading={isGenerating === 'risk'}
+                    disabled={isGenerating === 'risk'}
+                  >
+                    {isGenerating === 'risk' ? 'Generating...' : 'Generate'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    leftIcon={<Eye size={16} />}
+                    onClick={() => handleViewReports('risk')}
+                  >
+                    View
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -681,6 +823,92 @@ const Pr1Bit: React.FC = () => {
                   Buy Crypto
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Reports Modal */}
+      {showReportsModal && selectedReportType && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-neutral-200">
+              <div className="flex justify-between items-start">
+                <h2 className="text-xl font-bold text-neutral-800">
+                  {getReportTypeTitle(selectedReportType)}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowReportsModal(false);
+                    setSelectedReportType(null);
+                  }}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <MoreVertical size={20} className="text-neutral-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {getReportsByType(selectedReportType).length > 0 ? (
+                <div className="space-y-4">
+                  {getReportsByType(selectedReportType).map((report) => (
+                    <div key={report.id} className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-neutral-900">{report.title}</h3>
+                          <p className="text-sm text-neutral-500">
+                            Generated on {formatDate(report.generatedAt)}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
+                            {report.status}
+                          </span>
+                          <Button variant="ghost" size="sm" leftIcon={<Download size={16} />}>
+                            Download
+                          </Button>
+                          <Button variant="ghost" size="sm" leftIcon={<Eye size={16} />}>
+                            View
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FileText className="mx-auto h-12 w-12 text-neutral-300 mb-4" />
+                  <h3 className="text-lg font-medium text-neutral-900 mb-2">
+                    No {getReportTypeTitle(selectedReportType)} Found
+                  </h3>
+                  <p className="text-neutral-500 mb-4">
+                    You haven't generated any {selectedReportType} reports yet.
+                  </p>
+                  <Button
+                    leftIcon={<Wand2 size={18} />}
+                    onClick={() => {
+                      setShowReportsModal(false);
+                      setSelectedReportType(null);
+                      handleGenerateReport(selectedReportType);
+                    }}
+                  >
+                    Generate First Report
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-neutral-200 flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowReportsModal(false);
+                  setSelectedReportType(null);
+                }}
+              >
+                Close
+              </Button>
             </div>
           </div>
         </div>
