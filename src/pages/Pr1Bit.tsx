@@ -204,12 +204,6 @@ Generated on: ${new Date().toISOString()}`;
           </div>
           <div className="flex space-x-3">
             <Button
-              variant="outline"
-              leftIcon={<FileText size={18} />}
-            >
-              Generate Report
-            </Button>
-            <Button
               leftIcon={<Plus size={18} />}
               onClick={() => setShowBuyModal(true)}
             >
