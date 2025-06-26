@@ -1,0 +1,684 @@
+import React, { useState, useEffect } from 'react';
+import { Bitcoin, TrendingUp, TrendingDown, DollarSign, PieChart, FileText, Users, Download, Plus, Search, Filter, Eye, MoreVertical, ArrowUpRight, ArrowDownRight, Wallet, CreditCard, BarChart3, Calendar, Globe, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import Button from '../components/Button';
+import Input from '../components/Input';
+import { useAuth } from '../context/AuthContext';
+
+interface CryptoHolding {
+  id: string;
+  symbol: string;
+  name: string;
+  amount: number;
+  currentPrice: number;
+  value: number;
+  change24h: number;
+  allocation: number;
+}
+
+interface Transaction {
+  id: string;
+  type: 'buy' | 'sell' | 'receive' | 'send';
+  symbol: string;
+  amount: number;
+  price: number;
+  value: number;
+  date: string;
+  status: 'completed' | 'pending' | 'failed';
+  txHash?: string;
+}
+
+interface CustomerPayment {
+  id: string;
+  customerName: string;
+  amount: number;
+  symbol: string;
+  value: number;
+  date: string;
+  status: 'confirmed' | 'pending' | 'failed';
+  confirmations: number;
+  txHash: string;
+}
+
+const Pr1Bit: React.FC = () => {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'portfolio' | 'transactions' | 'payments' | 'reports'>('portfolio');
+  const [holdings, setHoldings] = useState<CryptoHolding[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [customerPayments, setCustomerPayments] = useState<CustomerPayment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showBuyModal, setShowBuyModal] = useState(false);
+  const [selectedCrypto, setSelectedCrypto] = useState<string>('');
+  const [buyAmount, setBuyAmount] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Mock data - in production this would come from APIs
+  useEffect(() => {
+    const mockHoldings: CryptoHolding[] = [
+      {
+        id: '1',
+        symbol: 'BTC',
+        name: 'Bitcoin',
+        amount: 2.5,
+        currentPrice: 43250.00,
+        value: 108125.00,
+        change24h: 2.34,
+        allocation: 65.2
+      },
+      {
+        id: '2',
+        symbol: 'ETH',
+        name: 'Ethereum',
+        amount: 15.8,
+        currentPrice: 2580.50,
+        value: 40772.90,
+        change24h: -1.23,
+        allocation: 24.6
+      },
+      {
+        id: '3',
+        symbol: 'ADA',
+        name: 'Cardano',
+        amount: 25000,
+        currentPrice: 0.68,
+        value: 17000.00,
+        change24h: 4.56,
+        allocation: 10.2
+      }
+    ];
+
+    const mockTransactions: Transaction[] = [
+      {
+        id: '1',
+        type: 'buy',
+        symbol: 'BTC',
+        amount: 0.5,
+        price: 43100.00,
+        value: 21550.00,
+        date: '2024-01-15T10:30:00Z',
+        status: 'completed',
+        txHash: '1a2b3c4d5e6f7g8h9i0j'
+      },
+      {
+        id: '2',
+        type: 'receive',
+        symbol: 'ETH',
+        amount: 2.3,
+        price: 2590.00,
+        value: 5957.00,
+        date: '2024-01-14T14:22:00Z',
+        status: 'completed',
+        txHash: '9i8h7g6f5e4d3c2b1a0z'
+      }
+    ];
+
+    const mockPayments: CustomerPayment[] = [
+      {
+        id: '1',
+        customerName: 'Acme Corp Ltd',
+        amount: 0.025,
+        symbol: 'BTC',
+        value: 1081.25,
+        date: '2024-01-15T09:15:00Z',
+        status: 'confirmed',
+        confirmations: 6,
+        txHash: 'abc123def456ghi789'
+      },
+      {
+        id: '2',
+        customerName: 'Tech Solutions Inc',
+        amount: 1.5,
+        symbol: 'ETH',
+        value: 3870.75,
+        date: '2024-01-14T16:45:00Z',
+        status: 'confirmed',
+        confirmations: 12,
+        txHash: 'xyz789uvw456rst123'
+      }
+    ];
+
+    setHoldings(mockHoldings);
+    setTransactions(mockTransactions);
+    setCustomerPayments(mockPayments);
+    setIsLoading(false);
+  }, []);
+
+  const totalPortfolioValue = holdings.reduce((sum, holding) => sum + holding.value, 0);
+  const totalChange24h = holdings.reduce((sum, holding) => sum + (holding.value * holding.change24h / 100), 0);
+  const totalChangePercent = (totalChange24h / totalPortfolioValue) * 100;
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP'
+    }).format(amount);
+  };
+
+  const formatCrypto = (amount: number, symbol: string) => {
+    return `${amount.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${symbol}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+      case 'confirmed':
+        return 'bg-success-50 text-success-700';
+      case 'pending':
+        return 'bg-warning-50 text-warning-700';
+      case 'failed':
+        return 'bg-error-50 text-error-700';
+      default:
+        return 'bg-neutral-100 text-neutral-700';
+    }
+  };
+
+  const getTransactionIcon = (type: string) => {
+    switch (type) {
+      case 'buy':
+        return <ArrowDownRight size={16} className="text-success-600" />;
+      case 'sell':
+        return <ArrowUpRight size={16} className="text-error-600" />;
+      case 'receive':
+        return <ArrowDownRight size={16} className="text-primary" />;
+      case 'send':
+        return <ArrowUpRight size={16} className="text-warning-600" />;
+      default:
+        return <DollarSign size={16} />;
+    }
+  };
+
+  return (
+    <div className="px-4 py-8 animate-fade-in">
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-800 flex items-center">
+              <Bitcoin className="mr-3 text-orange-500" size={32} />
+              Pr1Bit Treasury
+            </h1>
+            <p className="text-neutral-500">Manage your company's cryptocurrency treasury and payments</p>
+          </div>
+          <div className="flex space-x-3">
+            <Button
+              variant="outline"
+              leftIcon={<FileText size={18} />}
+            >
+              Generate Report
+            </Button>
+            <Button
+              leftIcon={<Plus size={18} />}
+              onClick={() => setShowBuyModal(true)}
+            >
+              Buy Crypto
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Portfolio Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl p-6 shadow-lg">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <p className="text-orange-100 text-sm font-medium">Total Portfolio Value</p>
+              <h3 className="text-2xl font-bold mt-1">
+                {formatCurrency(totalPortfolioValue)}
+              </h3>
+            </div>
+            <Wallet size={24} className="text-orange-200" />
+          </div>
+          <div className="flex items-center">
+            {totalChangePercent >= 0 ? (
+              <TrendingUp size={16} className="mr-1 text-green-300" />
+            ) : (
+              <TrendingDown size={16} className="mr-1 text-red-300" />
+            )}
+            <span className={`text-sm font-medium ${totalChangePercent >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+              {totalChangePercent >= 0 ? '+' : ''}{totalChangePercent.toFixed(2)}% (24h)
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <p className="text-neutral-600 text-sm font-medium">Active Holdings</p>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
+                {holdings.length}
+              </h3>
+            </div>
+            <PieChart size={24} className="text-primary" />
+          </div>
+          <p className="text-sm text-neutral-500">Across {holdings.length} cryptocurrencies</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <p className="text-neutral-600 text-sm font-medium">Customer Payments</p>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
+                {customerPayments.length}
+              </h3>
+            </div>
+            <CreditCard size={24} className="text-success-500" />
+          </div>
+          <p className="text-sm text-neutral-500">This month</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <p className="text-neutral-600 text-sm font-medium">Total Transactions</p>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
+                {transactions.length}
+              </h3>
+            </div>
+            <BarChart3 size={24} className="text-accent" />
+          </div>
+          <p className="text-sm text-neutral-500">All time</p>
+        </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
+        <div className="border-b border-neutral-200">
+          <div className="flex">
+            {[
+              { id: 'portfolio', label: 'Portfolio', icon: PieChart },
+              { id: 'transactions', label: 'Transactions', icon: BarChart3 },
+              { id: 'payments', label: 'Customer Payments', icon: CreditCard },
+              { id: 'reports', label: 'Reports & Governance', icon: FileText }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                className={`flex items-center px-6 py-3 text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? 'text-primary border-b-2 border-primary bg-primary/5'
+                    : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
+                }`}
+                onClick={() => setActiveTab(tab.id as any)}
+              >
+                <tab.icon size={18} className="mr-2" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Portfolio Tab */}
+        {activeTab === 'portfolio' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-neutral-800">Holdings</h2>
+              <div className="flex space-x-2">
+                <Input
+                  placeholder="Search holdings..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  leftIcon={<Search size={18} />}
+                  className="w-64"
+                />
+                <Button variant="outline" leftIcon={<Filter size={18} />}>
+                  Filter
+                </Button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-neutral-200">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Asset</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Holdings</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Price</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Value</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">24h Change</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Allocation</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {holdings.map((holding) => (
+                    <tr key={holding.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mr-3">
+                            <span className="text-orange-600 font-bold text-sm">{holding.symbol}</span>
+                          </div>
+                          <div>
+                            <div className="font-medium text-neutral-900">{holding.name}</div>
+                            <div className="text-sm text-neutral-500">{holding.symbol}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="font-medium">{formatCrypto(holding.amount, holding.symbol)}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="font-medium">{formatCurrency(holding.currentPrice)}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="font-medium">{formatCurrency(holding.value)}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center">
+                          {holding.change24h >= 0 ? (
+                            <TrendingUp size={16} className="mr-1 text-success-500" />
+                          ) : (
+                            <TrendingDown size={16} className="mr-1 text-error-500" />
+                          )}
+                          <span className={`font-medium ${holding.change24h >= 0 ? 'text-success-600' : 'text-error-600'}`}>
+                            {holding.change24h >= 0 ? '+' : ''}{holding.change24h.toFixed(2)}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center">
+                          <div className="w-16 bg-neutral-200 rounded-full h-2 mr-2">
+                            <div
+                              className="bg-primary h-2 rounded-full"
+                              style={{ width: `${holding.allocation}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-medium">{holding.allocation}%</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical size={16} />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Transactions Tab */}
+        {activeTab === 'transactions' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-neutral-800">Transaction History</h2>
+              <div className="flex space-x-2">
+                <Button variant="outline" leftIcon={<Calendar size={18} />}>
+                  Date Range
+                </Button>
+                <Button variant="outline" leftIcon={<Download size={18} />}>
+                  Export
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {transactions.map((transaction) => (
+                <div key={transaction.id} className="bg-neutral-50 rounded-lg p-4 border border-neutral-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mr-4 border border-neutral-200">
+                        {getTransactionIcon(transaction.type)}
+                      </div>
+                      <div>
+                        <div className="flex items-center">
+                          <span className="font-medium text-neutral-900 capitalize">{transaction.type}</span>
+                          <span className="mx-2 text-neutral-400">•</span>
+                          <span className="text-neutral-600">{transaction.symbol}</span>
+                        </div>
+                        <div className="text-sm text-neutral-500">{formatDate(transaction.date)}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium text-neutral-900">
+                        {formatCrypto(transaction.amount, transaction.symbol)}
+                      </div>
+                      <div className="text-sm text-neutral-500">
+                        {formatCurrency(transaction.value)}
+                      </div>
+                    </div>
+                    <div className="flex items-center ml-4">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
+                        {transaction.status}
+                      </span>
+                      {transaction.txHash && (
+                        <Button variant="ghost" size="sm" className="ml-2">
+                          <Globe size={16} />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Customer Payments Tab */}
+        {activeTab === 'payments' && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-neutral-800">Customer Payments</h2>
+              <div className="flex space-x-2">
+                <Input
+                  placeholder="Search payments..."
+                  leftIcon={<Search size={18} />}
+                  className="w-64"
+                />
+                <Button variant="outline" leftIcon={<Filter size={18} />}>
+                  Filter
+                </Button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-neutral-200">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Customer</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Amount</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Value</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Date</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Status</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Confirmations</th>
+                    <th className="text-right py-3 px-4 text-sm font-medium text-neutral-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customerPayments.map((payment) => (
+                    <tr key={payment.id} className="border-b border-neutral-100 hover:bg-neutral-50">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                            <Users size={16} className="text-primary" />
+                          </div>
+                          <span className="font-medium text-neutral-900">{payment.customerName}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="font-medium">{formatCrypto(payment.amount, payment.symbol)}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="font-medium">{formatCurrency(payment.value)}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-sm text-neutral-600">{formatDate(payment.date)}</span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
+                          {payment.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center">
+                          {payment.status === 'confirmed' ? (
+                            <CheckCircle size={16} className="text-success-500 mr-1" />
+                          ) : (
+                            <AlertTriangle size={16} className="text-warning-500 mr-1" />
+                          )}
+                          <span className="text-sm">{payment.confirmations}/6</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="ghost" size="sm" leftIcon={<Eye size={16} />}>
+                            View
+                          </Button>
+                          <Button variant="ghost" size="sm" leftIcon={<Globe size={16} />}>
+                            Explorer
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Reports Tab */}
+        {activeTab === 'reports' && (
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-gradient-to-br from-primary to-primary-700 text-white rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Treasury Report</h3>
+                  <FileText size={24} className="text-primary-200" />
+                </div>
+                <p className="text-primary-100 mb-4">
+                  Generate comprehensive treasury reports for board meetings and compliance.
+                </p>
+                <Button variant="outline" className="text-primary border-white hover:bg-white hover:text-primary">
+                  Generate Report
+                </Button>
+              </div>
+
+              <div className="bg-gradient-to-br from-success-500 to-success-600 text-white rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Governance Documents</h3>
+                  <Shield size={24} className="text-success-200" />
+                </div>
+                <p className="text-success-100 mb-4">
+                  Create governance documents and policy frameworks for cryptocurrency holdings.
+                </p>
+                <Button variant="outline" className="text-success-600 border-white hover:bg-white hover:text-success-600">
+                  Create Documents
+                </Button>
+              </div>
+
+              <div className="bg-gradient-to-br from-warning-500 to-warning-600 text-white rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Tax Reports</h3>
+                  <Calendar size={24} className="text-warning-200" />
+                </div>
+                <p className="text-warning-100 mb-4">
+                  Generate tax reports and capital gains calculations for regulatory compliance.
+                </p>
+                <Button variant="outline" className="text-warning-600 border-white hover:bg-white hover:text-warning-600">
+                  Generate Tax Report
+                </Button>
+              </div>
+
+              <div className="bg-gradient-to-br from-accent to-accent-600 text-white rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Risk Assessment</h3>
+                  <AlertTriangle size={24} className="text-accent-200" />
+                </div>
+                <p className="text-accent-100 mb-4">
+                  Analyze portfolio risk and generate risk management recommendations.
+                </p>
+                <Button variant="outline" className="text-accent-600 border-white hover:bg-white hover:text-accent-600">
+                  Assess Risk
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Buy Crypto Modal */}
+      {showBuyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-xl font-bold text-neutral-800">Buy Cryptocurrency</h2>
+                <button
+                  onClick={() => setShowBuyModal(false)}
+                  className="p-1 hover:bg-neutral-100 rounded-full"
+                >
+                  <MoreVertical size={20} className="text-neutral-500" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Cryptocurrency
+                  </label>
+                  <select
+                    value={selectedCrypto}
+                    onChange={(e) => setSelectedCrypto(e.target.value)}
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">Select cryptocurrency...</option>
+                    <option value="BTC">Bitcoin (BTC)</option>
+                    <option value="ETH">Ethereum (ETH)</option>
+                    <option value="ADA">Cardano (ADA)</option>
+                  </select>
+                </div>
+
+                <Input
+                  label="Amount (GBP)"
+                  type="number"
+                  value={buyAmount}
+                  onChange={(e) => setBuyAmount(e.target.value)}
+                  placeholder="0.00"
+                  leftIcon={<DollarSign size={18} />}
+                  fullWidth
+                />
+
+                <div className="bg-neutral-50 p-4 rounded-lg">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-neutral-600">Estimated Amount:</span>
+                    <span className="font-medium">0.0234 BTC</span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-1">
+                    <span className="text-neutral-600">Network Fee:</span>
+                    <span className="font-medium">£2.50</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowBuyModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={!selectedCrypto || !buyAmount}
+                  leftIcon={<Bitcoin size={18} />}
+                >
+                  Buy Crypto
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Pr1Bit;

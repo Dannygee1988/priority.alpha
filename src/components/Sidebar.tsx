@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Share2, Megaphone, Users, Globe, LayoutDashboard, PoundSterling, Users2, LineChart, UserCog, Calendar, Inbox, Settings, ChevronLeft, ChevronRight, ChevronDown, PenSquare, MessageSquare, Palette, Hash, TrendingUp, CalendarDays, Video, Images, Type, BookOpen, Wrench, FileType2, ScanLine, FileSearch, FileCog, FileText, FileSpreadsheet, FileImage, FileAudio, FileVideo, Printer, Newspaper, UserCircle, Shield, AlertCircle, PenLine, Database, Sparkles, UserPlus, Image, FileEdit, FileCheck, Brain, Bot, MessagesSquare, ListFilter, FileUp as FileUser } from 'lucide-react';
+import { Share2, Megaphone, Users, Globe, LayoutDashboard, PoundSterling, Users2, LineChart, UserCog, Calendar, Inbox, Settings, ChevronLeft, ChevronRight, ChevronDown, PenSquare, MessageSquare, Palette, Hash, TrendingUp, CalendarDays, Video, Images, Type, BookOpen, Wrench, FileType2, ScanLine, FileSearch, FileCog, FileText, FileSpreadsheet, FileImage, FileAudio, FileVideo, Printer, Newspaper, UserCircle, Shield, AlertCircle, PenLine, Database, Sparkles, UserPlus, Image, FileEdit, FileCheck, Brain, Bot, MessagesSquare, ListFilter, FileUp as FileUser, Bitcoin } from 'lucide-react';
 
 const socialMediaSubmenu = [
   { name: 'Posts', icon: ListFilter, path: '/social-media/posts' },
@@ -60,6 +60,13 @@ const hrSubmenu = [
   { name: 'Employee Records', icon: UserCircle, path: '/hr/employee-records' },
 ];
 
+const financeSubmenu = [
+  { name: 'Pr1Bit Treasury', icon: Bitcoin, path: '/finance/pr1bit' },
+  { name: 'Financial Reports', icon: FileText, path: '/finance/reports' },
+  { name: 'Budgeting', icon: PoundSterling, path: '/finance/budgeting' },
+  { name: 'Invoicing', icon: FileSpreadsheet, path: '/finance/invoicing' },
+];
+
 const advisorSubmenu = [
   { name: 'GPT', icon: Bot, path: '/gpt' },
   { name: 'Chats', icon: MessagesSquare, path: '/chats' },
@@ -86,7 +93,12 @@ const navigation = [
     submenu: prSubmenu,
   },
   { name: 'Management', icon: LayoutDashboard, path: '/management' },
-  { name: 'Finance', icon: PoundSterling, path: '/finance' },
+  {
+    name: 'Finance',
+    icon: PoundSterling,
+    path: '/finance',
+    submenu: financeSubmenu,
+  },
   {
     name: 'Community',
     icon: Users2,
