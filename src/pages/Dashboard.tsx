@@ -204,7 +204,7 @@ const getToolIcon = (icon: string) => {
 };
 
 const Dashboard: React.FC = () => {
-  const { user, hasFeatureAccess } = useAuth();
+  const { user } = useAuth();
   const [stats, setStats] = useState<Stat[]>([
     {
       id: '1',
@@ -290,28 +290,6 @@ const Dashboard: React.FC = () => {
     loadSocialMetrics();
   }, [user]);
 
-  const getFeatureKey = (name: string) => {
-    switch (name) {
-      case 'Social Media': return 'social-media';
-      case 'Marketing': return 'marketing';
-      case 'Public Relations': return 'pr';
-      case 'Tools': return 'tools';
-      case 'Calendar': return 'calendar';
-      case 'Inbox': return 'inbox';
-      case 'Data': return 'data';
-      case 'Settings': return 'settings';
-      case 'Management': return 'management';
-      case 'Finance': return 'finance';
-      case 'Human Resources': return 'hr';
-      case 'CRM': return 'crm';
-      case 'Investors': return 'investors';
-      case 'Community': return 'community';
-      case 'Analytics': return 'analytics';
-      case 'Advisor': return 'advisor';
-      default: return name.toLowerCase().replace(/\s+/g, '-');
-    }
-  };
-
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8 animate-fade-in">
       <div className="mb-6">
@@ -336,7 +314,6 @@ const Dashboard: React.FC = () => {
                     title={tool.name}
                     description={tool.description}
                     icon={getToolIcon(tool.icon)}
-                    disabled={!hasFeatureAccess(getFeatureKey(tool.name))}
                     path={tool.path}
                   />
                 </div>
