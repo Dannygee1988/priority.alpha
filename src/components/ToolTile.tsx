@@ -194,10 +194,11 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, fea
                   </div>
                 ) : (
                   <Link
+                    key={option.name}
                     to={option.path}
                     className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
                     onClick={() => setShowPopup(false)}
-          >
+                  >
                     <option.icon size={18} className="mr-3" />
                     {option.name}
                   </Link>
@@ -207,7 +208,7 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, fea
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 };
 
