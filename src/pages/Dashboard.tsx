@@ -23,6 +23,7 @@ import {
 import { Stat, Tool } from '../types';
 import DashboardStatistics from '../components/DashboardStatistics';
 import ToolTile from '../components/ToolTile';
+import Button from '../components/Button';
 import UpgradeModal from '../components/UpgradeModal';
 import { useAuth } from '../context/AuthContext';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
