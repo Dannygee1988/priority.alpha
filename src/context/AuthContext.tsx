@@ -121,16 +121,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
     setError(null);
     
     try {
+      setIsLoading(true);
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (signInError) {
+        setIsLoading(false);
         throw signInError;
       }
 
@@ -145,11 +146,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userData);
         await loadUserProfile(id);
       }
+      setIsLoading(false);
     } catch (err) {
       console.error('Auth error:', err);
       setError(err instanceof Error ? err.message : 'Failed to sign in');
-      // Don't throw the error to prevent unhandled promise rejection
-    } finally {
       setIsLoading(false);
     }
   };

@@ -31,7 +31,6 @@ const Login: React.FC = () => {
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
-      // Error is handled in AuthContext, but we ensure loading state is reset
     }
   };
 
