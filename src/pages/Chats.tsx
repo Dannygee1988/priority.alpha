@@ -18,6 +18,8 @@ interface ChatMessage {
   sentiment_score: number;
   keywords: string[];
   email: string;
+  'Ai response': string | null;
+  'Topic': string | null;
 }
 
 type Platform = 'all' | 'whatsapp' | 'telegram' | 'facebook' | 'instagram' | 'website';
@@ -58,7 +60,7 @@ const Chats: React.FC = () => {
 
       const { data, error: fetchError } = await supabase
         .from('chatbot_messages')
-        .select('*')
+        .select('*, "Ai response", "Topic"')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
@@ -104,6 +106,34 @@ const Chats: React.FC = () => {
   const getSourceIcon = (source: ChatMessage['source']) => {
     const platform = platforms.find(p => p.id === source);
     return platform?.emoji || '💬';
+  };
+
+  const getTopicTag = (topic: string | null) => {
+    if (!topic || topic.trim() === '') {
+      return 'General';
+    }
+    return topic;
+  };
+
+  const getTopicColor = (topic: string | null) => {
+    const topicValue = getTopicTag(topic);
+    
+    switch (topicValue.toLowerCase()) {
+      case 'general':
+        return 'bg-neutral-100 text-neutral-700';
+      case 'support':
+        return 'bg-blue-100 text-blue-700';
+      case 'sales':
+        return 'bg-green-100 text-green-700';
+      case 'technical':
+        return 'bg-purple-100 text-purple-700';
+      case 'billing':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'feedback':
+        return 'bg-pink-100 text-pink-700';
+      default:
+        return 'bg-primary-100 text-primary-700';
+    }
   };
 
   const filteredMessages = messages.filter(msg => {
@@ -278,6 +308,9 @@ const Chats: React.FC = () => {
                         <span className="text-sm font-medium text-neutral-700">
                           Subject: {message.subject}
                         </span>
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getTopicColor(message.Topic)}`}>
+                          {getTopicTag(message.Topic)}
+                        </span>
                       </div>
                     )}
 
@@ -288,6 +321,23 @@ const Chats: React.FC = () => {
                         {message.content}
                       </p>
                     </div>
+
+                    {/* AI Response Section */}
+                    {message['Ai response'] && (
+                      <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                        <div className="flex items-center mb-2">
+                          <Bot size={16} className="text-primary mr-2" />
+                          <span className="text-sm font-medium text-primary">AI Advisor Response</span>
+                        </div>
+                        <div className={`${
+                          expandedMessage === message.id ? '' : 'line-clamp-3'
+                        }`}>
+                          <p className="text-neutral-700 whitespace-pre-wrap text-sm">
+                            {message['Ai response']}
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     {message.keywords && message.keywords.length > 0 && (
                       <div className="mt-3 flex items-center flex-wrap gap-2">
