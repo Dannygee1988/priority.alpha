@@ -98,7 +98,6 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, fea
   const { isFeatureLocked } = useFeatureAccess();
   const [showPopup, setShowPopup] = useState(false);
   const [showNestedPopup, setShowNestedPopup] = useState<string | null>(null);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const isLocked = featureKey ? isFeatureLocked(featureKey) : false;
 
@@ -109,12 +108,6 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, fea
       return;
     }
     
-    if (isLocked) {
-      e.preventDefault();
-      setShowUpgradeModal(true);
-      return;
-    }
-
     if (title === 'Social Media' || title === 'Tools' || title === 'Community' || title === 'Investors' || title === 'Public Relations') {
       e.preventDefault();
       setShowPopup(!showPopup);
@@ -139,39 +132,31 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, fea
   return (
     <>
       <div className="relative h-full">
-        <LockedFeature
-          isLocked={isLocked}
-          featureName={title}
-          onUpgrade={() => setShowUpgradeModal(true)}
+        <Link 
+          to={path}
+          onClick={handleClick}
+          className="bg-white rounded-xl shadow-sm border border-neutral-200 hover:border-neutral-300 transition-all group block h-full relative overflow-hidden p-6"
         >
-          <Link 
-            to={path}
-            onClick={handleClick}
-            className={`bg-white rounded-xl shadow-sm border border-neutral-100 transition-all group block h-full relative overflow-hidden p-6 ${
-              isLocked ? 'cursor-not-allowed' : ''
-            }`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-xl" />
-            
-            <div className="relative flex flex-col items-center justify-center h-full">
-              <div className="p-3 rounded-xl bg-primary/5 text-primary transform group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary-700 transition-all duration-300 mb-4">
-                {icon}
-              </div>
-              
-              <h3 className="font-bold text-lg text-primary group-hover:text-primary-700 transition-colors text-center">
-                {title}
-              </h3>
-              
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/95 to-white/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-xl p-6">
-                <p className="text-neutral-600 text-sm text-center leading-relaxed">
-                  {description}
-                </p>
-              </div>
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-xl" />
+          
+          <div className="relative flex flex-col items-center justify-center h-full">
+            <div className="p-3 rounded-xl bg-primary/5 text-primary transform group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary-700 transition-all duration-300 mb-4">
+              {icon}
             </div>
-          </Link>
-        </LockedFeature>
+            
+            <h3 className="font-bold text-lg text-primary group-hover:text-primary-700 transition-colors text-center">
+              {title}
+            </h3>
+            
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/95 to-white/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-xl p-6">
+              <p className="text-neutral-600 text-sm text-center leading-relaxed">
+                {description}
+              </p>
+            </div>
+          </div>
+        </Link>
 
-        {showPopup && (getOptions().length > 0) && !isLocked && (
+        {showPopup && (getOptions().length > 0) && (
           <div className="absolute z-50 left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 animate-fade-in">
             {getOptions().map((option) => (
               <div key={option.name}>
@@ -212,7 +197,7 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, fea
                     to={option.path}
                     className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
                     onClick={() => setShowPopup(false)}
-                  >
+          >
                     <option.icon size={18} className="mr-3" />
                     {option.name}
                   </Link>
@@ -222,12 +207,7 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, fea
           </div>
         )}
       </div>
-
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-      />
-    </>
+    </div>
   );
 };
 

@@ -18,10 +18,12 @@ import {
   Database,
   Star,
   MessageSquare,
+  Crown,
 } from 'lucide-react';
 import { Stat, Tool } from '../types';
 import DashboardStatistics from '../components/DashboardStatistics';
 import ToolTile from '../components/ToolTile';
+import UpgradeModal from '../components/UpgradeModal';
 import { useAuth } from '../context/AuthContext';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { getSocialMetrics, getUserCompany } from '../lib/api';
@@ -222,7 +224,8 @@ const getToolIcon = (icon: string) => {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { hasFeatureAccess } = useFeatureAccess();
+  const { hasFeatureAccess, getUserTier } = useFeatureAccess();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [stats, setStats] = useState<Stat[]>([
     {
       id: '1',
@@ -308,8 +311,11 @@ const Dashboard: React.FC = () => {
     loadSocialMetrics();
   }, [user]);
 
+  const userTier = getUserTier();
+  const isFreeTier = userTier === 'free';
+
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8 animate-fade-in">
+    <div className="px-4 py-6 sm:px-6 lg:px-8 animate-fade-in relative">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-neutral-800">Dashboard</h1>
       </div>
@@ -318,7 +324,7 @@ const Dashboard: React.FC = () => {
         <DashboardStatistics stats={stats} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className={`grid grid-cols-1 lg:grid-cols-4 gap-6 relative ${isFreeTier ? 'pointer-events-none' : ''}`}>
         {Object.entries(toolCategories).map(([key, category]) => (
           <div key={key} className="space-y-6">
             <div>
@@ -327,7 +333,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="space-y-6">
               {category.tools.map((tool) => (
-                <div key={tool.id} className="h-[200px]">
+                <div key={tool.id} className={`h-[200px] ${isFreeTier && tool.featureKey !== 'advisor' ? 'opacity-30' : ''}`}>
                   <ToolTile
                     title={tool.name}
                     description={tool.description}
@@ -340,7 +346,48 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         ))}
+        
+        {/* Single Upgrade Overlay for Free Tier */}
+        {isFreeTier && (
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center rounded-lg pointer-events-auto">
+            <div className="text-center p-8 max-w-md">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-warning-400 to-warning-600 text-white flex items-center justify-center mx-auto mb-6">
+                <Crown size={32} />
+              </div>
+              
+              <h2 className="text-2xl font-bold text-neutral-800 mb-4">
+                Unlock Full Platform Access
+              </h2>
+              
+              <p className="text-neutral-600 mb-6 leading-relaxed">
+                You're currently on the <strong>Advisor</strong> plan. Upgrade to <strong>Professional</strong> 
+                or <strong>Enterprise</strong> to unlock all business management features including CRM, 
+                Social Media, Finance, HR, and more.
+              </p>
+              
+              <div className="space-y-3">
+                <Button
+                  size="lg"
+                  leftIcon={<Crown size={20} />}
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="bg-gradient-to-r from-warning-500 to-warning-600 hover:from-warning-600 hover:to-warning-700 text-white w-full"
+                >
+                  Upgrade Now
+                </Button>
+                
+                <p className="text-sm text-neutral-500">
+                  Starting from £99.99/month • Cancel anytime
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+      
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
     </div>
   );
 };
