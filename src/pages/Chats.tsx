@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MessageSquare, User, Bot, ChevronDown, ChevronUp, Tag as TagIcon } from 'lucide-react';
+import { Search, Filter, MessageSquare, User, Bot, ChevronDown, ChevronUp, Tag as TagIcon, Lock } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -124,6 +124,9 @@ const Chats: React.FC = () => {
     return messages.filter(msg => msg.source === platform).length;
   };
 
+  const isPlatformLocked = (platform: Platform) => {
+    return platform !== 'all' && platform !== 'website';
+  };
   return (
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
@@ -147,6 +150,9 @@ const Chats: React.FC = () => {
               >
                 <span className="mr-2">{platform.emoji}</span>
                 {platform.name}
+                {isPlatformLocked(platform.id) && (
+                  <Lock size={14} className="ml-2 text-neutral-400" />
+                )}
                 <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-neutral-100 text-neutral-600">
                   {getMessageCountByPlatform(platform.id)}
                 </span>
