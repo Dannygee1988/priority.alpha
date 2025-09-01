@@ -182,7 +182,7 @@ const Sidebar: React.FC = () => {
     if (path.includes('/analytics')) return 'analytics';
     if (path.includes('/hr')) return 'hr';
     if (path.includes('/crm')) return 'crm';
-    if (path.includes('/data')) return 'data';
+    if (path.includes('/data')) return null; // Data is now unlocked for all users
     if (path.includes('/tools')) return 'tools';
     if (path.includes('/calendar')) return 'calendar';
     if (path.includes('/inbox')) return 'settings';

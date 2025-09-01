@@ -10,7 +10,7 @@ interface UserProfile {
 }
 
 const FEATURE_ACCESS = {
-  free: ['advisor', 'gpt', 'chats'],
+  free: ['advisor', 'gpt', 'chats', 'data'],
   premium: [
     'advisor', 'gpt', 'chats', 'social-media', 'marketing', 'analytics', 
     'calendar', 'crm', 'data', 'tools'
