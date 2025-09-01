@@ -109,8 +109,7 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, fea
       return;
     }
     
-    // All other features are locked
-    if (true) { // Force lock all other features
+    if (isLocked) {
       e.preventDefault();
       setShowUpgradeModal(true);
       return;
