@@ -3,10 +3,14 @@ import { Bell, User, LogOut, Settings, ChevronDown, ArrowLeft } from 'lucide-rea
 import Button from './Button';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import UpgradeModal from './UpgradeModal';
 
 const Header: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { user, logout } = useAuth();
+  const { isFeatureLocked } = useFeatureAccess();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -88,8 +92,19 @@ const Header: React.FC = () => {
                   </a>
                   <a
                     href="#"
-                    className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 flex items-center"
-                    onClick={() => setShowUserMenu(false)}
+                    className={`block px-4 py-2 text-sm flex items-center ${
+                      isFeatureLocked('settings') 
+                        ? 'text-neutral-400 cursor-not-allowed' 
+                        : 'text-neutral-700 hover:bg-neutral-50'
+                    }`}
+                    onClick={() => {
+                      if (isFeatureLocked('settings')) {
+                        setShowUpgradeModal(true);
+                        setShowUserMenu(false);
+                        return;
+                      }
+                      setShowUserMenu(false);
+                    }}
                   >
                     <Settings size={16} className="mr-2" />
                     Settings
@@ -113,6 +128,11 @@ const Header: React.FC = () => {
             <Button size="sm">Sign in</Button>
           )}
         </div>
+        
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+        />
       </div>
     </header>
   );

@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Share2, Megaphone, Users, Globe, LayoutDashboard, PoundSterling, Users2, LineChart, UserCog, Calendar, Inbox, Settings, ChevronLeft, ChevronRight, ChevronDown, PenSquare, MessageSquare, Palette, Hash, TrendingUp, CalendarDays, Video, Images, Type, BookOpen, Wrench, FileType2, ScanLine, FileSearch, FileCog, FileText, FileSpreadsheet, FileImage, FileAudio, FileVideo, Printer, Newspaper, UserCircle, Shield, AlertCircle, PenLine, Database, Sparkles, UserPlus, Image, FileEdit, FileCheck, Brain, Bot, MessagesSquare, ListFilter, FileUp as FileUser, Bitcoin } from 'lucide-react';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import LockedFeature from './LockedFeature';
+import UpgradeModal from './UpgradeModal';
 
 const socialMediaSubmenu = [
   { name: 'Posts', icon: ListFilter, path: '/social-media/posts' },
@@ -132,8 +135,10 @@ const navigation = [
 const Sidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isFeatureLocked } = useFeatureAccess();
   const [isExpanded, setIsExpanded] = useState(true);
   const [expandedSubmenu, setExpandedSubmenu] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [expandedNestedSubmenu, setExpandedNestedSubmenu] = useState<string | null>(null);
 
   const toggleSidebar = () => {
@@ -154,9 +159,36 @@ const Sidebar: React.FC = () => {
   };
 
   const handleNavigation = (path: string, hasSubmenu: boolean) => {
+    // Check if feature is locked
+    const featureKey = getFeatureKeyFromPath(path);
+    if (featureKey && isFeatureLocked(featureKey)) {
+      setShowUpgradeModal(true);
+      return;
+    }
+    
     if (!hasSubmenu) {
       navigate(path);
     }
+  };
+
+  const getFeatureKeyFromPath = (path: string): string | null => {
+    if (path.includes('/social-media')) return 'social-media';
+    if (path.includes('/marketing')) return 'pr';
+    if (path.includes('/investors')) return 'investors';
+    if (path.includes('/pr')) return 'pr';
+    if (path.includes('/management')) return 'management';
+    if (path.includes('/finance')) return 'finance';
+    if (path.includes('/community')) return 'community';
+    if (path.includes('/analytics')) return 'analytics';
+    if (path.includes('/hr')) return 'hr';
+    if (path.includes('/crm')) return 'crm';
+    if (path.includes('/data')) return 'data';
+    if (path.includes('/tools')) return 'tools';
+    if (path.includes('/calendar')) return 'calendar';
+    if (path.includes('/inbox')) return 'settings';
+    if (path.includes('/settings')) return 'settings';
+    if (path.includes('/advisor') || path.includes('/gpt') || path.includes('/chats')) return null; // These are always unlocked
+    return 'locked';
   };
 
   const NavLink = ({ 
@@ -177,18 +209,28 @@ const Sidebar: React.FC = () => {
     const hasSubmenu = item.submenu && item.submenu.length > 0;
     const isSubmenuExpanded = expandedSubmenu === item.name;
     const isNestedSubmenuExpanded = expandedNestedSubmenu === item.name;
+    
+    // Check if this feature is locked
+    const featureKey = getFeatureKeyFromPath(item.path);
+    const isLocked = featureKey && isFeatureLocked(featureKey);
 
     return (
       <div>
         <div
           className={`
-            flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer
-            ${isActive ? 'text-primary bg-primary/5' : 'text-neutral-600 hover:text-primary hover:bg-primary/5'}
+            flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
+            ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+            ${isActive && !isLocked ? 'text-primary bg-primary/5' : isLocked ? 'text-neutral-400' : 'text-neutral-600 hover:text-primary hover:bg-primary/5'}
             ${!isExpanded && 'justify-center'}
             ${isSubmenuItem && 'pl-6'}
             ${isNestedSubmenuItem && 'pl-9'}
           `}
           onClick={() => {
+            if (isLocked) {
+              setShowUpgradeModal(true);
+              return;
+            }
+            
             if (hasSubmenu) {
               isSubmenuItem ? toggleNestedSubmenu(item.name) : toggleSubmenu(item.name);
             } else {
@@ -223,6 +265,11 @@ const Sidebar: React.FC = () => {
             ))}
           </div>
         )}
+        
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+        />
       </div>
     );
   };

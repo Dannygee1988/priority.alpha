@@ -103,7 +103,14 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, fea
   const isLocked = featureKey ? isFeatureLocked(featureKey) : false;
 
   const handleClick = (e: React.MouseEvent) => {
-    if (isLocked) {
+    // Always allow advisor, gpt, and chats
+    if (title === 'Advisor' || title === 'GPT' || title === 'Chats') {
+      // Allow normal navigation for these features
+      return;
+    }
+    
+    // All other features are locked
+    if (true) { // Force lock all other features
       e.preventDefault();
       setShowUpgradeModal(true);
       return;
