@@ -146,8 +146,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await loadUserProfile(id);
       }
     } catch (err) {
+      console.error('Auth error:', err);
       setError(err instanceof Error ? err.message : 'Failed to sign in');
-      throw err;
+      // Don't throw the error to prevent unhandled promise rejection
     } finally {
       setIsLoading(false);
     }
