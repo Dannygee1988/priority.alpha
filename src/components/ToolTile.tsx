@@ -38,6 +38,7 @@ interface ToolTileProps {
   description: string;
   icon: React.ReactNode;
   path: string;
+  disabled?: boolean;
 }
 
 const socialMediaOptions = [
@@ -90,11 +91,16 @@ const prOptions = [
   },
 ];
 
-const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) => {
+const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, disabled = false }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [showNestedPopup, setShowNestedPopup] = useState<string | null>(null);
 
   const handleClick = (e: React.MouseEvent) => {
+    if (disabled) {
+      e.preventDefault();
+      return;
+    }
+    
     if (title === 'Social Media' || title === 'Tools' || title === 'Community' || title === 'Investors' || title === 'Public Relations') {
       e.preventDefault();
       setShowPopup(!showPopup);
@@ -102,12 +108,14 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) =
   };
 
   const handleNestedClick = (e: React.MouseEvent, itemName: string) => {
+    if (disabled) return;
     e.preventDefault();
     e.stopPropagation();
     setShowNestedPopup(showNestedPopup === itemName ? null : itemName);
   };
 
   const getOptions = () => {
+    if (disabled) return [];
     if (title === 'Social Media') return socialMediaOptions;
     if (title === 'Tools') return toolsOptions;
     if (title === 'Community') return communityOptions;
@@ -121,28 +129,39 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) =
       <Link 
         to={path}
         onClick={handleClick}
-        className="bg-white rounded-xl shadow-sm border border-neutral-100 transition-all group block h-full relative overflow-hidden"
+        className={`bg-white rounded-xl shadow-sm border border-neutral-100 transition-all group block h-full relative overflow-hidden ${
+          disabled ? 'cursor-not-allowed opacity-50' : ''
+        }`}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
+        <div className={`absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent opacity-0 transition-all duration-300 ${
+          disabled ? '' : 'group-hover:opacity-100'
+        }`} />
         
         <div className="relative flex flex-col items-center justify-center h-full p-6">
-          <div className="p-4 rounded-xl bg-primary/5 text-primary transform group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary-700 transition-all duration-300">
+          <div className={`p-4 rounded-xl bg-primary/5 text-primary transition-all duration-300 ${
+            disabled ? 'text-neutral-400 bg-neutral-100' : 'transform group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary-700'
+          }`}>
             {icon}
           </div>
           
-          <h3 className="font-bold text-lg text-primary mt-4 group-hover:text-primary-700 transition-colors">
+          <h3 className={`font-bold text-lg mt-4 transition-colors ${
+            disabled ? 'text-neutral-400' : 'text-primary group-hover:text-primary-700'
+          }`}>
             {title}
+            {disabled && <span className="ml-2 text-xs bg-neutral-200 text-neutral-500 px-2 py-1 rounded-full">Upgrade</span>}
           </h3>
           
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/95 to-white/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-xl">
+          <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/95 to-white/90 backdrop-blur-sm opacity-0 transition-all duration-300 rounded-xl ${
+            disabled ? '' : 'group-hover:opacity-100'
+          }`}>
             <p className="text-neutral-600 text-sm px-4 text-center">
-              {description}
+              {disabled ? 'Upgrade to access this feature' : description}
             </p>
           </div>
         </div>
       </Link>
 
-      {showPopup && (getOptions().length > 0) && (
+      {showPopup && (getOptions().length > 0) && !disabled && (
         <div className="absolute z-50 left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 animate-fade-in">
           {getOptions().map((option) => (
             <div key={option.name}>

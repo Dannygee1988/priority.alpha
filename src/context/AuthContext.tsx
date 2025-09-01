@@ -1,21 +1,71 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { supabase } from '../lib/supabase';
+import { getUserCompany } from '../lib/api';
+
+interface UserProfile {
+  profileType: string;
+  features: string[];
+  subscriptionStatus: string;
+  subscriptionExpiresAt: string | null;
+}
 
 interface AuthContextType {
   user: User | null;
+  userProfile: UserProfile | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   error: string | null;
+  hasFeatureAccess: (feature: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const companyId = await getUserCompany(userId);
+      if (!companyId) return;
+
+      const { data, error } = await supabase
+        .from('user_companies')
+        .select(`
+          subscription_status,
+          subscription_expires_at,
+          profile_type:user_profile_types(
+            name,
+            features
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
+        .single();
+
+      if (error) throw error;
+
+      if (data?.profile_type) {
+        setUserProfile({
+          profileType: data.profile_type.name,
+          features: data.profile_type.features || [],
+          subscriptionStatus: data.subscription_status,
+          subscriptionExpiresAt: data.subscription_expires_at
+        });
+      }
+    } catch (err) {
+      console.error('Error loading user profile:', err);
+    }
+  };
+
+  const hasFeatureAccess = (feature: string): boolean => {
+    if (!userProfile) return false;
+    return userProfile.features.includes(feature);
+  };
 
   useEffect(() => {
     // Check if user is logged in from Supabase session
@@ -29,12 +79,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (session?.user) {
           const { id, email, user_metadata } = session.user;
-          setUser({
+          const userData = {
             id,
             name: user_metadata?.full_name || email?.split('@')[0] || 'User',
             email: email || '',
             avatar: user_metadata?.avatar_url || ''
-          });
+          };
+          setUser(userData);
+          await loadUserProfile(id);
         }
       } catch (err) {
         console.error('Auth check error:', err);
@@ -49,14 +101,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         const { id, email, user_metadata } = session.user;
-        setUser({
+        const userData = {
           id,
           name: user_metadata?.full_name || email?.split('@')[0] || 'User',
           email: email || '',
           avatar: user_metadata?.avatar_url || ''
-        });
+        };
+        setUser(userData);
+        await loadUserProfile(id);
       } else {
         setUser(null);
+        setUserProfile(null);
       }
     });
 
@@ -81,12 +136,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data.user) {
         const { id, email, user_metadata } = data.user;
-        setUser({
+        const userData = {
           id,
           name: user_metadata?.full_name || email?.split('@')[0] || 'User',
           email: email || '',
           avatar: user_metadata?.avatar_url || ''
-        });
+        };
+        setUser(userData);
+        await loadUserProfile(id);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign in');
@@ -103,6 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw signOutError;
       }
       setUser(null);
+      setUserProfile(null);
     } catch (err) {
       console.error('Logout error:', err);
     }
@@ -110,10 +168,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const contextValue: AuthContextType = {
     user,
+    userProfile,
     login,
     logout,
     isLoading,
     error,
+    hasFeatureAccess,
   };
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
