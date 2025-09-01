@@ -322,24 +322,20 @@ const Chats: React.FC = () => {
                       </p>
                     </div>
 
-                    {/* AI Response Section */}
-                    {message['Ai response'] && message['Ai response'].trim() !== '' && (
+                    {/* AI Response Section - Only show when expanded */}
+                    {expandedMessage === message.id && message['Ai response'] && message['Ai response'].trim() !== '' && (
                       <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
                         <div className="flex items-center mb-2">
                           <Bot size={16} className="text-primary mr-2" />
                           <span className="text-sm font-medium text-primary">AI Advisor Response</span>
                         </div>
-                        <div className={`${
-                          expandedMessage === message.id ? '' : 'line-clamp-3'
-                        }`}>
-                          <p className="text-neutral-700 whitespace-pre-wrap text-sm">
-                            {message['Ai response']}
-                          </p>
-                        </div>
+                        <p className="text-neutral-700 whitespace-pre-wrap text-sm">
+                          {message['Ai response']}
+                        </p>
                       </div>
                     )}
 
-                    {message.keywords && message.keywords.length > 0 && (
+                    {expandedMessage === message.id && message.keywords && message.keywords.length > 0 && (
                       <div className="mt-3 flex items-center flex-wrap gap-2">
                         <TagIcon size={14} className="text-neutral-400" />
                         {message.keywords.map((keyword, index) => (
