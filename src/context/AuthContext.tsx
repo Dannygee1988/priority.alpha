@@ -25,7 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadUserProfile = async (userId: string) => {
@@ -70,8 +70,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Check if user is logged in from Supabase session
     const checkAuth = async () => {
-      setIsLoading(true);
       try {
+        setIsLoading(true);
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -91,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (err) {
         console.error('Auth check error:', err);
+        setError(null); // Clear any previous errors
       } finally {
         setIsLoading(false);
       }
@@ -100,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setIsLoading(true);
       if (session?.user) {
         const { id, email, user_metadata } = session.user;
         const userData = {
@@ -114,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setUserProfile(null);
       }
+      setIsLoading(false);
     });
 
     return () => {
@@ -123,9 +126,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     setError(null);
+    setIsLoading(true);
     
     try {
-      setIsLoading(true);
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password
