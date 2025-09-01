@@ -25,7 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadUserProfile = async (userId: string) => {
@@ -71,7 +71,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check if user is logged in from Supabase session
     const checkAuth = async () => {
       try {
-        setIsLoading(true);
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -101,7 +100,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setIsLoading(true);
       if (session?.user) {
         const { id, email, user_metadata } = session.user;
         const userData = {
@@ -116,7 +114,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
         setUserProfile(null);
       }
-      setIsLoading(false);
     });
 
     return () => {
@@ -127,15 +124,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setError(null);
     setIsLoading(true);
+    setIsLoading(true);
     
-    try {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (signInError) {
-        setIsLoading(false);
         throw signInError;
       }
 
@@ -150,10 +146,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userData);
         await loadUserProfile(id);
       }
-      setIsLoading(false);
     } catch (err) {
       console.error('Auth error:', err);
       setError(err instanceof Error ? err.message : 'Failed to sign in');
+    } finally {
       setIsLoading(false);
     }
   };
