@@ -1,234 +1,348 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useFeatureAccess } from '../hooks/useFeatureAccess';
-import LockedFeature from './LockedFeature';
-import UpgradeModal from './UpgradeModal';
+import React, { useEffect, useState } from 'react';
 import {
-  PenSquare,
+  Share2,
+  Megaphone,
+  Users,
+  Globe,
+  LayoutDashboard,
+  PoundSterling,
+  Users2,
+  LineChart,
+  UserCog,
+  Calendar,
+  Inbox,
+  Settings,
+  Wrench,
+  Brain,
+  UserPlus,
+  Database,
+  Star,
   MessageSquare,
-  Palette,
-  Hash,
-  TrendingUp,
-  CalendarDays,
-  Video,
-  Images,
-  Type,
-  BookOpen,
-  FileType2,
-  ScanLine,
-  FileSearch,
-  FileCog,
-  FileText,
-  FileSpreadsheet,
-  FileImage,
-  FileAudio,
-  FileVideo,
-  Printer,
-  Newspaper,
-  UserCircle,
-  Shield,
-  AlertCircle,
-  PenLine,
-  ChevronDown,
-  Image,
-  FileEdit,
-  Sparkles,
-  FileCheck,
 } from 'lucide-react';
+import { Stat, Tool } from '../types';
+import DashboardStatistics from '../components/DashboardStatistics';
+import ToolTile from '../components/ToolTile';
+import { useAuth } from '../context/AuthContext';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { getSocialMetrics, getUserCompany } from '../lib/api';
 
-interface ToolTileProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  path: string;
-  featureKey?: string;
-}
-
-const socialMediaOptions = [
-  { name: 'Create New Post', icon: PenSquare, path: '/social-media/create' },
-  { name: 'Generate Captions', icon: MessageSquare, path: '/social-media/captions' },
-  { name: 'Create Graphics', icon: Palette, path: '/social-media/graphics' },
-  { name: 'Gallery', icon: Image, path: '/social-media/gallery' },
-  { name: 'Hashtag Suggestions', icon: Hash, path: '/social-media/hashtags' },
-  { name: 'Trending Tags', icon: TrendingUp, path: '/social-media/trending' },
-  { name: 'Content Calendar', icon: CalendarDays, path: '/social-media/calendar' },
-  { name: 'Video Scripts', icon: Video, path: '/social-media/scripts' },
-  { name: 'Carousel Posts', icon: Images, path: '/social-media/carousel' },
-  { name: 'Headlines & Hooks', icon: Type, path: '/social-media/headlines' },
-  { name: 'Story Content', icon: BookOpen, path: '/social-media/stories' },
-];
-
-const toolsOptions = [
-  { name: 'File Converter', icon: FileType2, path: '/tools/converter' },
-  { name: 'Business Card Scanner', icon: ScanLine, path: '/tools/card-scanner' },
-  { name: 'Document OCR', icon: FileSearch, path: '/tools/ocr' },
-  { name: 'File Compressor', icon: FileCog, path: '/tools/compressor' },
-  { name: 'PDF Tools', icon: FileText, path: '/tools/pdf' },
-  { name: 'Excel Tools', icon: FileSpreadsheet, path: '/tools/excel' },
-  { name: 'Image Editor', icon: FileImage, path: '/tools/image' },
-  { name: 'Audio Editor', icon: FileAudio, path: '/tools/audio' },
-  { name: 'Video Editor', icon: FileVideo, path: '/tools/video' },
-  { name: 'Print Templates', icon: Printer, path: '/tools/templates' },
-];
-
-const communityOptions = [
-  { name: 'Bulletin Board', icon: Newspaper, path: '/community/bulletin-board' },
-];
-
-const investorsOptions = [
-  { name: 'Shareholders', icon: UserCircle, path: '/investors/shareholders' },
-  { name: 'Insiders', icon: Shield, path: '/investors/insiders' },
-];
-
-const prOptions = [
-  { 
-    name: 'RNS', 
-    icon: AlertCircle, 
-    path: '/pr/rns',
-    submenu: [
-      { name: 'Write new RNS', icon: PenLine, path: '/pr/rns/write' },
-      { name: 'Improve RNS', icon: Sparkles, path: '/pr/rns/improve' },
-      { name: 'Drafts', icon: FileEdit, path: '/pr/rns/drafts' },
-      { name: 'Published RNS', icon: FileCheck, path: '/pr/rns/published' }
+const toolCategories = {
+  design: {
+    title: "Design",
+    description: "Create and design your content",
+    tools: [
+      {
+        id: '1',
+        name: 'Social Media',
+        description: 'Manage and analyse social media presence',
+        icon: 'share',
+        path: '/social-media',
+        featureKey: 'social-media',
+      },
+      {
+        id: '2',
+        name: 'Marketing',
+        description: 'Plan and execute marketing campaigns',
+        icon: 'megaphone',
+        path: '/marketing',
+        featureKey: 'pr',
+      },
+      {
+        id: '4',
+        name: 'Public Relations',
+        description: 'Manage public relations and communications',
+        icon: 'globe',
+        path: '/pr',
+        featureKey: 'pr',
+      },
+      {
+        id: '12',
+        name: 'Tools',
+        description: 'Business efficiency and file management tools',
+        icon: 'wrench',
+        path: '/tools',
+        featureKey: 'tools',
+      },
     ]
   },
-];
+  organize: {
+    title: "Organise",
+    description: "Structure and organize your work",
+    tools: [
+      {
+        id: '13',
+        name: 'Calendar',
+        description: 'Schedule and manage appointments',
+        icon: 'calendar',
+        path: '/calendar',
+        featureKey: 'calendar',
+      },
+      {
+        id: '14',
+        name: 'Inbox',
+        description: 'Messages and communications hub',
+        icon: 'inbox',
+        path: '/inbox',
+        featureKey: 'settings',
+      },
+      {
+        id: '11',
+        name: 'Data',
+        description: 'Data management and analytics',
+        icon: 'database',
+        path: '/data',
+        featureKey: 'data',
+      },
+      {
+        id: '16',
+        name: 'Settings',
+        description: 'Configure application settings',
+        icon: 'settings',
+        path: '/settings',
+        featureKey: 'settings',
+      },
+    ]
+  },
+  manage: {
+    title: "Manage",
+    description: "Manage your business operations",
+    tools: [
+      {
+        id: '5',
+        name: 'Management',
+        description: 'Business operations and management',
+        icon: 'layout',
+        path: '/management',
+        featureKey: 'management',
+      },
+      {
+        id: '6',
+        name: 'Finance',
+        description: 'Financial tracking and reporting',
+        icon: 'pound',
+        path: '/finance',
+        featureKey: 'finance',
+      },
+      {
+        id: '9',
+        name: 'Human Resources',
+        description: 'Employee management and HR tools',
+        icon: 'user-cog',
+        path: '/hr',
+        featureKey: 'hr',
+      },
+      {
+        id: '10',
+        name: 'CRM',
+        description: 'Customer relationship management',
+        icon: 'user-plus',
+        path: '/crm',
+        featureKey: 'crm',
+      },
+    ]
+  },
+  grow: {
+    title: "Grow",
+    description: "Grow and scale your business",
+    tools: [
+      {
+        id: '3',
+        name: 'Investors',
+        description: 'Investor relations and management',
+        icon: 'users',
+        path: '/investors',
+        featureKey: 'investors',
+      },
+      {
+        id: '7',
+        name: 'Community',
+        description: 'Community engagement and management',
+        icon: 'users2',
+        path: '/community',
+        featureKey: 'community',
+      },
+      {
+        id: '8',
+        name: 'Analytics',
+        description: 'Business insights and analytics',
+        icon: 'chart',
+        path: '/analytics',
+        featureKey: 'analytics',
+      },
+      {
+        id: '15',
+        name: 'Advisor',
+        description: 'AI-powered business advice and insights',
+        icon: 'brain',
+        path: '/advisor',
+        featureKey: 'advisor',
+      },
+    ]
+  }
+};
 
-const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, featureKey }) => {
-  const { isFeatureLocked } = useFeatureAccess();
-  const [showPopup, setShowPopup] = useState(false);
-  const [showNestedPopup, setShowNestedPopup] = useState<string | null>(null);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+const getToolIcon = (icon: string) => {
+  switch (icon) {
+    case 'share':
+      return <Share2 size={24} />;
+    case 'megaphone':
+      return <Megaphone size={24} />;
+    case 'users':
+      return <Users size={24} />;
+    case 'globe':
+      return <Globe size={24} />;
+    case 'layout':
+      return <LayoutDashboard size={24} />;
+    case 'pound':
+      return <PoundSterling size={24} />;
+    case 'users2':
+      return <Users2 size={24} />;
+    case 'chart':
+      return <LineChart size={24} />;
+    case 'user-cog':
+      return <UserCog size={24} />;
+    case 'user-plus':
+      return <UserPlus size={24} />;
+    case 'database':
+      return <Database size={24} />;
+    case 'wrench':
+      return <Wrench size={24} />;
+    case 'calendar':
+      return <Calendar size={24} />;
+    case 'inbox':
+      return <Inbox size={24} />;
+    case 'brain':
+      return <Brain size={24} />;
+    case 'settings':
+      return <Settings size={24} />;
+    default:
+      return <Settings size={24} />;
+  }
+};
 
-  const isLocked = featureKey ? isFeatureLocked(featureKey) : false;
-
-  const handleClick = (e: React.MouseEvent) => {
-    // Always allow advisor, gpt, and chats
-    if (title === 'Advisor' || title === 'GPT' || title === 'Chats') {
-      // Allow normal navigation for these features
-      return;
+const Dashboard: React.FC = () => {
+  const { user } = useAuth();
+  const { hasFeatureAccess } = useFeatureAccess();
+  const [stats, setStats] = useState<Stat[]>([
+    {
+      id: '1',
+      title: 'Total Followers',
+      value: '-',
+      change: 0,
+      icon: 'users'
+    },
+    {
+      id: '2',
+      title: 'Most Popular Platform',
+      value: '-',
+      change: 0,
+      icon: 'share'
+    },
+    {
+      id: '3',
+      title: 'Community Score',
+      value: '-',
+      change: 0,
+      icon: 'star'
+    },
+    {
+      id: '4',
+      title: 'Hot Topic',
+      value: '-',
+      change: 0,
+      icon: 'message-square'
     }
-    
-    if (isLocked) {
-      e.preventDefault();
-      setShowUpgradeModal(true);
-      return;
-    }
+  ]);
 
-    if (title === 'Social Media' || title === 'Tools' || title === 'Community' || title === 'Investors' || title === 'Public Relations') {
-      e.preventDefault();
-      setShowPopup(!showPopup);
-    }
-  };
+  useEffect(() => {
+    const loadSocialMetrics = async () => {
+      if (user?.id) {
+        try {
+          const companyId = await getUserCompany(user.id);
+          
+          if (!companyId) {
+            console.warn('No company found for user');
+            return;
+          }
 
-  const handleNestedClick = (e: React.MouseEvent, itemName: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowNestedPopup(showNestedPopup === itemName ? null : itemName);
-  };
+          const metrics = await getSocialMetrics(companyId);
+          
+          if (metrics) {
+            setStats([
+              {
+                id: '1',
+                title: 'Total Followers',
+                value: metrics.total_followers ? metrics.total_followers.toLocaleString() : '-',
+                change: 0,
+                icon: 'users'
+              },
+              {
+                id: '2',
+                title: 'Most Popular Platform',
+                value: metrics.most_popular_platform || '-',
+                change: 0,
+                icon: 'share'
+              },
+              {
+                id: '3',
+                title: 'Community Score',
+                value: metrics.community_score ? `${metrics.community_score}%` : '-',
+                change: 0,
+                icon: 'star'
+              },
+              {
+                id: '4',
+                title: 'Hot Topic',
+                value: metrics.hot_topic || '-',
+                change: 0,
+                icon: 'message-square'
+              }
+            ]);
+          }
+        } catch (error) {
+          console.error('Error loading social metrics:', error);
+        }
+      }
+    };
 
-  const getOptions = () => {
-    if (title === 'Social Media') return socialMediaOptions;
-    if (title === 'Tools') return toolsOptions;
-    if (title === 'Community') return communityOptions;
-    if (title === 'Investors') return investorsOptions;
-    if (title === 'Public Relations') return prOptions;
-    return [];
-  };
+    loadSocialMetrics();
+  }, [user]);
 
   return (
-    <>
-      <div className="relative h-full">
-        <LockedFeature
-          isLocked={isLocked}
-          featureName={title}
-          onUpgrade={() => setShowUpgradeModal(true)}
-        >
-          <Link 
-            to={path}
-            onClick={handleClick}
-            className={`bg-white rounded-xl shadow-md border-2 border-neutral-200 hover:border-neutral-300 transition-all group block h-full relative overflow-hidden ${
-              isLocked ? 'cursor-not-allowed' : ''
-            }`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
-            
-            <div className="relative flex flex-col items-center justify-center h-full p-8">
-              <div className="p-4 rounded-xl bg-primary/5 text-primary transform group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary-700 transition-all duration-300 mb-6">
-                {icon}
-              </div>
-              
-              <h3 className="font-bold text-lg text-primary group-hover:text-primary-700 transition-colors text-center mb-2">
-                {title}
-              </h3>
-              
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/95 to-white/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 p-8">
-                <p className="text-neutral-600 text-sm text-center leading-relaxed">
-                  {description}
-                </p>
-              </div>
-            </div>
-          </Link>
-        </LockedFeature>
-
-        {showPopup && (getOptions().length > 0) && !isLocked && (
-          <div className="absolute z-50 left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 animate-fade-in">
-            {getOptions().map((option) => (
-              <div key={option.name}>
-                {option.submenu ? (
-                  <div>
-                    <button
-                      onClick={(e) => handleNestedClick(e, option.name)}
-                      className="w-full flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
-                    >
-                      <option.icon size={18} className="mr-3" />
-                      <span className="flex-1">{option.name}</span>
-                      <ChevronDown
-                        size={16}
-                        className={`transition-transform ${showNestedPopup === option.name ? 'rotate-180' : ''}`}
-                      />
-                    </button>
-                    {showNestedPopup === option.name && (
-                      <div className="pl-8 bg-neutral-50">
-                        {option.submenu.map((subOption) => (
-                          <Link
-                            key={subOption.name}
-                            to={subOption.path}
-                            className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
-                            onClick={() => {
-                              setShowPopup(false);
-                              setShowNestedPopup(null);
-                            }}
-                          >
-                            <subOption.icon size={18} className="mr-3" />
-                            {subOption.name}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <Link
-                    to={option.path}
-                    className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
-                    onClick={() => setShowPopup(false)}
-                  >
-                    <option.icon size={18} className="mr-3" />
-                    {option.name}
-                  </Link>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+    <div className="px-4 py-6 sm:px-6 lg:px-8 animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-neutral-800">Dashboard</h1>
       </div>
 
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-      />
-    </>
+      <div className="mb-8">
+        <DashboardStatistics stats={stats} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {Object.entries(toolCategories).map(([key, category]) => (
+          <div key={key} className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold text-neutral-800">{category.title}</h2>
+              <p className="text-neutral-500 text-sm">{category.description}</p>
+            </div>
+            <div className="space-y-6">
+              {category.tools.map((tool) => (
+                <div key={tool.id} className="h-[200px]">
+                  <ToolTile
+                    title={tool.name}
+                    description={tool.description}
+                    icon={getToolIcon(tool.icon)}
+                    path={tool.path}
+                    featureKey={tool.featureKey}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
 
-export default ToolTile;
+export default Dashboard;
