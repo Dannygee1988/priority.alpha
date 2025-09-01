@@ -361,8 +361,8 @@ const Dashboard: React.FC = () => {
               </h2>
               
               <p className="text-neutral-600 mb-6 leading-relaxed">
-                You're currently on the <strong>Advisor</strong> plan. Upgrade to <strong>Professional</strong> 
-                or <strong>Enterprise</strong> to unlock all business management features including CRM, 
+                You're currently on the <strong>Advisor</strong> plan. Upgrade to <strong>Pri0r1ty Generate</strong> 
+                or <strong>Fan Sonar</strong> from £250/month to unlock all business management features including CRM, 
                 Social Media, Finance, HR, and more.
               </p>
               
@@ -377,7 +377,7 @@ const Dashboard: React.FC = () => {
                 </Button>
                 
                 <p className="text-sm text-neutral-500">
-                  Starting from £99.99/month • Cancel anytime
+                  Starting from £250/month • Cancel anytime
                 </p>
               </div>
             </div>
