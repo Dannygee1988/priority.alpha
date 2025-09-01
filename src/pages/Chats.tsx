@@ -43,70 +43,8 @@ const Chats: React.FC = () => {
   const [showUpgradeMessage, setShowUpgradeMessage] = useState(false);
 
   useEffect(() => {
-    // For now, show sample messages instead of loading from database
-    loadSampleMessages();
+    loadMessages();
   }, [user]);
-
-  const loadSampleMessages = () => {
-    // Sample conversation showing user question and advisor response
-    const sampleMessages: ChatMessage[] = [
-      {
-        id: '1',
-        conversation_id: 'conv-1',
-        role: 'user',
-        content: 'What are the key financial metrics I should be tracking for my startup?',
-        source: 'website',
-        metadata: {},
-        created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(), // 2 minutes ago
-        subject: 'Financial Metrics Inquiry',
-        sentiment_score: 0.7,
-        keywords: ['financial', 'metrics', 'startup', 'tracking'],
-        email: 'founder@techstartup.com'
-      },
-      {
-        id: '2',
-        conversation_id: 'conv-1',
-        role: 'bot',
-        content: 'For a startup, focus on these key financial metrics:\n\n1. **Cash Runway** - How long your current cash will last\n2. **Monthly Recurring Revenue (MRR)** - Predictable monthly income\n3. **Customer Acquisition Cost (CAC)** - Cost to acquire each customer\n4. **Lifetime Value (LTV)** - Total revenue from a customer\n5. **Burn Rate** - Monthly cash expenditure\n6. **Gross Margin** - Revenue minus direct costs\n\nTrack these monthly and aim for LTV:CAC ratio of 3:1 or higher. Would you like me to help you set up tracking for any specific metric?',
-        source: 'website',
-        metadata: {},
-        created_at: new Date(Date.now() - 1 * 60 * 1000).toISOString(), // 1 minute ago
-        subject: 'Financial Metrics Response',
-        sentiment_score: 0.8,
-        keywords: ['financial', 'metrics', 'advice', 'startup'],
-        email: 'advisor@pri0r1ty.com'
-      },
-      {
-        id: '3',
-        conversation_id: 'conv-2',
-        role: 'user',
-        content: 'How can I improve my company\'s social media engagement?',
-        source: 'website',
-        metadata: {},
-        created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // 10 minutes ago
-        subject: 'Social Media Strategy',
-        sentiment_score: 0.6,
-        keywords: ['social media', 'engagement', 'marketing'],
-        email: 'marketing@retailbrand.co.uk'
-      },
-      {
-        id: '4',
-        conversation_id: 'conv-2',
-        role: 'bot',
-        content: 'Here are proven strategies to boost social media engagement:\n\n**Content Strategy:**\n• Post consistently (3-5 times per week)\n• Share behind-the-scenes content\n• Use storytelling in your posts\n• Ask questions to encourage comments\n\n**Timing & Frequency:**\n• Post when your audience is most active\n• Use analytics to find optimal posting times\n• Maintain regular posting schedule\n\n**Community Building:**\n• Respond to comments within 2-4 hours\n• Share user-generated content\n• Collaborate with industry influencers\n\nWould you like me to analyze your current social media performance and suggest specific improvements?',
-        source: 'website',
-        metadata: {},
-        created_at: new Date(Date.now() - 8 * 60 * 1000).toISOString(), // 8 minutes ago
-        subject: 'Social Media Strategy Response',
-        sentiment_score: 0.9,
-        keywords: ['social media', 'engagement', 'strategy', 'advice'],
-        email: 'advisor@pri0r1ty.com'
-      }
-    ];
-
-    setMessages(sampleMessages);
-    setIsLoading(false);
-  };
   const loadMessages = async () => {
     if (!user?.id) return;
 
