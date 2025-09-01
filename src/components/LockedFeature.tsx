@@ -30,21 +30,21 @@ const LockedFeature: React.FC<LockedFeatureProps> = ({
       
       {/* Overlay */}
       <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center rounded-xl">
-        <div className="text-center p-8 max-w-sm">
-          <div className="w-12 h-12 rounded-full bg-neutral-100 text-neutral-500 flex items-center justify-center mx-auto mb-4">
+        <div className="text-center p-6 max-w-sm">
+          <div className="w-10 h-10 rounded-full bg-neutral-100 text-neutral-500 flex items-center justify-center mx-auto mb-3">
             <Lock size={24} />
           </div>
           
-          <h3 className="text-lg font-semibold text-neutral-800 mb-3">
+          <h3 className="text-base font-semibold text-neutral-800 mb-2">
             {featureName} Locked
           </h3>
           
-          <p className="text-sm text-neutral-600 mb-6 leading-relaxed">
+          <p className="text-xs text-neutral-600 mb-4 leading-relaxed">
             Upgrade to {requiredPlan} to unlock this feature and access the full platform.
           </p>
           
           <Button
-            size="md"
+            size="sm"
             leftIcon={<Crown size={16} />}
             rightIcon={<ArrowRight size={16} />}
             onClick={onUpgrade}
