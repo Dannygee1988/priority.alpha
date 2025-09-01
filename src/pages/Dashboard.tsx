@@ -147,21 +147,23 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, fea
           <Link 
             to={path}
             onClick={handleClick}
-            className={`bg-white rounded-xl shadow-sm border border-neutral-200 hover:shadow-md hover:border-neutral-300 transition-all group block h-full relative overflow-hidden ${
+            className={`bg-white rounded-xl shadow-md border-2 border-neutral-200 hover:border-neutral-300 transition-all group block h-full relative overflow-hidden ${
               isLocked ? 'cursor-not-allowed' : ''
             }`}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/3 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
             
-            <div className="relative flex flex-col items-center justify-center h-full p-6">
-              <div className="p-3 rounded-lg bg-primary/5 text-primary transform group-hover:scale-105 group-hover:bg-primary/10 transition-all duration-300 mb-4">
+            <div className="relative flex flex-col items-center justify-center h-full p-8">
+              <div className="p-4 rounded-xl bg-primary/5 text-primary transform group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary-700 transition-all duration-300 mb-6">
                 {icon}
               </div>
               
-              <h3 className="font-semibold text-base text-neutral-800 group-hover:text-primary transition-colors text-center mb-2">
+              <h3 className="font-bold text-lg text-primary group-hover:text-primary-700 transition-colors text-center mb-2">
                 {title}
               </h3>
               
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/95 to-white/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 p-8">
+                <p className="text-neutral-600 text-sm text-center leading-relaxed">
                   {description}
                 </p>
               </div>
