@@ -70,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Check if user is logged in from Supabase session
     const checkAuth = async () => {
+      setIsLoading(true);
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
