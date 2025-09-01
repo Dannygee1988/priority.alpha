@@ -40,6 +40,7 @@ const Chats: React.FC = () => {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   const [activePlatform, setActivePlatform] = useState<Platform>('all');
+  const [showUpgradeMessage, setShowUpgradeMessage] = useState(false);
 
   useEffect(() => {
     loadMessages();
@@ -127,12 +128,37 @@ const Chats: React.FC = () => {
   const isPlatformLocked = (platform: Platform) => {
     return platform !== 'all' && platform !== 'website';
   };
+
+  const handlePlatformClick = (platform: Platform) => {
+    if (isPlatformLocked(platform)) {
+      setShowUpgradeMessage(true);
+      setTimeout(() => setShowUpgradeMessage(false), 3000);
+      return;
+    }
+    setActivePlatform(platform);
+  };
+
   return (
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-neutral-800">Customer Chats</h1>
         <p className="text-neutral-500">View and analyze customer conversations across all platforms</p>
       </div>
+
+      {/* Upgrade Message */}
+      {showUpgradeMessage && (
+        <div className="mb-4 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+          <div className="flex items-center">
+            <Lock size={20} className="text-primary mr-3" />
+            <div>
+              <p className="text-primary font-medium">Upgrade for more Advisor channels</p>
+              <p className="text-sm text-primary-700">
+                Access WhatsApp, Telegram, Facebook, and Instagram chat channels with Pri0r1ty Generate or Fan Sonar
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
         {/* Platform Tabs */}
@@ -141,10 +167,12 @@ const Chats: React.FC = () => {
             {platforms.map((platform) => (
               <button
                 key={platform.id}
-                onClick={() => setActivePlatform(platform.id)}
+                onClick={() => handlePlatformClick(platform.id)}
                 className={`flex items-center px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
                   activePlatform === platform.id
                     ? 'text-primary border-b-2 border-primary bg-primary/5'
+                    : isPlatformLocked(platform.id)
+                    ? 'text-neutral-400 hover:text-neutral-500'
                     : 'text-neutral-600 hover:text-primary hover:bg-primary/5'
                 }`}
               >
