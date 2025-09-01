@@ -29,9 +29,9 @@ const LockedFeature: React.FC<LockedFeatureProps> = ({
       </div>
       
       {/* Overlay */}
-      <div className="absolute inset-0 bg-white/90 backdrop-blur-[2px] flex items-center justify-center rounded-xl border-2 border-warning-200">
+      <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-center rounded-xl">
         <div className="text-center p-8 max-w-sm">
-          <div className="w-12 h-12 rounded-full bg-warning-100 text-warning-600 flex items-center justify-center mx-auto mb-4">
+          <div className="w-12 h-12 rounded-full bg-neutral-100 text-neutral-500 flex items-center justify-center mx-auto mb-4">
             <Lock size={24} />
           </div>
           
@@ -48,7 +48,7 @@ const LockedFeature: React.FC<LockedFeatureProps> = ({
             leftIcon={<Crown size={16} />}
             rightIcon={<ArrowRight size={16} />}
             onClick={onUpgrade}
-            className="bg-gradient-to-r from-warning-500 to-warning-600 hover:from-warning-600 hover:to-warning-700 shadow-lg"
+            className="bg-primary hover:bg-primary-700"
           >
             Upgrade Now
           </Button>

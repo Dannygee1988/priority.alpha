@@ -318,18 +318,18 @@ const Dashboard: React.FC = () => {
         <DashboardStatistics stats={stats} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
         {Object.entries(toolCategories).map(([key, category]) => (
-          <div key={key} className="space-y-8">
+          <div key={key} className="space-y-10">
             <div>
-              <div className="border-b border-neutral-200 pb-4 mb-6">
+              <div className="pb-6 mb-8">
                 <h2 className="text-xl font-bold text-neutral-800">{category.title}</h2>
                 <p className="text-neutral-500 text-sm mt-1">{category.description}</p>
               </div>
             </div>
-            <div className="space-y-8">
+            <div className="space-y-10">
               {category.tools.map((tool) => (
-                <div key={tool.id} className="h-[240px]">
+                <div key={tool.id} className="h-[220px]">
                   <ToolTile
                     title={tool.name}
                     description={tool.description}
