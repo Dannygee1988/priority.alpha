@@ -274,6 +274,9 @@ const Chats: React.FC = () => {
                             <span className="text-sm text-neutral-500">
                               via {getSourceIcon(message.source)} {message.source}
                             </span>
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getTopicColor(message.Topic)}`}>
+                              {getTopicTag(message.Topic)}
+                            </span>
                           </div>
                           <div className="text-sm text-neutral-500">
                             {formatDate(message.created_at)}
@@ -308,9 +311,6 @@ const Chats: React.FC = () => {
                         <span className="text-sm font-medium text-neutral-700">
                           Subject: {message.subject}
                         </span>
-                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getTopicColor(message.Topic)}`}>
-                          {getTopicTag(message.Topic)}
-                        </span>
                       </div>
                     )}
 
@@ -323,7 +323,7 @@ const Chats: React.FC = () => {
                     </div>
 
                     {/* AI Response Section */}
-                    {message['Ai response'] && (
+                    {message['Ai response'] && message['Ai response'].trim() !== '' && (
                       <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
                         <div className="flex items-center mb-2">
                           <Bot size={16} className="text-primary mr-2" />
