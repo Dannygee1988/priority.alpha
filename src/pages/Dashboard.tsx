@@ -23,6 +23,7 @@ import { Stat, Tool } from '../types';
 import DashboardStatistics from '../components/DashboardStatistics';
 import ToolTile from '../components/ToolTile';
 import { useAuth } from '../context/AuthContext';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { getSocialMetrics, getUserCompany } from '../lib/api';
 
 const toolCategories = {
@@ -36,6 +37,7 @@ const toolCategories = {
         description: 'Manage and analyse social media presence',
         icon: 'share',
         path: '/social-media',
+        featureKey: 'social-media',
       },
       {
         id: '2',
@@ -43,6 +45,7 @@ const toolCategories = {
         description: 'Plan and execute marketing campaigns',
         icon: 'megaphone',
         path: '/marketing',
+        featureKey: 'pr',
       },
       {
         id: '4',
@@ -50,6 +53,7 @@ const toolCategories = {
         description: 'Manage public relations and communications',
         icon: 'globe',
         path: '/pr',
+        featureKey: 'pr',
       },
       {
         id: '12',
@@ -57,6 +61,7 @@ const toolCategories = {
         description: 'Business efficiency and file management tools',
         icon: 'wrench',
         path: '/tools',
+        featureKey: 'tools',
       },
     ]
   },
@@ -70,6 +75,7 @@ const toolCategories = {
         description: 'Schedule and manage appointments',
         icon: 'calendar',
         path: '/calendar',
+        featureKey: 'calendar',
       },
       {
         id: '14',
@@ -77,6 +83,7 @@ const toolCategories = {
         description: 'Messages and communications hub',
         icon: 'inbox',
         path: '/inbox',
+        featureKey: 'settings',
       },
       {
         id: '11',
@@ -84,6 +91,7 @@ const toolCategories = {
         description: 'Data management and analytics',
         icon: 'database',
         path: '/data',
+        featureKey: 'data',
       },
       {
         id: '16',
@@ -91,6 +99,7 @@ const toolCategories = {
         description: 'Configure application settings',
         icon: 'settings',
         path: '/settings',
+        featureKey: 'settings',
       },
     ]
   },
@@ -104,6 +113,7 @@ const toolCategories = {
         description: 'Business operations and management',
         icon: 'layout',
         path: '/management',
+        featureKey: 'management',
       },
       {
         id: '6',
@@ -111,6 +121,7 @@ const toolCategories = {
         description: 'Financial tracking and reporting',
         icon: 'pound',
         path: '/finance',
+        featureKey: 'finance',
       },
       {
         id: '9',
@@ -118,6 +129,7 @@ const toolCategories = {
         description: 'Employee management and HR tools',
         icon: 'user-cog',
         path: '/hr',
+        featureKey: 'hr',
       },
       {
         id: '10',
@@ -125,6 +137,7 @@ const toolCategories = {
         description: 'Customer relationship management',
         icon: 'user-plus',
         path: '/crm',
+        featureKey: 'crm',
       },
     ]
   },
@@ -138,6 +151,7 @@ const toolCategories = {
         description: 'Investor relations and management',
         icon: 'users',
         path: '/investors',
+        featureKey: 'investors',
       },
       {
         id: '7',
@@ -145,6 +159,7 @@ const toolCategories = {
         description: 'Community engagement and management',
         icon: 'users2',
         path: '/community',
+        featureKey: 'community',
       },
       {
         id: '8',
@@ -152,6 +167,7 @@ const toolCategories = {
         description: 'Business insights and analytics',
         icon: 'chart',
         path: '/analytics',
+        featureKey: 'analytics',
       },
       {
         id: '15',
@@ -159,6 +175,7 @@ const toolCategories = {
         description: 'AI-powered business advice and insights',
         icon: 'brain',
         path: '/advisor',
+        featureKey: 'advisor',
       },
     ]
   }
@@ -205,6 +222,7 @@ const getToolIcon = (icon: string) => {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { hasFeatureAccess } = useFeatureAccess();
   const [stats, setStats] = useState<Stat[]>([
     {
       id: '1',
@@ -315,6 +333,7 @@ const Dashboard: React.FC = () => {
                     description={tool.description}
                     icon={getToolIcon(tool.icon)}
                     path={tool.path}
+                    featureKey={tool.featureKey}
                   />
                 </div>
               ))}

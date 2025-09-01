@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import LockedFeature from './LockedFeature';
+import UpgradeModal from './UpgradeModal';
 import {
   PenSquare,
   MessageSquare,
@@ -38,6 +41,7 @@ interface ToolTileProps {
   description: string;
   icon: React.ReactNode;
   path: string;
+  featureKey?: string;
 }
 
 const socialMediaOptions = [
@@ -90,11 +94,21 @@ const prOptions = [
   },
 ];
 
-const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) => {
+const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path, featureKey }) => {
+  const { isFeatureLocked } = useFeatureAccess();
   const [showPopup, setShowPopup] = useState(false);
   const [showNestedPopup, setShowNestedPopup] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const isLocked = featureKey ? isFeatureLocked(featureKey) : false;
 
   const handleClick = (e: React.MouseEvent) => {
+    if (isLocked) {
+      e.preventDefault();
+      setShowUpgradeModal(true);
+      return;
+    }
+
     if (title === 'Social Media' || title === 'Tools' || title === 'Community' || title === 'Investors' || title === 'Public Relations') {
       e.preventDefault();
       setShowPopup(!showPopup);
@@ -117,82 +131,97 @@ const ToolTile: React.FC<ToolTileProps> = ({ title, description, icon, path }) =
   };
 
   return (
-    <div className="relative h-full">
-      <Link 
-        to={path}
-        onClick={handleClick}
-        className="bg-white rounded-xl shadow-sm border border-neutral-100 transition-all group block h-full relative overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
-        
-        <div className="relative flex flex-col items-center justify-center h-full p-6">
-          <div className="p-4 rounded-xl bg-primary/5 text-primary transform group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary-700 transition-all duration-300">
-            {icon}
-          </div>
-          
-          <h3 className="font-bold text-lg text-primary mt-4 group-hover:text-primary-700 transition-colors">
-            {title}
-          </h3>
-          
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/95 to-white/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-xl">
-            <p className="text-neutral-600 text-sm px-4 text-center">
-              {description}
-            </p>
-          </div>
-        </div>
-      </Link>
+    <>
+      <div className="relative h-full">
+        <LockedFeature
+          isLocked={isLocked}
+          featureName={title}
+          onUpgrade={() => setShowUpgradeModal(true)}
+        >
+          <Link 
+            to={path}
+            onClick={handleClick}
+            className={`bg-white rounded-xl shadow-sm border border-neutral-100 transition-all group block h-full relative overflow-hidden ${
+              isLocked ? 'cursor-not-allowed' : ''
+            }`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
+            
+            <div className="relative flex flex-col items-center justify-center h-full p-6">
+              <div className="p-4 rounded-xl bg-primary/5 text-primary transform group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary-700 transition-all duration-300">
+                {icon}
+              </div>
+              
+              <h3 className="font-bold text-lg text-primary mt-4 group-hover:text-primary-700 transition-colors">
+                {title}
+              </h3>
+              
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/95 to-white/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-xl">
+                <p className="text-neutral-600 text-sm px-4 text-center">
+                  {description}
+                </p>
+              </div>
+            </div>
+          </Link>
+        </LockedFeature>
 
-      {showPopup && (getOptions().length > 0) && (
-        <div className="absolute z-50 left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 animate-fade-in">
-          {getOptions().map((option) => (
-            <div key={option.name}>
-              {option.submenu ? (
-                <div>
-                  <button
-                    onClick={(e) => handleNestedClick(e, option.name)}
-                    className="w-full flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
+        {showPopup && (getOptions().length > 0) && !isLocked && (
+          <div className="absolute z-50 left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 animate-fade-in">
+            {getOptions().map((option) => (
+              <div key={option.name}>
+                {option.submenu ? (
+                  <div>
+                    <button
+                      onClick={(e) => handleNestedClick(e, option.name)}
+                      className="w-full flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
+                    >
+                      <option.icon size={18} className="mr-3" />
+                      <span className="flex-1">{option.name}</span>
+                      <ChevronDown
+                        size={16}
+                        className={`transition-transform ${showNestedPopup === option.name ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {showNestedPopup === option.name && (
+                      <div className="pl-8 bg-neutral-50">
+                        {option.submenu.map((subOption) => (
+                          <Link
+                            key={subOption.name}
+                            to={subOption.path}
+                            className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
+                            onClick={() => {
+                              setShowPopup(false);
+                              setShowNestedPopup(null);
+                            }}
+                          >
+                            <subOption.icon size={18} className="mr-3" />
+                            {subOption.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Link
+                    to={option.path}
+                    className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
+                    onClick={() => setShowPopup(false)}
                   >
                     <option.icon size={18} className="mr-3" />
-                    <span className="flex-1">{option.name}</span>
-                    <ChevronDown
-                      size={16}
-                      className={`transition-transform ${showNestedPopup === option.name ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-                  {showNestedPopup === option.name && (
-                    <div className="pl-8 bg-neutral-50">
-                      {option.submenu.map((subOption) => (
-                        <Link
-                          key={subOption.name}
-                          to={subOption.path}
-                          className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
-                          onClick={() => {
-                            setShowPopup(false);
-                            setShowNestedPopup(null);
-                          }}
-                        >
-                          <subOption.icon size={18} className="mr-3" />
-                          {subOption.name}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  to={option.path}
-                  className="flex items-center px-4 py-2 text-sm text-neutral-700 hover:bg-primary/5 hover:text-primary transition-colors"
-                  onClick={() => setShowPopup(false)}
-                >
-                  <option.icon size={18} className="mr-3" />
-                  {option.name}
-                </Link>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+                    {option.name}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+      />
+    </>
   );
 };
 
