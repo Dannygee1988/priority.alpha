@@ -290,6 +290,28 @@ const Dashboard: React.FC = () => {
     loadSocialMetrics();
   }, [user]);
 
+  const getFeatureKey = (name: string) => {
+    switch (name) {
+      case 'Social Media': return 'social-media';
+      case 'Marketing': return 'marketing';
+      case 'Public Relations': return 'pr';
+      case 'Tools': return 'tools';
+      case 'Calendar': return 'calendar';
+      case 'Inbox': return 'inbox';
+      case 'Data': return 'data';
+      case 'Settings': return 'settings';
+      case 'Management': return 'management';
+      case 'Finance': return 'finance';
+      case 'Human Resources': return 'hr';
+      case 'CRM': return 'crm';
+      case 'Investors': return 'investors';
+      case 'Community': return 'community';
+      case 'Analytics': return 'analytics';
+      case 'Advisor': return 'advisor';
+      default: return name.toLowerCase().replace(/\s+/g, '-');
+    }
+  };
+
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8 animate-fade-in">
       <div className="mb-6">
@@ -309,37 +331,12 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="space-y-4">
               {category.tools.map((tool) => (
-                const getFeatureKey = (name: string) => {
-                  switch (name) {
-                    case 'Social Media': return 'social-media';
-                    case 'Marketing': return 'marketing';
-                    case 'Public Relations': return 'pr';
-                    case 'Tools': return 'tools';
-                    case 'Calendar': return 'calendar';
-                    case 'Inbox': return 'inbox';
-                    case 'Data': return 'data';
-                    case 'Settings': return 'settings';
-                    case 'Management': return 'management';
-                    case 'Finance': return 'finance';
-                    case 'Human Resources': return 'hr';
-                    case 'CRM': return 'crm';
-                    case 'Investors': return 'investors';
-                    case 'Community': return 'community';
-                    case 'Analytics': return 'analytics';
-                    case 'Advisor': return 'advisor';
-                    default: return name.toLowerCase().replace(/\s+/g, '-');
-                  }
-                };
-                
-                const featureKey = getFeatureKey(tool.name);
-                const hasAccess = hasFeatureAccess(featureKey);
-                
                 <div key={tool.id} className="h-[180px]">
                   <ToolTile
                     title={tool.name}
                     description={tool.description}
                     icon={getToolIcon(tool.icon)}
-                      disabled={!hasAccess}
+                    disabled={!hasFeatureAccess(getFeatureKey(tool.name))}
                     path={tool.path}
                   />
                 </div>
