@@ -132,7 +132,6 @@ const Chats: React.FC = () => {
   const handlePlatformClick = (platform: Platform) => {
     if (isPlatformLocked(platform)) {
       setShowUpgradeMessage(true);
-      setTimeout(() => setShowUpgradeMessage(false), 3000);
       return;
     }
     setActivePlatform(platform);
