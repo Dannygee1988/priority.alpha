@@ -640,6 +640,7 @@ const Data: React.FC = () => {
             </div>
           </div>
         )}
+
         {/* Upload Section */}
         {activeTab === 'upload' && (
           <div className="p-6">
@@ -725,6 +726,8 @@ const Data: React.FC = () => {
                 {error}
               </div>
             )}
+          </div>
+        )}
       </div>
     </div>
   );
