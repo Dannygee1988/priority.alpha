@@ -228,7 +228,7 @@ const Data: React.FC = () => {
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-neutral-800">Knowledge Base</h1>
-        <p className="text-neutral-500">Manage and analyze the data used to train your AI assistant</p>
+        <p className="text-neutral-500">Manage and analyse the data used to train your AI assistant</p>
       </div>
 
       {/* Statistics Grid */}
