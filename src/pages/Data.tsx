@@ -25,7 +25,7 @@ interface Document {
 
 const Data: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'documents' | 'upload'>('documents');
+  const [activeTab, setActiveTab] = useState<'documents' | 'upload' | 'urls'>('documents');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [url, setUrl] = useState('');
   const [urls, setUrls] = useState<string[]>([]);
@@ -42,10 +42,50 @@ const Data: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isProcessingUrls, setIsProcessingUrls] = useState(false);
+  const [trainingUrls, setTrainingUrls] = useState<string[]>([]);
+  const [isLoadingUrls, setIsLoadingUrls] = useState(false);
 
   useEffect(() => {
     loadData();
+    if (activeTab === 'urls') {
+      loadTrainingUrls();
+    }
   }, [user]);
+
+  useEffect(() => {
+    if (activeTab === 'urls') {
+      loadTrainingUrls();
+    }
+  }, [activeTab]);
+
+  const loadTrainingUrls = async () => {
+    if (!user?.id) return;
+
+    setIsLoadingUrls(true);
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        console.warn('No company found for user');
+        setIsLoadingUrls(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('training_urls')
+        .select('url')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTrainingUrls(data?.map(item => item.url).filter(Boolean) || []);
+    } catch (err) {
+      console.error('Error loading training URLs:', err);
+      setError('Failed to load training URLs. Please try again.');
+    } finally {
+      setIsLoadingUrls(false);
+    }
+  };
 
   const loadData = async () => {
     if (!user?.id) return;
@@ -189,6 +229,79 @@ const Data: React.FC = () => {
     setUrls(urls.filter(u => u !== urlToRemove));
   };
 
+  const handleRemoveTrainingUrl = async (urlToRemove: string) => {
+    if (!user?.id) return;
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      const { error } = await supabase
+        .from('training_urls')
+        .delete()
+        .eq('company_id', companyId)
+        .eq('url', urlToRemove);
+
+      if (error) throw error;
+      setTrainingUrls(trainingUrls.filter(u => u !== urlToRemove));
+    } catch (err) {
+      console.error('Error removing training URL:', err);
+      setError('Failed to remove URL. Please try again.');
+    }
+  };
+
+  const handleProcessUrls = async () => {
+    if (!user?.id || urls.length === 0) return;
+
+    setIsProcessingUrls(true);
+    setError(null);
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      // Save URLs to database
+      const urlInserts = urls.map(url => ({
+        company_id: companyId,
+        url: url
+      }));
+
+      const { error: insertError } = await supabase
+        .from('training_urls')
+        .insert(urlInserts);
+
+      if (insertError) throw insertError;
+
+      // Send to webhook for processing
+      const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/url-training', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          company_id: companyId,
+          urls: urls
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Processing failed with status ${response.status}`);
+      }
+
+      // Clear the URLs and reload training URLs
+      setUrls([]);
+      loadTrainingUrls();
+      loadData(); // Reload documents in case new ones were created
+    } catch (err) {
+      console.error('Error processing URLs:', err);
+      setError('Failed to process URLs. Please try again.');
+    } finally {
+      setIsProcessingUrls(false);
+    }
+  };
+
   const handleExtractSitemap = async () => {
     setExtractingSitemap(true);
     // Simulate sitemap extraction
@@ -307,6 +420,16 @@ const Data: React.FC = () => {
             >
               Upload Data
             </button>
+            <button
+              className={`px-6 py-3 text-sm font-medium ${
+                activeTab === 'urls'
+                  ? 'text-primary border-b-2 border-primary bg-primary/5'
+                  : 'text-neutral-600 hover:text-primary'
+              }`}
+              onClick={() => setActiveTab('urls')}
+            >
+              URLs
+            </button>
           </div>
         </div>
 
@@ -391,6 +514,132 @@ const Data: React.FC = () => {
           </div>
         )}
 
+        {/* URLs Tab */}
+        {activeTab === 'urls' && (
+          <div className="p-6">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-neutral-800 mb-2">URL Training Data</h2>
+              <p className="text-sm text-neutral-500">
+                Add URLs to extract content and build training data for your AI assistant
+              </p>
+            </div>
+
+            {/* Add URL Section */}
+            <div className="bg-neutral-50 rounded-lg border border-neutral-200 p-6 mb-6">
+              <h3 className="text-md font-medium text-neutral-800 mb-4">Add New URLs</h3>
+              <div className="space-y-4">
+                <div className="flex space-x-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Enter URL to train from..."
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      leftIcon={<Globe size={18} />}
+                      fullWidth
+                    />
+                  </div>
+                  <Button
+                    onClick={handleAddUrl}
+                    disabled={!url}
+                    className="whitespace-nowrap h-[42px]"
+                  >
+                    Add URL
+                  </Button>
+                </div>
+
+                {urls.length > 0 && (
+                  <div className="bg-white rounded-lg border border-neutral-200 p-4">
+                    <h4 className="text-sm font-medium text-neutral-700 mb-3">
+                      URLs to Process ({urls.length})
+                    </h4>
+                    <div className="space-y-2 mb-4">
+                      {urls.map((url, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between bg-neutral-50 p-3 rounded-lg border border-neutral-200"
+                        >
+                          <div className="flex items-center">
+                            <Globe size={18} className="text-primary mr-2" />
+                            <span className="text-sm text-neutral-700 break-all">{url}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveUrl(url)}
+                            className="text-error-600 hover:text-error-700"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <Button
+                        variant="outline"
+                        onClick={handleExtractSitemap}
+                        isLoading={extractingSitemap}
+                      >
+                        Extract Sitemap
+                      </Button>
+                      <Button
+                        onClick={handleProcessUrls}
+                        isLoading={isProcessingUrls}
+                        leftIcon={<Plus size={18} />}
+                      >
+                        {isProcessingUrls ? 'Processing URLs...' : 'Start Training'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Existing Training URLs */}
+            <div>
+              <h3 className="text-md font-medium text-neutral-800 mb-4">Training URLs</h3>
+              {isLoadingUrls ? (
+                <div className="flex justify-center items-center h-32">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                </div>
+              ) : trainingUrls.length > 0 ? (
+                <div className="bg-white rounded-lg border border-neutral-200">
+                  <div className="divide-y divide-neutral-200">
+                    {trainingUrls.map((trainingUrl, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 hover:bg-neutral-50"
+                      >
+                        <div className="flex items-center">
+                          <Globe size={18} className="text-success-500 mr-3" />
+                          <div>
+                            <span className="text-sm text-neutral-700 break-all">{trainingUrl}</span>
+                            <div className="text-xs text-success-600 mt-1">✓ Processed</div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveTrainingUrl(trainingUrl)}
+                          className="text-error-600 hover:text-error-700"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-neutral-50 rounded-lg border border-neutral-200">
+                  <Globe size={48} className="mx-auto text-neutral-300 mb-4" />
+                  <h3 className="text-lg font-medium text-neutral-800 mb-2">No Training URLs</h3>
+                  <p className="text-neutral-500">
+                    Add URLs above to start building training data from web content
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         {/* Upload Section */}
         {activeTab === 'upload' && (
           <div className="p-6">
@@ -476,70 +725,6 @@ const Data: React.FC = () => {
                 {error}
               </div>
             )}
-
-            {/* URL Training Section */}
-            <div className="mt-8">
-              <h2 className="text-lg font-semibold text-neutral-800 mb-4">URL Training Data</h2>
-              <div className="space-y-4">
-                <div className="flex space-x-2">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Enter URL to train from..."
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      leftIcon={<Globe size={18} />}
-                      fullWidth
-                    />
-                  </div>
-                  <Button
-                    onClick={handleAddUrl}
-                    disabled={!url}
-                    className="whitespace-nowrap h-[42px]"
-                  >
-                    Add URL
-                  </Button>
-                </div>
-
-                {urls.length > 0 && (
-                  <div className="bg-neutral-50 rounded-lg border border-neutral-200 p-4">
-                    <div className="space-y-2">
-                      {urls.map((url, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between bg-white p-3 rounded-lg border border-neutral-200"
-                        >
-                          <div className="flex items-center">
-                            <Globe size={18} className="text-primary" />
-                            <span className="ml-2 text-sm text-neutral-700">{url}</span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveUrl(url)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-4 flex justify-between items-center">
-                      <Button
-                        variant="outline"
-                        onClick={handleExtractSitemap}
-                        isLoading={extractingSitemap}
-                      >
-                        Extract Sitemap
-                      </Button>
-                      <Button>
-                        Start Training
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
