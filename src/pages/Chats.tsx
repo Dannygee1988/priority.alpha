@@ -170,7 +170,7 @@ const Chats: React.FC = () => {
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-neutral-800">Customer Chats</h1>
-        <p className="text-neutral-500">View and analyze customer conversations across all platforms</p>
+        <p className="text-neutral-500">View and analyse customer conversations across all platforms</p>
       </div>
 
       {/* Upgrade Message */}
