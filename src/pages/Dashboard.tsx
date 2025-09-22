@@ -361,7 +361,7 @@ const Dashboard: React.FC = () => {
               </h2>
               
               <p className="text-neutral-600 mb-6 leading-relaxed">
-                You're currently on the <strong>Advisor</strong> plan. Upgrade to <strong>Pri0r1ty Generate</strong> 
+                You're currently on the <strong>Advisor</strong> plan. Upgrade to <strong>Pri0r1ty Generate </strong> 
                 or <strong>Fan Sonar</strong> from £250/month to unlock all business management features including CRM, 
                 Social Media, Finance, HR, and more.
               </p>
