@@ -370,7 +370,7 @@ const Dashboard: React.FC = () => {
                 <Button
                   size="lg"
                   leftIcon={<Crown size={20} />}
-                  onClick={() => setShowUpgradeModal(true)}
+                  disabled={true}
                   className="bg-gradient-to-r from-warning-500 to-warning-600 hover:from-warning-600 hover:to-warning-700 text-white w-full"
                 >
                   Upgrade Now
