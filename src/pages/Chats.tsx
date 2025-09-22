@@ -53,7 +53,7 @@ const Chats: React.FC = () => {
     loadMessages();
     loadCompanyLogo();
   }, [user]);
-  const loadMessages = async () => {
+
   const loadCompanyLogo = async () => {
     if (!user?.id) return;
 
@@ -74,6 +74,7 @@ const Chats: React.FC = () => {
     }
   };
 
+  const loadMessages = async () => {
     if (!user?.id) return;
 
     try {
