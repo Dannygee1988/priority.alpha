@@ -293,14 +293,12 @@ const Chats: React.FC = () => {
                         }`}>
                           {message.role === 'user' ? (
                             <User size={18} />
-                          ) : companyLogo ? (
+                          ) : (
                             <img 
-                              src={companyLogo} 
-                              alt="Company Logo" 
+                              src="https://res.cloudinary.com/deyzbqzya/image/upload/v1750009661/Blue_Pri0r1ty_Icon_fsmbrw.png" 
+                              alt="Pri0r1ty AI" 
                               className="w-full h-full object-cover"
                             />
-                          ) : (
-                            <Bot size={18} className="text-accent" />
                           )}
                         </div>
                         <div>
@@ -364,15 +362,11 @@ const Chats: React.FC = () => {
                       <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
                         <div className="flex items-center mb-2">
                           <div className="w-4 h-4 rounded-full overflow-hidden mr-2 flex items-center justify-center bg-neutral-100">
-                            {companyLogo ? (
-                              <img 
-                                src={companyLogo} 
-                                alt="Company Logo" 
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Bot size={12} className="text-primary" />
-                            )}
+                            <img 
+                              src="https://res.cloudinary.com/deyzbqzya/image/upload/v1750009661/Blue_Pri0r1ty_Icon_fsmbrw.png" 
+                              alt="Pri0r1ty AI" 
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                           <span className="text-sm font-medium text-primary">AI Advisor Response</span>
                         </div>
