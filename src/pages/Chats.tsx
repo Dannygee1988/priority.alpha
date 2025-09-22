@@ -294,11 +294,15 @@ const Chats: React.FC = () => {
                           {message.role === 'user' ? (
                             <User size={18} />
                           ) : (
-                            <img 
-                              src="https://res.cloudinary.com/deyzbqzya/image/upload/v1750009661/Blue_Pri0r1ty_Icon_fsmbrw.png" 
-                              alt="Pri0r1ty AI" 
-                              className="w-full h-full object-cover"
-                            />
+                            companyLogo ? (
+                              <img 
+                                src={companyLogo} 
+                                alt="Company Logo" 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Bot size={18} className="text-neutral-500" />
+                            )
                           )}
                         </div>
                         <div>
