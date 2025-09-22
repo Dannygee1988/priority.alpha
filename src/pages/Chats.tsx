@@ -22,6 +22,10 @@ interface ChatMessage {
   'Topic': string | null;
 }
 
+interface CompanyProfile {
+  logo_url: string | null;
+}
+
 type Platform = 'all' | 'whatsapp' | 'telegram' | 'facebook' | 'instagram' | 'website';
 
 const platforms: { id: Platform; name: string; emoji: string }[] = [
@@ -36,6 +40,7 @@ const platforms: { id: Platform; name: string; emoji: string }[] = [
 const Chats: React.FC = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,8 +51,29 @@ const Chats: React.FC = () => {
 
   useEffect(() => {
     loadMessages();
+    loadCompanyLogo();
   }, [user]);
   const loadMessages = async () => {
+  const loadCompanyLogo = async () => {
+    if (!user?.id) return;
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      const { data, error } = await supabase
+        .from('company_profiles')
+        .select('logo_url')
+        .eq('id', companyId)
+        .single();
+
+      if (error) throw error;
+      setCompanyLogo(data?.logo_url || null);
+    } catch (err) {
+      console.error('Error loading company logo:', err);
+    }
+  };
+
     if (!user?.id) return;
 
     try {
@@ -259,12 +285,22 @@ const Chats: React.FC = () => {
                   <div className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-4">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center overflow-hidden ${
                           message.role === 'user' 
-                            ? 'bg-primary/10 text-primary' 
-                            : 'bg-accent/10 text-accent'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-neutral-100'
                         }`}>
-                          {message.role === 'user' ? <User size={18} /> : <Bot size={18} />}
+                          {message.role === 'user' ? (
+                            <User size={18} />
+                          ) : companyLogo ? (
+                            <img 
+                              src={companyLogo} 
+                              alt="Company Logo" 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Bot size={18} className="text-accent" />
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center space-x-2">
@@ -326,7 +362,17 @@ const Chats: React.FC = () => {
                     {expandedMessage === message.id && message['Ai response'] && message['Ai response'].trim() !== '' && (
                       <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
                         <div className="flex items-center mb-2">
-                          <Bot size={16} className="text-primary mr-2" />
+                          <div className="w-4 h-4 rounded-full overflow-hidden mr-2 flex items-center justify-center bg-neutral-100">
+                            {companyLogo ? (
+                              <img 
+                                src={companyLogo} 
+                                alt="Company Logo" 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Bot size={12} className="text-primary" />
+                            )}
+                          </div>
                           <span className="text-sm font-medium text-primary">AI Advisor Response</span>
                         </div>
                         <p className="text-neutral-700 whitespace-pre-wrap text-sm">
