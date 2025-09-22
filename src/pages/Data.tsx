@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Upload, FileText, Database, Layers, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X } from 'lucide-react';
+import { Search, Upload, FileText, Database, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -8,7 +8,6 @@ import { supabase } from '../lib/supabase';
 
 interface DocumentStats {
   totalSize: number;
-  totalTokens: number;
   totalDocuments: number;
 }
 
@@ -34,7 +33,6 @@ const Data: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [stats, setStats] = useState<DocumentStats>({
     totalSize: 0,
-    totalTokens: 0,
     totalDocuments: 0
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -112,7 +110,6 @@ const Data: React.FC = () => {
       // Calculate stats from the documents
       const stats = {
         totalSize: documentsData?.reduce((acc, doc) => acc + (doc.size || 0), 0) || 0,
-        totalTokens: documentsData?.reduce((acc, doc) => acc + (doc.token_count || 0), 0) || 0,
         totalDocuments: documentsData?.length || 0
       };
 
@@ -370,17 +367,6 @@ const Data: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-neutral-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-neutral-600 text-sm font-medium">Total Tokens</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
-                {stats.totalTokens ? stats.totalTokens.toLocaleString() : '-'}
-              </h3>
-            </div>
-            <Layers className="text-warning-500" size={24} />
-          </div>
-        </div>
 
         <div className="bg-white p-6 rounded-lg border border-neutral-200">
           <div className="flex justify-between items-start">
@@ -467,7 +453,6 @@ const Data: React.FC = () => {
                       <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Size</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Uploaded</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Tokens</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500"></th>
                     </tr>
                   </thead>
@@ -488,7 +473,6 @@ const Data: React.FC = () => {
                         <td className="py-3 px-4 text-sm text-neutral-600">
                           {new Date(doc.created_at).toLocaleDateString()}
                         </td>
-                        <td className="py-3 px-4 text-sm text-neutral-600">{doc.token_count?.toLocaleString() || '-'}</td>
                         <td className="py-3 px-4">
                           <button className="p-1 hover:bg-neutral-100 rounded-full">
                             <MoreVertical size={16} className="text-neutral-400" />
