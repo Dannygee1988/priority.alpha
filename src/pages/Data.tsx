@@ -446,13 +446,6 @@ const Data: React.FC = () => {
                   fullWidth
                 />
               </div>
-              <Button
-                variant="outline"
-                leftIcon={<Filter size={18} />}
-                className="ml-2"
-              >
-                Filter
-              </Button>
             </div>
 
             {error && (
