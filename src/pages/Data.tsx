@@ -193,7 +193,12 @@ const Data: React.FC = () => {
       formData.append('company_name', companyData.name);
       formData.append('file_count', selectedFiles.length.toString());
 
-      const response = await fetch('https://n8n.srv997647.hstgr.cloud/webhook/821b6f3f-f635-422b-916c-b1aed0f2d96f', {
+      const webhookUrl = import.meta.env.VITE_UPLOAD_WEBHOOK_URL;
+      if (!webhookUrl) {
+        throw new Error('Upload webhook URL is not configured. Please check your environment variables.');
+      }
+
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         body: formData
       });
