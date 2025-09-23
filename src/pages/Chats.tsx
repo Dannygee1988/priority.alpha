@@ -114,8 +114,8 @@ const Chats: React.FC = () => {
       if (error) throw error;
 
       if (messages && messages.length > 0) {
-        // Calculate unique conversations
-        const uniqueConversations = new Set(messages.map(m => m.conversation_id)).size;
+        // Total messages for the month
+        const totalMonthlyMessages = messages.length;
 
         // Calculate unique users (based on email)
         const uniqueUsers = new Set(messages.map(m => m.email).filter(Boolean)).size;
@@ -142,7 +142,7 @@ const Chats: React.FC = () => {
           .map(([keyword]) => keyword);
 
         setConversationStats({
-          totalMonthlyConversations: uniqueConversations,
+          totalMonthlyConversations: totalMonthlyMessages,
           topKeywords,
           averageSentimentScore: averageSentiment,
           totalUniqueUsers: uniqueUsers
