@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Upload, FileText, Database, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X, MessageSquare, Hash, Heart, Users } from 'lucide-react';
+import { Search, Upload, FileText, Database, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -11,12 +11,6 @@ interface DocumentStats {
   totalDocuments: number;
 }
 
-interface ConversationStats {
-  totalMonthlyConversations: number;
-  topKeywords: string[];
-  averageSentimentScore: number;
-  totalUniqueUsers: number;
-}
 interface Document {
   id: string;
   name: string;
@@ -41,12 +35,6 @@ const Data: React.FC = () => {
     totalSize: 0,
     totalDocuments: 0
   });
-  const [conversationStats, setConversationStats] = useState<ConversationStats>({
-    totalMonthlyConversations: 0,
-    topKeywords: [],
-    averageSentimentScore: 0,
-    totalUniqueUsers: 0
-  });
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
@@ -58,7 +46,6 @@ const Data: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    loadConversationStats();
     if (activeTab === 'urls') {
       loadTrainingUrls();
     }
@@ -70,70 +57,6 @@ const Data: React.FC = () => {
     }
   }, [activeTab]);
 
-  const loadConversationStats = async () => {
-    if (!user?.id) return;
-
-    try {
-      const companyId = await getUserCompany(user.id);
-      if (!companyId) {
-        console.warn('No company found for user');
-        return;
-      }
-
-      // Get current month's start and end dates
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-      // Fetch chatbot messages for this month
-      const { data: messages, error } = await supabase
-        .from('chatbot_messages')
-        .select('conversation_id, email, keywords, sentiment_score')
-        .eq('company_id', companyId)
-        .gte('created_at', startOfMonth.toISOString())
-        .lte('created_at', endOfMonth.toISOString());
-
-      if (error) throw error;
-
-      if (messages && messages.length > 0) {
-        // Calculate unique conversations
-        const uniqueConversations = new Set(messages.map(m => m.conversation_id)).size;
-
-        // Calculate unique users (based on email)
-        const uniqueUsers = new Set(messages.map(m => m.email).filter(Boolean)).size;
-
-        // Calculate average sentiment score
-        const sentimentScores = messages
-          .map(m => m.sentiment_score)
-          .filter(score => score !== null && score !== undefined);
-        const averageSentiment = sentimentScores.length > 0
-          ? sentimentScores.reduce((sum, score) => sum + score, 0) / sentimentScores.length
-          : 0;
-
-        // Get top keywords
-        const allKeywords = messages
-          .flatMap(m => m.keywords || [])
-          .filter(Boolean);
-        const keywordCounts = allKeywords.reduce((acc, keyword) => {
-          acc[keyword] = (acc[keyword] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-        const topKeywords = Object.entries(keywordCounts)
-          .sort(([,a], [,b]) => b - a)
-          .slice(0, 3)
-          .map(([keyword]) => keyword);
-
-        setConversationStats({
-          totalMonthlyConversations: uniqueConversations,
-          topKeywords,
-          averageSentimentScore: averageSentiment,
-          totalUniqueUsers: uniqueUsers
-        });
-      }
-    } catch (err) {
-      console.error('Error loading conversation stats:', err);
-    }
-  };
   const loadTrainingUrls = async () => {
     if (!user?.id) return;
 
@@ -418,69 +341,6 @@ const Data: React.FC = () => {
         <p className="text-neutral-500">Manage and analyse the data used to train your AI assistant</p>
       </div>
 
-      {/* Conversation Statistics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white p-6 rounded-lg border border-neutral-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-neutral-600 text-sm font-medium">Monthly Conversations</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
-                {conversationStats.totalMonthlyConversations || '-'}
-              </h3>
-            </div>
-            <MessageSquare className="text-primary" size={24} />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg border border-neutral-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-neutral-600 text-sm font-medium">Top Keywords</p>
-              <div className="mt-1">
-                {conversationStats.topKeywords.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {conversationStats.topKeywords.map((keyword, index) => (
-                      <span key={index} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                        {keyword}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <h3 className="text-2xl font-bold text-neutral-800">-</h3>
-                )}
-              </div>
-            </div>
-            <Hash className="text-success-500" size={24} />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg border border-neutral-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-neutral-600 text-sm font-medium">Average Sentiment</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
-                {conversationStats.averageSentimentScore > 0 
-                  ? `${(conversationStats.averageSentimentScore * 100).toFixed(0)}%`
-                  : '-'
-                }
-              </h3>
-            </div>
-            <Heart className="text-accent" size={24} />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg border border-neutral-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-neutral-600 text-sm font-medium">Unique Users</p>
-              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
-                {conversationStats.totalUniqueUsers || '-'}
-              </h3>
-            </div>
-            <Users className="text-warning-500" size={24} />
-          </div>
-        </div>
-      </div>
       {/* Statistics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="bg-white p-6 rounded-lg border border-neutral-200">
