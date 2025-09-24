@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Upload, FileText, Database, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X, MessageSquare, Hash, Heart, Users, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, Upload, FileText, Database, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X, MessageSquare, Hash, Heart, Users, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -47,6 +47,8 @@ const Data: React.FC = () => {
   const [isLoadingUrls, setIsLoadingUrls] = useState(false);
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
 
   useEffect(() => {
     loadData();
@@ -61,6 +63,10 @@ const Data: React.FC = () => {
     }
   }, [activeTab]);
 
+  // Reset to first page when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortField, sortDirection]);
   const loadTrainingUrls = async () => {
     if (!user?.id) return;
 
@@ -383,6 +389,50 @@ const Data: React.FC = () => {
     }
   });
   return (
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedDocuments.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedDocuments = sortedDocuments.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const generatePageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-neutral-800">Knowledge Base</h1>
@@ -480,6 +530,11 @@ const Data: React.FC = () => {
                   fullWidth
                 />
               </div>
+              {sortedDocuments.length > 0 && (
+                <div className="text-sm text-neutral-500">
+                  Showing {startIndex + 1}-{Math.min(endIndex, sortedDocuments.length)} of {sortedDocuments.length} documents
+                </div>
+              )}
             </div>
 
             {error && (
@@ -493,7 +548,8 @@ const Data: React.FC = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : sortedDocuments.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div>
+                <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-neutral-200">
@@ -529,7 +585,7 @@ const Data: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedDocuments.map((doc) => (
+                    {paginatedDocuments.map((doc) => (
                       <tr
                         key={doc.id}
                         className="border-b border-neutral-100 hover:bg-neutral-50"
@@ -555,6 +611,57 @@ const Data: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 pt-6 border-t border-neutral-200">
+                  <div className="text-sm text-neutral-500">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      leftIcon={<ChevronLeft size={16} />}
+                    >
+                      Previous
+                    </Button>
+                    
+                    <div className="flex space-x-1">
+                      {generatePageNumbers().map((page, index) => (
+                        <button
+                          key={index}
+                          onClick={() => typeof page === 'number' ? handlePageChange(page) : undefined}
+                          disabled={page === '...'}
+                          className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                            page === currentPage
+                              ? 'bg-primary text-white'
+                              : page === '...'
+                              ? 'text-neutral-400 cursor-default'
+                              : 'text-neutral-600 hover:bg-neutral-100'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      rightIcon={<ChevronRight size={16} />}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
             ) : (
               <div className="text-center py-12">
                 <p className="text-neutral-500">No documents found</p>
