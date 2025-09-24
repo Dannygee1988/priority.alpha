@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Upload, FileText, Database, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X } from 'lucide-react';
+import { Search, Upload, FileText, Database, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X, MessageSquare, Hash, Heart, Users, ChevronUp, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,8 @@ interface Document {
   updated_at: string;
 }
 
+type SortField = 'name' | 'created_at' | 'size';
+type SortDirection = 'asc' | 'desc';
 const Data: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'documents' | 'upload' | 'urls'>('documents');
@@ -43,6 +45,8 @@ const Data: React.FC = () => {
   const [isProcessingUrls, setIsProcessingUrls] = useState(false);
   const [trainingUrls, setTrainingUrls] = useState<string[]>([]);
   const [isLoadingUrls, setIsLoadingUrls] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   useEffect(() => {
     loadData();
@@ -122,6 +126,23 @@ const Data: React.FC = () => {
     }
   };
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ChevronUp size={14} className="text-neutral-300" />;
+    }
+    return sortDirection === 'asc' ? 
+      <ChevronUp size={14} className="text-primary" /> : 
+      <ChevronDown size={14} className="text-primary" />;
+  };
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -334,6 +355,33 @@ const Data: React.FC = () => {
     doc.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const sortedDocuments = [...filteredDocuments].sort((a, b) => {
+    let aValue: string | number;
+    let bValue: string | number;
+
+    switch (sortField) {
+      case 'name':
+        aValue = a.name.toLowerCase();
+        bValue = b.name.toLowerCase();
+        break;
+      case 'created_at':
+        aValue = new Date(a.created_at).getTime();
+        bValue = new Date(b.created_at).getTime();
+        break;
+      case 'size':
+        aValue = a.size;
+        bValue = b.size;
+        break;
+      default:
+        return 0;
+    }
+
+    if (sortDirection === 'asc') {
+      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+    } else {
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+    }
+  });
   return (
     <div className="px-4 py-8 animate-fade-in">
       <div className="mb-8">
@@ -444,20 +492,44 @@ const Data: React.FC = () => {
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : filteredDocuments.length > 0 ? (
+            ) : sortedDocuments.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-neutral-200">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Name</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                        <button
+                          onClick={() => handleSort('name')}
+                          className="flex items-center space-x-1 hover:text-neutral-700 transition-colors"
+                        >
+                          <span>Name</span>
+                          {getSortIcon('name')}
+                        </button>
+                      </th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Type</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Size</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">Uploaded</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                        <button
+                          onClick={() => handleSort('size')}
+                          className="flex items-center space-x-1 hover:text-neutral-700 transition-colors"
+                        >
+                          <span>Size</span>
+                          {getSortIcon('size')}
+                        </button>
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500">
+                        <button
+                          onClick={() => handleSort('created_at')}
+                          className="flex items-center space-x-1 hover:text-neutral-700 transition-colors"
+                        >
+                          <span>Uploaded</span>
+                          {getSortIcon('created_at')}
+                        </button>
+                      </th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-neutral-500"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredDocuments.map((doc) => (
+                    {sortedDocuments.map((doc) => (
                       <tr
                         key={doc.id}
                         className="border-b border-neutral-100 hover:bg-neutral-50"
