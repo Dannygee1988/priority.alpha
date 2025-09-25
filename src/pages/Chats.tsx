@@ -167,12 +167,19 @@ const Chats: React.FC = () => {
 
       const { data, error: fetchError } = await supabase
         .from('chatbot_messages')
-        .select('*, "Ai response", "Topic", session_id')
+        .select('*, "Ai response", "Topic", "Session Id"')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
-      setMessages(data || []);
+      
+      // Map "Session Id" to session_id for compatibility
+      const mappedData = (data || []).map(message => ({
+        ...message,
+        session_id: message['Session Id']
+      }));
+      
+      setMessages(mappedData);
     } catch (err) {
       console.error('Error loading messages:', err);
       setError('Failed to load messages. Please try again.');
