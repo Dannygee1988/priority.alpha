@@ -454,7 +454,7 @@ const Chats: React.FC = () => {
                         </div>
                         <div>
                           <span className="font-medium text-neutral-900">
-                            {sessionMessages[0]?.metadata?.user_name || sessionMessages[0]?.email || 'Anonymous User'}
+                            {sessionMessages[0]?.email || 'Anonymous User'}
                           </span>
                           <span className="text-sm text-neutral-500 ml-2">
                             via {getSourceIcon(sessionMessages[0]?.source)} {sessionMessages[0]?.source}
