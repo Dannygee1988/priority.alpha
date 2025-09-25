@@ -159,13 +159,6 @@ const Sidebar: React.FC = () => {
   };
 
   const handleNavigation = (path: string, hasSubmenu: boolean) => {
-    // Check if feature is locked
-    const featureKey = getFeatureKeyFromPath(path);
-    if (featureKey && isFeatureLocked(featureKey)) {
-      setShowUpgradeModal(true);
-      return;
-    }
-    
     if (!hasSubmenu) {
       navigate(path);
     }
@@ -219,18 +212,13 @@ const Sidebar: React.FC = () => {
         <div
           className={`
             flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
-            ${isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+            ${isLocked ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}
             ${isActive && !isLocked ? 'text-primary bg-primary/5' : isLocked ? 'text-neutral-400' : 'text-neutral-600 hover:text-primary hover:bg-primary/5'}
             ${!isExpanded && 'justify-center'}
             ${isSubmenuItem && 'pl-6'}
             ${isNestedSubmenuItem && 'pl-9'}
           `}
           onClick={() => {
-            if (isLocked) {
-              setShowUpgradeModal(true);
-              return;
-            }
-            
             if (hasSubmenu) {
               isSubmenuItem ? toggleNestedSubmenu(item.name) : toggleSubmenu(item.name);
             } else {
