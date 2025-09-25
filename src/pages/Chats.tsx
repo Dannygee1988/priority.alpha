@@ -509,7 +509,7 @@ const Chats: React.FC = () => {
                               
                               {message.subject && (
                                 <div className="mt-1">
-                                  <span className="text-sm font-medium text-neutral-600">
+                               {sessionMessages[0]?.metadata?.user_name || sessionMessages[0]?.email || 'Anonymous User'}
                                     Subject: {message.subject}
                                   </span>
                                 </div>
