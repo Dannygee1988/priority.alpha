@@ -19,6 +19,7 @@ interface ChatMessage {
   sentiment_score: number;
   keywords: string[];
   email: string;
+  name: string;
   'Ai response': string | null;
   'Topic': string | null;
 }
@@ -167,7 +168,7 @@ const Chats: React.FC = () => {
 
       const { data, error: fetchError } = await supabase
         .from('chatbot_messages')
-        .select('*, "Ai response", "Topic", "Session Id"')
+        .select('*, "Ai response", "Topic", "Session Id", name')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
@@ -250,11 +251,34 @@ const Chats: React.FC = () => {
     }
   };
 
+  // Helper function to get display name
+  const getCustomerDisplayName = (message: ChatMessage) => {
+    if (message.name && message.name.trim() !== '') {
+      return message.name;
+    }
+    if (message.email && message.email.trim() !== '') {
+      return message.email;
+    }
+    return 'Anonymous User';
+  };
+
+  // Helper function to get display name
+  const getCustomerDisplayName = (message: ChatMessage) => {
+    if (message.name && message.name.trim() !== '') {
+      return message.name;
+    }
+    if (message.email && message.email.trim() !== '') {
+      return message.email;
+    }
+    return 'Anonymous User';
+  };
+
   const filteredMessages = messages.filter(msg => {
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = 
       msg.content.toLowerCase().includes(searchLower) ||
       msg.email?.toLowerCase().includes(searchLower) ||
+      msg.name?.toLowerCase().includes(searchLower) ||
       msg.subject?.toLowerCase().includes(searchLower) ||
       msg.keywords?.some(k => k.toLowerCase().includes(searchLower));
 
@@ -415,7 +439,7 @@ const Chats: React.FC = () => {
           <div className="flex justify-between items-center mb-6">
             <div className="flex-1 max-w-md">
               <Input
-                placeholder="Search messages, emails, or keywords..."
+                placeholder="Search messages, emails, names, or keywords..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 leftIcon={<Search size={18} />}
@@ -454,7 +478,7 @@ const Chats: React.FC = () => {
                         </div>
                         <div>
                           <span className="font-medium text-neutral-900">
-                            {sessionMessages[0]?.email || 'Anonymous User'}
+                            {getCustomerDisplayName(sessionMessages[0])}
                           </span>
                           <span className="text-sm text-neutral-500 ml-2">
                             via {getSourceIcon(sessionMessages[0]?.source)} {sessionMessages[0]?.source}
