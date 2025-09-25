@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MessageSquare, User, Bot, ChevronDown, ChevronUp, Tag as TagIcon, Lock, Hash, Heart, Users } from 'lucide-react';
+import { Search, Filter, MessageSquare, User, Bot, ChevronDown, ChevronUp, Tag as TagIcon, Lock, Hash, Heart, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -63,6 +63,8 @@ const Chats: React.FC = () => {
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   const [activePlatform, setActivePlatform] = useState<Platform>('all');
   const [showUpgradeMessage, setShowUpgradeMessage] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [messagesPerPage] = useState(25);
 
   useEffect(() => {
     loadMessages();
@@ -297,6 +299,23 @@ const Chats: React.FC = () => {
     const latestB = Math.max(...messagesB.map(m => new Date(m.created_at).getTime()));
     return latestB - latestA;
   });
+
+  // Pagination calculations
+  const totalSessions = sortedSessions.length;
+  const totalPages = Math.ceil(totalSessions / messagesPerPage);
+  const startIndex = (currentPage - 1) * messagesPerPage;
+  const endIndex = startIndex + messagesPerPage;
+  const paginatedSessions = sortedSessions.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Reset to first page when search or platform changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activePlatform]);
+
   const isPlatformLocked = (platform: Platform) => {
     return platform !== 'all' && platform !== 'website';
   };
@@ -456,7 +475,7 @@ const Chats: React.FC = () => {
             </div>
           ) : filteredMessages.length > 0 ? (
             <div className="space-y-4">
-              {sortedSessions.map(([sessionId, sessionMessages]) => (
+              {paginatedSessions.map(([sessionId, sessionMessages]) => (
                 <div key={sessionId} className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
                   {/* Session Header */}
                   <div className="bg-neutral-50 px-4 py-3 border-b border-neutral-200">
@@ -597,6 +616,66 @@ const Chats: React.FC = () => {
                   </div>
                 </div>
               ))}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 pt-6 border-t border-neutral-200">
+                  <div className="text-sm text-neutral-500">
+                    Showing {startIndex + 1}-{Math.min(endIndex, totalSessions)} of {totalSessions} conversations
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      leftIcon={<ChevronLeft size={16} />}
+                    >
+                      Previous
+                    </Button>
+                    
+                    <div className="flex space-x-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNumber;
+                        if (totalPages <= 5) {
+                          pageNumber = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNumber = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNumber = totalPages - 4 + i;
+                        } else {
+                          pageNumber = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <button
+                            key={pageNumber}
+                            onClick={() => handlePageChange(pageNumber)}
+                            className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                              pageNumber === currentPage
+                                ? 'bg-primary text-white'
+                                : 'text-neutral-600 hover:bg-neutral-100'
+                            }`}
+                          >
+                            {pageNumber}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      rightIcon={<ChevronRight size={16} />}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-12">
