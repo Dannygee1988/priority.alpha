@@ -262,17 +262,6 @@ const Chats: React.FC = () => {
     return 'Anonymous User';
   };
 
-  // Helper function to get display name
-  const getCustomerDisplayName = (message: ChatMessage) => {
-    if (message.name && message.name.trim() !== '') {
-      return message.name;
-    }
-    if (message.email && message.email.trim() !== '') {
-      return message.email;
-    }
-    return 'Anonymous User';
-  };
-
   const filteredMessages = messages.filter(msg => {
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = 
