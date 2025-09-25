@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 interface ChatMessage {
   id: string;
   conversation_id: string;
+  session_id: string;
   role: 'user' | 'bot';
   content: string;
   source: 'website' | 'whatsapp' | 'telegram' | 'facebook' | 'instagram';
@@ -166,7 +167,7 @@ const Chats: React.FC = () => {
 
       const { data, error: fetchError } = await supabase
         .from('chatbot_messages')
-        .select('*, "Ai response", "Topic"')
+        .select('*, "Ai response", "Topic", session_id')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
@@ -260,6 +261,22 @@ const Chats: React.FC = () => {
     return messages.filter(msg => msg.source === platform).length;
   };
 
+  // Group messages by session_id
+  const groupedMessages = filteredMessages.reduce((groups, message) => {
+    const sessionId = message.session_id || 'no-session';
+    if (!groups[sessionId]) {
+      groups[sessionId] = [];
+    }
+    groups[sessionId].push(message);
+    return groups;
+  }, {} as Record<string, ChatMessage[]>);
+
+  // Sort sessions by most recent message
+  const sortedSessions = Object.entries(groupedMessages).sort(([, messagesA], [, messagesB]) => {
+    const latestA = Math.max(...messagesA.map(m => new Date(m.created_at).getTime()));
+    const latestB = Math.max(...messagesB.map(m => new Date(m.created_at).getTime()));
+    return latestB - latestA;
+  });
   const isPlatformLocked = (platform: Platform) => {
     return platform !== 'all' && platform !== 'website';
   };
@@ -419,123 +436,144 @@ const Chats: React.FC = () => {
             </div>
           ) : filteredMessages.length > 0 ? (
             <div className="space-y-4">
-              {filteredMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`bg-white rounded-lg border border-neutral-200 overflow-hidden transition-all ${
-                    selectedConversation === message.conversation_id ? 'ring-2 ring-primary' : ''
-                  }`}
-                >
-                  <div className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center overflow-hidden ${
-                          message.role === 'user' 
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-neutral-100'
-                        }`}>
-                          {message.role === 'user' ? (
-                            <User size={18} />
-                          ) : (
-                            companyLogo ? (
-                              <img 
-                                src={companyLogo} 
-                                alt="Company Logo" 
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Bot size={18} className="text-neutral-500" />
-                            )
-                          )}
+              {sortedSessions.map(([sessionId, sessionMessages]) => (
+                <div key={sessionId} className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
+                  {/* Session Header */}
+                  <div className="bg-neutral-50 px-4 py-3 border-b border-neutral-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                          <MessageSquare size={14} />
                         </div>
                         <div>
-                          <div className="flex items-center space-x-2">
-                            <span className="font-medium text-neutral-900">
-                              {message.email || 'Anonymous User'}
-                            </span>
-                            <span className="text-sm text-neutral-500">
-                              via {getSourceIcon(message.source)} {message.source}
-                            </span>
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getTopicColor(message.Topic)}`}>
-                              {getTopicTag(message.Topic)}
-                            </span>
-                          </div>
-                          <div className="text-sm text-neutral-500">
-                            {formatDate(message.created_at)}
-                          </div>
+                          <span className="font-medium text-neutral-900">
+                            {sessionMessages[0]?.email || 'Anonymous User'}
+                          </span>
+                          <span className="text-sm text-neutral-500 ml-2">
+                            via {getSourceIcon(sessionMessages[0]?.source)} {sessionMessages[0]?.source}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {message.sentiment_score !== null && (
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            getSentimentInfo(message.sentiment_score).color
-                          }`}>
-                            {getSentimentInfo(message.sentiment_score).label}
-                          </span>
-                        )}
-                        <button
-                          onClick={() => setExpandedMessage(
-                            expandedMessage === message.id ? null : message.id
-                          )}
-                          className="p-1 hover:bg-neutral-100 rounded-full"
-                        >
-                          {expandedMessage === message.id ? (
-                            <ChevronUp size={16} className="text-neutral-400" />
-                          ) : (
-                            <ChevronDown size={16} className="text-neutral-400" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    {message.subject && (
-                      <div className="mt-2">
-                        <span className="text-sm font-medium text-neutral-700">
-                          Subject: {message.subject}
+                        <span className="text-sm text-neutral-500">
+                          {sessionMessages.length} message{sessionMessages.length !== 1 ? 's' : ''}
+                        </span>
+                        <span className="text-sm text-neutral-500">
+                          {formatDate(sessionMessages[0]?.created_at)}
                         </span>
                       </div>
-                    )}
-
-                    <div className={`mt-2 ${
-                      expandedMessage === message.id ? '' : 'line-clamp-2'
-                    }`}>
-                      <p className="text-neutral-700 whitespace-pre-wrap">
-                        {message.content}
-                      </p>
                     </div>
+                  </div>
 
-                    {/* AI Response Section - Only show when expanded */}
-                    {expandedMessage === message.id && message['Ai response'] && message['Ai response'].trim() !== '' && (
-                      <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
-                        <div className="flex items-center mb-2">
-                          <div className="w-4 h-4 rounded-full overflow-hidden mr-2 flex items-center justify-center bg-neutral-100">
-                            <img 
-                              src="https://res.cloudinary.com/deyzbqzya/image/upload/v1750009661/Blue_Pri0r1ty_Icon_fsmbrw.png" 
-                              alt="Pri0r1ty AI" 
-                              className="w-full h-full object-cover"
-                            />
+                  {/* Session Messages */}
+                  <div className="divide-y divide-neutral-100">
+                    {sessionMessages.map((message) => (
+                      <div key={message.id} className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-4">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center overflow-hidden ${
+                              message.role === 'user' 
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-neutral-100'
+                            }`}>
+                              {message.role === 'user' ? (
+                                <User size={18} />
+                              ) : (
+                                companyLogo ? (
+                                  <img 
+                                    src={companyLogo} 
+                                    alt="Company Logo" 
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <Bot size={18} className="text-neutral-500" />
+                                )
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-neutral-500">
+                                  {formatDate(message.created_at)}
+                                </span>
+                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getTopicColor(message.Topic)}`}>
+                                  {getTopicTag(message.Topic)}
+                                </span>
+                              </div>
+                              
+                              {message.subject && (
+                                <div className="mt-1">
+                                  <span className="text-sm font-medium text-neutral-700">
+                                    Subject: {message.subject}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <span className="text-sm font-medium text-primary">AI Advisor Response</span>
+                          <div className="flex items-center space-x-2">
+                            {message.sentiment_score !== null && (
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                getSentimentInfo(message.sentiment_score).color
+                              }`}>
+                                {getSentimentInfo(message.sentiment_score).label}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => setExpandedMessage(
+                                expandedMessage === message.id ? null : message.id
+                              )}
+                              className="p-1 hover:bg-neutral-100 rounded-full"
+                            >
+                              {expandedMessage === message.id ? (
+                                <ChevronUp size={16} className="text-neutral-400" />
+                              ) : (
+                                <ChevronDown size={16} className="text-neutral-400" />
+                              )}
+                            </button>
+                          </div>
                         </div>
-                        <p className="text-neutral-700 whitespace-pre-wrap text-sm">
-                          {message['Ai response']}
-                        </p>
-                      </div>
-                    )}
 
-                    {expandedMessage === message.id && message.keywords && message.keywords.length > 0 && (
-                      <div className="mt-3 flex items-center flex-wrap gap-2">
-                        <TagIcon size={14} className="text-neutral-400" />
-                        {message.keywords.map((keyword, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-1 text-xs bg-neutral-100 text-neutral-700 rounded-full"
-                          >
-                            {keyword}
-                          </span>
-                        ))}
+                        <div className={`mt-2 ${
+                          expandedMessage === message.id ? '' : 'line-clamp-2'
+                        }`}>
+                          <p className="text-neutral-700 whitespace-pre-wrap">
+                            {message.content}
+                          </p>
+                        </div>
+
+                        {/* AI Response Section - Only show when expanded */}
+                        {expandedMessage === message.id && message['Ai response'] && message['Ai response'].trim() !== '' && (
+                          <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                            <div className="flex items-center mb-2">
+                              <div className="w-4 h-4 rounded-full overflow-hidden mr-2 flex items-center justify-center bg-neutral-100">
+                                <img 
+                                  src="https://res.cloudinary.com/deyzbqzya/image/upload/v1750009661/Blue_Pri0r1ty_Icon_fsmbrw.png" 
+                                  alt="Pri0r1ty AI" 
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <span className="text-sm font-medium text-primary">AI Advisor Response</span>
+                            </div>
+                            <p className="text-neutral-700 whitespace-pre-wrap text-sm">
+                              {message['Ai response']}
+                            </p>
+                          </div>
+                        )}
+
+                        {expandedMessage === message.id && message.keywords && message.keywords.length > 0 && (
+                          <div className="mt-3 flex items-center flex-wrap gap-2">
+                            <TagIcon size={14} className="text-neutral-400" />
+                            {message.keywords.map((keyword, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 text-xs bg-neutral-100 text-neutral-700 rounded-full"
+                              >
+                                {keyword}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
                 </div>
               ))}
