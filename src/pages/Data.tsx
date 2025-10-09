@@ -21,6 +21,7 @@ interface Document {
   url: string;
   created_at: string;
   updated_at: string;
+  GID: string;
 }
 
 type SortField = 'name' | 'created_at' | 'size';
@@ -377,7 +378,8 @@ const Data: React.FC = () => {
         },
         body: JSON.stringify({
           document_id: deleteConfirm.document.id,
-          company_id: companyId
+          company_id: companyId,
+          GID: deleteConfirm.document.GID
         })
       });
 
