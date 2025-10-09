@@ -472,7 +472,7 @@ const Data: React.FC = () => {
             <div>
               <p className="text-neutral-600 text-sm font-medium">Data Sources</p>
               <h3 className="text-2xl font-bold text-neutral-800 mt-1">
-                {documents.length || '-'}
+                {new Set(documents.map(doc => doc.type)).size || '-'}
               </h3>
             </div>
             <Database className="text-accent" size={24} />
