@@ -370,7 +370,7 @@ const Data: React.FC = () => {
         throw new Error('No company found');
       }
 
-      const response = await fetch('https://n8n.srv997647.hstgr.cloud/webhook/delete-document', {
+      const response = await fetch('https://n8n.srv997647.hstgr.cloud/webhook/ff0b1b90-f024-4cd9-8e73-6aab6de57301', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
