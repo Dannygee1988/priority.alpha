@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Upload, FileText, Database, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X, MessageSquare, Hash, Heart, Users, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Upload, FileText, Database, Filter, MoreVertical, FileSpreadsheet, File as FilePdf, FileJson, Globe, Plus, X, MessageSquare, Hash, Heart, Users, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useAuth } from '../context/AuthContext';
 import { getDocuments, getDocumentStats, getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
@@ -49,6 +50,10 @@ const Data: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; document: Document | null }>({ isOpen: false, document: null });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData();
@@ -67,6 +72,18 @@ const Data: React.FC = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, sortField, sortDirection]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const loadTrainingUrls = async () => {
     if (!user?.id) return;
 
@@ -341,6 +358,52 @@ const Data: React.FC = () => {
     }, 2000);
   };
 
+  const handleDeleteDocument = async () => {
+    if (!deleteConfirm.document || !user?.id) return;
+
+    setIsDeleting(true);
+    setError(null);
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        throw new Error('No company found');
+      }
+
+      const response = await fetch('https://n8n.srv997647.hstgr.cloud/webhook/delete-document', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          document_id: deleteConfirm.document.id,
+          company_id: companyId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Delete failed with status ${response.status}`);
+      }
+
+      setDeleteConfirm({ isOpen: false, document: null });
+      loadData();
+    } catch (err) {
+      console.error('Error deleting document:', err);
+      setError('Failed to delete document. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const toggleDropdown = (docId: string) => {
+    setOpenDropdown(openDropdown === docId ? null : docId);
+  };
+
+  const handleDeleteClick = (doc: Document) => {
+    setDeleteConfirm({ isOpen: true, document: doc });
+    setOpenDropdown(null);
+  };
+
   const getFileIcon = (type: string) => {
     switch (type) {
       case 'PDF':
@@ -602,10 +665,28 @@ const Data: React.FC = () => {
                         <td className="py-3 px-4 text-sm text-neutral-600">
                           {new Date(doc.created_at).toLocaleDateString()}
                         </td>
-                        <td className="py-3 px-4">
-                          <button className="p-1 hover:bg-neutral-100 rounded-full">
+                        <td className="py-3 px-4 relative">
+                          <button
+                            className="p-1 hover:bg-neutral-100 rounded-full"
+                            onClick={() => toggleDropdown(doc.id)}
+                          >
                             <MoreVertical size={16} className="text-neutral-400" />
                           </button>
+
+                          {openDropdown === doc.id && (
+                            <div
+                              ref={dropdownRef}
+                              className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-neutral-200 z-10 animate-fade-in"
+                            >
+                              <button
+                                onClick={() => handleDeleteClick(doc)}
+                                className="w-full px-4 py-2 text-left text-sm text-error-600 hover:bg-error-50 flex items-center space-x-2 rounded-lg transition-colors"
+                              >
+                                <Trash2 size={16} />
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -886,6 +967,18 @@ const Data: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, document: null })}
+        onConfirm={handleDeleteDocument}
+        title="Delete Document"
+        message={`Are you sure you want to delete "${deleteConfirm.document?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={isDeleting}
+        variant="danger"
+      />
     </div>
   );
 };
