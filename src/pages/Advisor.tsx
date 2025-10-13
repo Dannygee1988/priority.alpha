@@ -373,24 +373,31 @@ const Advisor: React.FC = () => {
         assistant_id: assistantId
       };
 
-      // Send webhook
+      // Send webhook and wait for response with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout
+
       const webhookResponse = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(webhookPayload)
+        body: JSON.stringify(webhookPayload),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!webhookResponse.ok) {
         const errorText = await webhookResponse.text();
         throw new Error(`Webhook failed with status ${webhookResponse.status}: ${errorText}`);
       }
 
+      // Wait for the webhook response from N8N
       const webhookData = await webhookResponse.json();
       console.log('Webhook response:', webhookData);
 
-      // Check if we got an immediate response - handle multiple possible formats
+      // Parse the assistant response - handle multiple possible formats
       let assistantContent = null;
       let assistantSources = undefined;
 
@@ -408,65 +415,70 @@ const Advisor: React.FC = () => {
       else if (webhookData && typeof webhookData === 'string') {
         assistantContent = webhookData;
       }
-      // Format 4: Message field
+      // Format 4: Message or response field
       else if (webhookData && webhookData.message) {
         assistantContent = webhookData.message;
         assistantSources = webhookData.sources || undefined;
       }
-
-      if (assistantContent) {
-        const assistantMessage: Message = {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: assistantContent,
-          timestamp: new Date(),
-          conversation_id: conversationId,
-          sources: assistantSources
-        };
-
-        setMessages(prev => [...prev, assistantMessage]);
-        setIsLoading(false);
-        setPendingMessageId(null);
-
-        // Clear timeout since we got a response
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
-
-        // Save assistant message to database
-        try {
-          await supabase
-            .from('advisor_messages')
-            .insert({
-              id: assistantMessage.id,
-              company_id: companyId,
-              role: 'assistant',
-              content: assistantMessage.content,
-              conversation_id: conversationId,
-              parent_id: messageId,
-              sources: assistantMessage.sources
-            });
-        } catch (dbError) {
-          console.error('Database save error:', dbError);
-        }
-
-        // Update conversations list
-        loadConversations();
-      } else {
-        // No immediate response, wait for real-time update
-        console.log('No immediate response, waiting for real-time update...');
-        // Set a timeout to stop loading if no response comes within 60 seconds
-        timeoutRef.current = setTimeout(() => {
-          setIsLoading(false);
-          setPendingMessageId(null);
-          setError('Response timeout - the assistant is taking longer than expected. Please try again.');
-        }, 60000); // 60 second timeout
+      else if (webhookData && webhookData.response) {
+        assistantContent = webhookData.response;
+        assistantSources = webhookData.sources || undefined;
       }
+
+      if (!assistantContent) {
+        throw new Error('No response received from webhook');
+      }
+
+      // Create assistant message with the webhook response
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: assistantContent,
+        timestamp: new Date(),
+        conversation_id: conversationId,
+        sources: assistantSources
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      setIsLoading(false);
+      setPendingMessageId(null);
+
+      // Clear timeout since we got a response
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+
+      // Save assistant message to database
+      try {
+        await supabase
+          .from('advisor_messages')
+          .insert({
+            id: assistantMessage.id,
+            company_id: companyId,
+            role: 'assistant',
+            content: assistantMessage.content,
+            conversation_id: conversationId,
+            parent_id: messageId,
+            sources: assistantMessage.sources
+          });
+      } catch (dbError) {
+        console.error('Database save error:', dbError);
+      }
+
+      // Update conversations list
+      loadConversations();
 
     } catch (err) {
       console.error('Error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+
+      // Handle fetch abort (timeout)
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('Request timeout - the assistant is taking longer than expected. Please try again.');
+      } else {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      }
+
       setIsLoading(false);
       setPendingMessageId(null);
     }
