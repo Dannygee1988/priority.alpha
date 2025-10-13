@@ -541,10 +541,10 @@ const GPT: React.FC = () => {
               <div className="max-w-md">
                 <Bot size={48} className="mx-auto text-primary mb-4" />
                 <h2 className="text-lg font-semibold text-neutral-800 mb-2">
-                  Ask Pri0r1ty GPT anything
+                  Ask Pri0r1ty Advisor anything
                 </h2>
                 <p className="text-neutral-500">
-                  Ask me anything about your business data, documents, or general business advice.
+                  Ask me anything about your data, documents, or general information about your business.
                 </p>
               </div>
             </div>
