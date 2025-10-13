@@ -18,6 +18,7 @@ import Chats from './pages/Chats';
 import Gallery from './pages/Gallery';
 import CVLibrary from './pages/CVLibrary';
 import Pr1Bit from './pages/Pr1Bit';
+import AdvisorCode from './pages/AdvisorCode';
 import AppLayout from './layouts/AppLayout';
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/gpt" element={<GPT />} />
             <Route path="/chats" element={<Chats />} />
+            <Route path="/advisor/code" element={<AdvisorCode />} />
             <Route path="/social-media/gallery" element={<Gallery />} />
             <Route path="/hr/cv-library" element={<CVLibrary />} />
             <Route path="/finance/pr1bit" element={<Pr1Bit />} />
