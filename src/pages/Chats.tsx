@@ -72,7 +72,20 @@ const Chats: React.FC = () => {
     loadMessages();
     loadCompanyLogo();
     loadConversationStats();
+    loadFavoritesFromLocalStorage();
   }, [user]);
+
+  const loadFavoritesFromLocalStorage = () => {
+    try {
+      const stored = localStorage.getItem('favoriteMessages');
+      if (stored) {
+        const favorites = JSON.parse(stored);
+        setFavoriteMessages(new Set(favorites));
+      }
+    } catch (err) {
+      console.error('Error loading favorites from localStorage:', err);
+    }
+  };
 
   const loadCompanyLogo = async () => {
     if (!user?.id) return;
@@ -375,16 +388,17 @@ Keywords: ${message.keywords.join(', ')}
   const toggleFavorite = async (messageId: string) => {
     try {
       const isFavorite = favoriteMessages.has(messageId);
+      const newFavoriteStatus = !isFavorite;
 
-      // Update in database
+      // Try to update in database
       const { error } = await supabase
         .from('chatbot_messages')
-        .update({ is_favorite: !isFavorite })
+        .update({ is_favorite: newFavoriteStatus })
         .eq('id', messageId);
 
       if (error) {
         console.error('Error updating favorite status:', error);
-        return;
+        // Still update local state even if database update fails
       }
 
       // Update local state
@@ -396,9 +410,12 @@ Keywords: ${message.keywords.join(', ')}
       }
       setFavoriteMessages(newFavorites);
 
+      // Save to localStorage as backup
+      localStorage.setItem('favoriteMessages', JSON.stringify(Array.from(newFavorites)));
+
       // Update messages state
       setMessages(prev => prev.map(msg =>
-        msg.id === messageId ? { ...msg, is_favorite: !isFavorite } : msg
+        msg.id === messageId ? { ...msg, is_favorite: newFavoriteStatus } : msg
       ));
     } catch (err) {
       console.error('Error toggling favorite:', err);
