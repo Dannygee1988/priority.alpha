@@ -390,15 +390,15 @@ const GPT: React.FC = () => {
       const webhookData = await webhookResponse.json();
 
       // Check if we got an immediate response
-      if (webhookData && Array.isArray(webhookData) && webhookData[0]?.output) {
-        
+      if (webhookData?.output) {
+
         const assistantMessage: Message = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: webhookData[0].output,
+          content: webhookData.output,
           timestamp: new Date(),
           conversation_id: conversationId,
-          sources: webhookData[0].sources || undefined
+          sources: webhookData.sources || undefined
         };
 
         setMessages(prev => [...prev, assistantMessage]);
