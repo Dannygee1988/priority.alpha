@@ -4,12 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
 
-type CodeTab = 'javascript' | 'css' | 'html' | 'live';
+type CodeTab = 'live' | 'javascript' | 'css' | 'html';
 
 interface AdvisorCodeData {
   id: string;
   company_id: string;
-  live: boolean;
+  live: string | null;
   javascript: string | null;
   css: string | null;
   html: string | null;
@@ -17,16 +17,16 @@ interface AdvisorCodeData {
 
 const AdvisorCode: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<CodeTab>('javascript');
+  const [activeTab, setActiveTab] = useState<CodeTab>('live');
   const [codeData, setCodeData] = useState<AdvisorCodeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
   const tabs = [
+    { id: 'live' as CodeTab, label: 'Live', icon: Globe },
     { id: 'javascript' as CodeTab, label: 'JavaScript', icon: Code },
     { id: 'css' as CodeTab, label: 'CSS', icon: Palette },
     { id: 'html' as CodeTab, label: 'HTML', icon: FileCode },
-    { id: 'live' as CodeTab, label: 'Live', icon: Globe },
   ];
 
   useEffect(() => {
@@ -63,11 +63,6 @@ const AdvisorCode: React.FC = () => {
 
   const getCurrentCode = () => {
     if (!codeData) return '';
-
-    if (activeTab === 'live') {
-      return codeData.live ? 'Active' : 'Inactive';
-    }
-
     return codeData[activeTab] || '';
   };
 
@@ -118,27 +113,6 @@ const AdvisorCode: React.FC = () => {
     );
   };
 
-  const renderLiveStatus = () => {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className={`inline-flex items-center justify-center w-24 h-24 rounded-full mb-4 ${
-            codeData?.live ? 'bg-green-100' : 'bg-neutral-100'
-          }`}>
-            <Globe size={48} className={codeData?.live ? 'text-green-600' : 'text-neutral-400'} />
-          </div>
-          <div className="text-2xl font-semibold text-neutral-800 mb-2">
-            {codeData?.live ? 'Active' : 'Inactive'}
-          </div>
-          <div className="text-neutral-600">
-            {codeData?.live
-              ? 'Your advisor code is currently live'
-              : 'Your advisor code is not active'}
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   if (loading) {
     return (
@@ -179,29 +153,27 @@ const AdvisorCode: React.FC = () => {
 
         <div className="relative">
           <div className="absolute top-4 right-4 z-10">
-            {activeTab !== 'live' && (
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 transition-colors shadow-sm"
-                disabled={!getCurrentCode()}
-              >
-                {copied ? (
-                  <>
-                    <Check size={16} className="text-green-600" />
-                    <span className="text-sm text-green-600">Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy size={16} />
-                    <span className="text-sm">Copy Code</span>
-                  </>
-                )}
-              </button>
-            )}
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 transition-colors shadow-sm"
+              disabled={!getCurrentCode()}
+            >
+              {copied ? (
+                <>
+                  <Check size={16} className="text-green-600" />
+                  <span className="text-sm text-green-600">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={16} />
+                  <span className="text-sm">Copy Code</span>
+                </>
+              )}
+            </button>
           </div>
 
           <div className="p-6 bg-neutral-50 min-h-[500px]">
-            {activeTab === 'live' ? renderLiveStatus() : renderCodeWithLineNumbers(getCurrentCode())}
+            {renderCodeWithLineNumbers(getCurrentCode())}
           </div>
         </div>
       </div>
