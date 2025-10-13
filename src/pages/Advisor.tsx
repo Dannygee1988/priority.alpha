@@ -388,17 +388,40 @@ const Advisor: React.FC = () => {
       }
 
       const webhookData = await webhookResponse.json();
+      console.log('Webhook response:', webhookData);
 
-      // Check if we got an immediate response
+      // Check if we got an immediate response - handle multiple possible formats
+      let assistantContent = null;
+      let assistantSources = undefined;
+
+      // Format 1: Array with output field
       if (webhookData && Array.isArray(webhookData) && webhookData[0]?.output) {
-        
+        assistantContent = webhookData[0].output;
+        assistantSources = webhookData[0].sources || undefined;
+      }
+      // Format 2: Direct object with output
+      else if (webhookData && webhookData.output) {
+        assistantContent = webhookData.output;
+        assistantSources = webhookData.sources || undefined;
+      }
+      // Format 3: Direct response string
+      else if (webhookData && typeof webhookData === 'string') {
+        assistantContent = webhookData;
+      }
+      // Format 4: Message field
+      else if (webhookData && webhookData.message) {
+        assistantContent = webhookData.message;
+        assistantSources = webhookData.sources || undefined;
+      }
+
+      if (assistantContent) {
         const assistantMessage: Message = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: webhookData[0].output,
+          content: assistantContent,
           timestamp: new Date(),
           conversation_id: conversationId,
-          sources: webhookData[0].sources || undefined
+          sources: assistantSources
         };
 
         setMessages(prev => [...prev, assistantMessage]);
@@ -432,6 +455,7 @@ const Advisor: React.FC = () => {
         loadConversations();
       } else {
         // No immediate response, wait for real-time update
+        console.log('No immediate response, waiting for real-time update...');
         // Set a timeout to stop loading if no response comes within 60 seconds
         timeoutRef.current = setTimeout(() => {
           setIsLoading(false);
