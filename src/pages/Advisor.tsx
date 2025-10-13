@@ -395,37 +395,46 @@ const Advisor: React.FC = () => {
 
       // Wait for the webhook response from N8N
       const webhookData = await webhookResponse.json();
-      console.log('Webhook response:', webhookData);
+      console.log('Webhook response received:', JSON.stringify(webhookData));
 
       // Parse the assistant response - handle multiple possible formats
       let assistantContent = null;
       let assistantSources = undefined;
 
-      // Format 1: Array with output field
-      if (webhookData && Array.isArray(webhookData) && webhookData[0]?.output) {
+      // Format 1: Array with output field (N8N format)
+      if (Array.isArray(webhookData) && webhookData.length > 0 && webhookData[0]?.output) {
+        console.log('Format 1: Array with output field');
         assistantContent = webhookData[0].output;
         assistantSources = webhookData[0].sources || undefined;
       }
       // Format 2: Direct object with output
-      else if (webhookData && webhookData.output) {
+      else if (webhookData && typeof webhookData === 'object' && webhookData.output) {
+        console.log('Format 2: Direct object with output');
         assistantContent = webhookData.output;
         assistantSources = webhookData.sources || undefined;
       }
       // Format 3: Direct response string
-      else if (webhookData && typeof webhookData === 'string') {
+      else if (typeof webhookData === 'string') {
+        console.log('Format 3: Direct response string');
         assistantContent = webhookData;
       }
-      // Format 4: Message or response field
-      else if (webhookData && webhookData.message) {
+      // Format 4: Message field
+      else if (webhookData && typeof webhookData === 'object' && webhookData.message) {
+        console.log('Format 4: Message field');
         assistantContent = webhookData.message;
         assistantSources = webhookData.sources || undefined;
       }
-      else if (webhookData && webhookData.response) {
+      // Format 5: Response field
+      else if (webhookData && typeof webhookData === 'object' && webhookData.response) {
+        console.log('Format 5: Response field');
         assistantContent = webhookData.response;
         assistantSources = webhookData.sources || undefined;
       }
 
+      console.log('Parsed assistant content:', assistantContent);
+
       if (!assistantContent) {
+        console.error('Failed to parse webhook response:', webhookData);
         throw new Error('No response received from webhook');
       }
 
@@ -470,7 +479,13 @@ const Advisor: React.FC = () => {
       loadConversations();
 
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Error in handleSubmit:', err);
+      console.error('Error type:', err instanceof Error ? err.constructor.name : typeof err);
+      console.error('Error details:', {
+        name: err instanceof Error ? err.name : 'unknown',
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : 'no stack'
+      });
 
       // Handle fetch abort (timeout)
       if (err instanceof Error && err.name === 'AbortError') {
