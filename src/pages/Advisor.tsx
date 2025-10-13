@@ -373,14 +373,19 @@ const Advisor: React.FC = () => {
         assistant_id: assistantId
       };
 
-      // Send webhook and wait for response with timeout
+      // Send webhook via Supabase Edge Function (to avoid CORS issues)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout
 
-      const webhookResponse = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/advisor-webhook`;
+
+      const webhookResponse = await fetch(edgeFunctionUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`
         },
         body: JSON.stringify(webhookPayload),
         signal: controller.signal
