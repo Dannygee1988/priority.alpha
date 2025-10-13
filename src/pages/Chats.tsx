@@ -132,12 +132,22 @@ const Chats: React.FC = () => {
 
       if (error) throw error;
 
+      // Fetch ALL chatbot messages to count unique users across all time
+      const { data: allMessages, error: allError } = await supabase
+        .from('chatbot_messages')
+        .select('email')
+        .eq('company_id', companyId);
+
+      if (allError) throw allError;
+
       if (messages && messages.length > 0) {
         // Total messages for the month
         const totalMonthlyMessages = messages.length;
 
-        // Calculate unique users (based on email)
-        const uniqueUsers = new Set(messages.map(m => m.email).filter(Boolean)).size;
+        // Calculate unique users across ALL chats (based on email)
+        const uniqueUsers = new Set(
+          (allMessages || []).map(m => m.email).filter(Boolean)
+        ).size;
 
         // Calculate average sentiment score
         const sentimentScores = messages
