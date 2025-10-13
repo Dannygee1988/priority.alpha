@@ -374,7 +374,7 @@ const GPT: React.FC = () => {
       };
 
       // Send webhook
-      const webhookResponse = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
+      const webhookResponse = await fetch('https://n8n.srv997647.hstgr.cloud/webhook-test/f7178db5-3e54-4f7d-a171-277d1d265bfa', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
