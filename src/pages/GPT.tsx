@@ -531,7 +531,7 @@ const GPT: React.FC = () => {
       <div className="flex-1 flex flex-col bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
         <div className="p-6 border-b border-neutral-200">
           <h1 className="text-2xl font-bold text-neutral-800">GPT</h1>
-          <p className="text-neutral-500">Get AI-powered insights and answers about your business</p>
+          <p className="text-neutral-500">Test your Pri0r1ty Advisor to see how it will respond </p>
         </div>
 
         {/* Messages Container */}
