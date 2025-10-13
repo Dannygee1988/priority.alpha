@@ -373,132 +373,100 @@ const Advisor: React.FC = () => {
         assistant_id: assistantId
       };
 
-      // Send webhook via Supabase Edge Function (to avoid CORS issues)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout
-
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/advisor-webhook`;
-
-      const webhookResponse = await fetch(edgeFunctionUrl, {
+      // Send webhook
+      const webhookResponse = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/25160821-3074-43d1-99ae-4108030d3eef', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(webhookPayload),
-        signal: controller.signal
+        body: JSON.stringify(webhookPayload)
       });
-
-      clearTimeout(timeoutId);
 
       if (!webhookResponse.ok) {
         const errorText = await webhookResponse.text();
         throw new Error(`Webhook failed with status ${webhookResponse.status}: ${errorText}`);
       }
 
-      // Wait for the webhook response from N8N
       const webhookData = await webhookResponse.json();
-      console.log('Webhook response received:', JSON.stringify(webhookData));
+      console.log('Webhook response:', webhookData);
 
-      // Parse the assistant response - handle multiple possible formats
+      // Check if we got an immediate response - handle multiple possible formats
       let assistantContent = null;
       let assistantSources = undefined;
 
-      // Format 1: Array with output field (N8N format)
-      if (Array.isArray(webhookData) && webhookData.length > 0 && webhookData[0]?.output) {
-        console.log('Format 1: Array with output field');
+      // Format 1: Array with output field
+      if (webhookData && Array.isArray(webhookData) && webhookData[0]?.output) {
         assistantContent = webhookData[0].output;
         assistantSources = webhookData[0].sources || undefined;
       }
       // Format 2: Direct object with output
-      else if (webhookData && typeof webhookData === 'object' && webhookData.output) {
-        console.log('Format 2: Direct object with output');
+      else if (webhookData && webhookData.output) {
         assistantContent = webhookData.output;
         assistantSources = webhookData.sources || undefined;
       }
       // Format 3: Direct response string
-      else if (typeof webhookData === 'string') {
-        console.log('Format 3: Direct response string');
+      else if (webhookData && typeof webhookData === 'string') {
         assistantContent = webhookData;
       }
       // Format 4: Message field
-      else if (webhookData && typeof webhookData === 'object' && webhookData.message) {
-        console.log('Format 4: Message field');
+      else if (webhookData && webhookData.message) {
         assistantContent = webhookData.message;
         assistantSources = webhookData.sources || undefined;
       }
-      // Format 5: Response field
-      else if (webhookData && typeof webhookData === 'object' && webhookData.response) {
-        console.log('Format 5: Response field');
-        assistantContent = webhookData.response;
-        assistantSources = webhookData.sources || undefined;
+
+      if (assistantContent) {
+        const assistantMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: assistantContent,
+          timestamp: new Date(),
+          conversation_id: conversationId,
+          sources: assistantSources
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        setIsLoading(false);
+        setPendingMessageId(null);
+
+        // Clear timeout since we got a response
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+
+        // Save assistant message to database
+        try {
+          await supabase
+            .from('advisor_messages')
+            .insert({
+              id: assistantMessage.id,
+              company_id: companyId,
+              role: 'assistant',
+              content: assistantMessage.content,
+              conversation_id: conversationId,
+              parent_id: messageId,
+              sources: assistantMessage.sources
+            });
+        } catch (dbError) {
+          console.error('Database save error:', dbError);
+        }
+
+        // Update conversations list
+        loadConversations();
+      } else {
+        // No immediate response, wait for real-time update
+        console.log('No immediate response, waiting for real-time update...');
+        // Set a timeout to stop loading if no response comes within 60 seconds
+        timeoutRef.current = setTimeout(() => {
+          setIsLoading(false);
+          setPendingMessageId(null);
+          setError('Response timeout - the assistant is taking longer than expected. Please try again.');
+        }, 60000); // 60 second timeout
       }
-
-      console.log('Parsed assistant content:', assistantContent);
-
-      if (!assistantContent) {
-        console.error('Failed to parse webhook response:', webhookData);
-        throw new Error('No response received from webhook');
-      }
-
-      // Create assistant message with the webhook response
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: assistantContent,
-        timestamp: new Date(),
-        conversation_id: conversationId,
-        sources: assistantSources
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-      setIsLoading(false);
-      setPendingMessageId(null);
-
-      // Clear timeout since we got a response
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-
-      // Save assistant message to database
-      try {
-        await supabase
-          .from('advisor_messages')
-          .insert({
-            id: assistantMessage.id,
-            company_id: companyId,
-            role: 'assistant',
-            content: assistantMessage.content,
-            conversation_id: conversationId,
-            parent_id: messageId,
-            sources: assistantMessage.sources
-          });
-      } catch (dbError) {
-        console.error('Database save error:', dbError);
-      }
-
-      // Update conversations list
-      loadConversations();
 
     } catch (err) {
-      console.error('Error in handleSubmit:', err);
-      console.error('Error type:', err instanceof Error ? err.constructor.name : typeof err);
-      console.error('Error details:', {
-        name: err instanceof Error ? err.name : 'unknown',
-        message: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : 'no stack'
-      });
-
-      // Handle fetch abort (timeout)
-      if (err instanceof Error && err.name === 'AbortError') {
-        setError('Request timeout - the assistant is taking longer than expected. Please try again.');
-      } else {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      }
-
+      console.error('Error:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
       setIsLoading(false);
       setPendingMessageId(null);
     }
