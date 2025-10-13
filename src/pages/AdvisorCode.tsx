@@ -83,7 +83,7 @@ const AdvisorCode: React.FC = () => {
     if (!code) return <div className="text-neutral-400 p-4">No code available</div>;
 
     const lines = code.split('\n');
-    const maxLines = 20;
+    const maxLines = 50;
     const displayLines = lines.slice(0, maxLines);
     const hasMore = lines.length > maxLines;
 
