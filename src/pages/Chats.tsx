@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MessageSquare, User, Bot, ChevronDown, ChevronUp, Tag as TagIcon, Lock, Hash, Heart, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, MessageSquare, User, Bot, ChevronDown, ChevronUp, Tag as TagIcon, Lock, Hash, Heart, Users, ChevronLeft, ChevronRight, Download, Star } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,7 @@ interface ChatMessage {
   name: string;
   'Ai response': string | null;
   'Topic': string | null;
+  is_favorite?: boolean;
 }
 
 interface CompanyProfile {
@@ -65,6 +66,7 @@ const Chats: React.FC = () => {
   const [showUpgradeMessage, setShowUpgradeMessage] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [messagesPerPage] = useState(25);
+  const [favoriteMessages, setFavoriteMessages] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadMessages();
@@ -175,14 +177,20 @@ const Chats: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
-      
+
       // Map "Session Id" to session_id for compatibility
       const mappedData = (data || []).map(message => ({
         ...message,
         session_id: message['Session Id']
       }));
-      
+
       setMessages(mappedData);
+
+      // Load favorite messages
+      const favorites = new Set(
+        mappedData.filter(m => m.is_favorite).map(m => m.id)
+      );
+      setFavoriteMessages(favorites);
     } catch (err) {
       console.error('Error loading messages:', err);
       setError('Failed to load messages. Please try again.');
@@ -326,6 +334,75 @@ const Chats: React.FC = () => {
       return;
     }
     setActivePlatform(platform);
+  };
+
+  const downloadMessage = (message: ChatMessage) => {
+    const content = `
+Customer Message
+================
+
+From: ${getCustomerDisplayName(message)}
+Email: ${message.email || 'N/A'}
+Date: ${formatDate(message.created_at)}
+Source: ${message.source}
+Topic: ${getTopicTag(message.Topic)}
+Sentiment: ${message.sentiment_score !== null ? getSentimentInfo(message.sentiment_score).label : 'N/A'}
+
+Message:
+${message.content}
+
+${message['Ai response'] ? `
+AI Advisor Response:
+${message['Ai response']}
+` : ''}
+
+${message.keywords && message.keywords.length > 0 ? `
+Keywords: ${message.keywords.join(', ')}
+` : ''}
+    `.trim();
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `message-${message.id}-${new Date(message.created_at).toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const toggleFavorite = async (messageId: string) => {
+    try {
+      const isFavorite = favoriteMessages.has(messageId);
+
+      // Update in database
+      const { error } = await supabase
+        .from('chatbot_messages')
+        .update({ is_favorite: !isFavorite })
+        .eq('id', messageId);
+
+      if (error) {
+        console.error('Error updating favorite status:', error);
+        return;
+      }
+
+      // Update local state
+      const newFavorites = new Set(favoriteMessages);
+      if (isFavorite) {
+        newFavorites.delete(messageId);
+      } else {
+        newFavorites.add(messageId);
+      }
+      setFavoriteMessages(newFavorites);
+
+      // Update messages state
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId ? { ...msg, is_favorite: !isFavorite } : msg
+      ));
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
   };
 
   return (
@@ -556,6 +633,23 @@ const Chats: React.FC = () => {
                                 {getSentimentInfo(message.sentiment_score).label}
                               </span>
                             )}
+                            <button
+                              onClick={() => downloadMessage(message)}
+                              className="p-1.5 hover:bg-neutral-100 rounded-full transition-colors"
+                              title="Download message"
+                            >
+                              <Download size={16} className="text-neutral-400 hover:text-primary" />
+                            </button>
+                            <button
+                              onClick={() => toggleFavorite(message.id)}
+                              className="p-1.5 hover:bg-neutral-100 rounded-full transition-colors"
+                              title={favoriteMessages.has(message.id) ? "Remove from favorites" : "Add to favorites"}
+                            >
+                              <Star
+                                size={16}
+                                className={favoriteMessages.has(message.id) ? "text-warning-500 fill-warning-500" : "text-neutral-400 hover:text-warning-500"}
+                              />
+                            </button>
                             <button
                               onClick={() => setExpandedMessage(
                                 expandedMessage === message.id ? null : message.id
