@@ -39,6 +39,7 @@ const GPT: React.FC = () => {
   const [showSources, setShowSources] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [assistantId, setAssistantId] = useState<string | null>(null);
+  const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [pendingMessageId, setPendingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -47,7 +48,7 @@ const GPT: React.FC = () => {
 
   useEffect(() => {
     loadConversations();
-    loadAssistantId();
+    loadCompanyData();
   }, [user]);
 
   useEffect(() => {
@@ -134,7 +135,7 @@ const GPT: React.FC = () => {
     };
   }, []);
 
-  const loadAssistantId = async () => {
+  const loadCompanyData = async () => {
     if (!user?.id) return;
 
     try {
@@ -143,14 +144,15 @@ const GPT: React.FC = () => {
 
       const { data, error } = await supabase
         .from('company_profiles')
-        .select('assistant_id')
+        .select('assistant_id, logo_url')
         .eq('id', companyId)
         .single();
 
       if (error) throw error;
       setAssistantId(data?.assistant_id);
+      setCompanyLogoUrl(data?.logo_url);
     } catch (err) {
-      console.error('Error loading assistant ID:', err);
+      console.error('Error loading company data:', err);
     }
   };
 
@@ -676,8 +678,16 @@ const GPT: React.FC = () => {
                   </div>
 
                   {message.role === 'user' && (
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center ml-4 mt-1">
-                      <User size={18} />
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center ml-4 mt-1 overflow-hidden">
+                      {companyLogoUrl ? (
+                        <img
+                          src={companyLogoUrl}
+                          alt="Company logo"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User size={18} />
+                      )}
                     </div>
                   )}
                 </div>
