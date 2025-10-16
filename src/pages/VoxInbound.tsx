@@ -26,25 +26,33 @@ const VoxInbound: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      console.log('Fetching calls for user:', user.id);
+
       const { data: userCompanies, error: companiesError } = await supabase
         .from('user_companies')
         .select('company_id')
         .eq('user_id', user.id);
 
+      console.log('User companies:', userCompanies, 'Error:', companiesError);
+
       if (companiesError) throw companiesError;
 
       if (!userCompanies || userCompanies.length === 0) {
+        console.log('No companies found for user');
         setCalls([]);
         setLoading(false);
         return;
       }
 
       const companyIds = userCompanies.map(uc => uc.company_id);
+      console.log('Company IDs:', companyIds);
 
       const { data: companies, error: companyError } = await supabase
         .from('company_profiles')
         .select('vox_agent_id')
         .in('id', companyIds);
+
+      console.log('Companies with agent IDs:', companies, 'Error:', companyError);
 
       if (companyError) throw companyError;
 
@@ -52,7 +60,10 @@ const VoxInbound: React.FC = () => {
         ?.map(c => c.vox_agent_id)
         .filter(id => id != null) || [];
 
+      console.log('Agent IDs:', agentIds);
+
       if (agentIds.length === 0) {
+        console.log('No vox agent IDs found for companies');
         setCalls([]);
         setLoading(false);
         return;
@@ -63,6 +74,8 @@ const VoxInbound: React.FC = () => {
         .select('*')
         .in('agent_id', agentIds)
         .order('started_at', { ascending: false });
+
+      console.log('Calls data:', data, 'Error:', error);
 
       if (error) throw error;
       setCalls(data || []);
