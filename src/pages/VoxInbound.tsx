@@ -273,7 +273,7 @@ const VoxInbound: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <label className="text-sm font-medium text-neutral-700">Agent Status</label>
+              <label className="text-sm font-medium text-neutral-700">Vox Status</label>
               <button
                 onClick={handleToggleAgent}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:ring-offset-2 ${
