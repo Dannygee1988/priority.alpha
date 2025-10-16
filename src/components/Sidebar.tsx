@@ -142,6 +142,11 @@ const navigation = [
     path: '/vox',
     submenu: voxSubmenu,
   },
+  {
+    name: 'Fan Sonar',
+    icon: 'https://res.cloudinary.com/deyzbqzya/image/upload/v1760599724/Fan_Sonar_Logo_plnus5.png',
+    path: '/fan-sonar',
+  },
   { name: 'Calendar', icon: Calendar, path: '/calendar' },
 ];
 
@@ -179,6 +184,7 @@ const Sidebar: React.FC = () => {
 
   const getFeatureKeyFromPath = (path: string): string | null => {
     if (path.includes('/vox')) return null; // Vox is always unlocked - check this first before /analytics
+    if (path.includes('/fan-sonar')) return null; // Fan Sonar is always unlocked
     if (path.includes('/advisor') || path.includes('/gpt') || path.includes('/chats')) return null; // These are always unlocked
     if (path.includes('/social-media')) return 'social-media';
     if (path.includes('/marketing')) return 'pr';
