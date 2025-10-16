@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, ChevronDown, ChevronUp, Clock, User, TrendingUp, MessageSquare, DollarSign, Tag, Search } from 'lucide-react';
+import { Phone, ChevronDown, ChevronUp, Clock, User, TrendingUp, MessageSquare, DollarSign, Tag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -9,7 +9,6 @@ const VoxInbound: React.FC = () => {
   const [calls, setCalls] = useState<VoxInboundCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
-  const [searchPhone, setSearchPhone] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -135,10 +134,7 @@ const VoxInbound: React.FC = () => {
     }
   };
 
-  const filteredCalls = calls.filter(call => {
-    if (searchPhone && !call.customer_number.includes(searchPhone)) return false;
-    return true;
-  });
+  const filteredCalls = calls;
 
   const toggleExpand = (callId: string) => {
     setExpandedCallId(expandedCallId === callId ? null : callId);
@@ -207,19 +203,6 @@ const VoxInbound: React.FC = () => {
               <TrendingUp className="w-6 h-6 text-orange-600" />
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400" />
-          <input
-            type="text"
-            placeholder="Search by phone number..."
-            value={searchPhone}
-            onChange={(e) => setSearchPhone(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
-          />
         </div>
       </div>
 
