@@ -178,6 +178,8 @@ const Sidebar: React.FC = () => {
   };
 
   const getFeatureKeyFromPath = (path: string): string | null => {
+    if (path.includes('/vox')) return null; // Vox is always unlocked - check this first before /analytics
+    if (path.includes('/advisor') || path.includes('/gpt') || path.includes('/chats')) return null; // These are always unlocked
     if (path.includes('/social-media')) return 'social-media';
     if (path.includes('/marketing')) return 'pr';
     if (path.includes('/investors')) return 'investors';
@@ -193,8 +195,6 @@ const Sidebar: React.FC = () => {
     if (path.includes('/calendar')) return 'calendar';
     if (path.includes('/inbox')) return 'settings';
     if (path.includes('/settings')) return 'settings';
-    if (path.includes('/advisor') || path.includes('/gpt') || path.includes('/chats')) return null; // These are always unlocked
-    if (path.includes('/vox')) return null; // Vox is always unlocked
     return 'locked';
   };
 
