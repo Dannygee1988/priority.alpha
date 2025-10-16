@@ -168,11 +168,50 @@ const VoxInbound: React.FC = () => {
     );
   }
 
+  const totalMinutes = Math.floor(calls.reduce((sum, call) => sum + call.call_duration, 0) / 60);
+  const totalConversations = calls.length;
+  const avgCallTime = totalConversations > 0
+    ? Math.floor(calls.reduce((sum, call) => sum + call.call_duration, 0) / totalConversations)
+    : 0;
+
   return (
     <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-neutral-800 mb-2">Call History</h1>
-        <p className="text-neutral-600">View and manage inbound voice agent calls</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-neutral-600 mb-1">Total Minutes</p>
+              <p className="text-3xl font-bold text-neutral-900">{totalMinutes.toLocaleString()}</p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Clock className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-neutral-600 mb-1">Total Conversations</p>
+              <p className="text-3xl font-bold text-neutral-900">{totalConversations.toLocaleString()}</p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <Phone className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-neutral-600 mb-1">Average Call Time</p>
+              <p className="text-3xl font-bold text-neutral-900">{formatDuration(avgCallTime)}</p>
+            </div>
+            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-orange-600" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-3">
