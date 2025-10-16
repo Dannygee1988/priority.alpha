@@ -48,6 +48,9 @@ export interface VoxOutboundCall {
   user_id: string;
   agent_id: string;
   phone_number: string;
+  caller_name: string;
+  caller_email?: string;
+  caller_address?: string;
   call_duration: number;
   call_status: 'completed' | 'failed' | 'no-answer' | 'busy' | 'cancelled' | 'pending' | 'queued';
   call_sid?: string;

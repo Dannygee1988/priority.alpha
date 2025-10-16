@@ -5,9 +5,12 @@ import { VoxOutboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 
-interface PhoneNumber {
+interface ContactData {
   id: string;
   number: string;
+  name: string;
+  email?: string;
+  address?: string;
   isValid: boolean;
   error?: string;
 }
@@ -15,8 +18,11 @@ interface PhoneNumber {
 const VoxOutbound: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'manual' | 'upload'>('manual');
-  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
-  const [currentNumber, setCurrentNumber] = useState('');
+  const [phoneNumbers, setPhoneNumbers] = useState<ContactData[]>([]);
+  const [currentNumber, setCurrentNumber] = useState('+44');
+  const [currentName, setCurrentName] = useState('');
+  const [currentEmail, setCurrentEmail] = useState('');
+  const [currentAddress, setCurrentAddress] = useState('');
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [agentId, setAgentId] = useState<string>('');
@@ -69,7 +75,15 @@ const VoxOutbound: React.FC = () => {
   };
 
   const addPhoneNumber = () => {
-    if (!currentNumber.trim()) return;
+    if (!currentNumber.trim() || currentNumber === '+44') {
+      setMessage({ type: 'error', text: 'Phone number is required' });
+      return;
+    }
+
+    if (!currentName.trim()) {
+      setMessage({ type: 'error', text: 'Caller name is required' });
+      return;
+    }
 
     const validation = validatePhoneNumber(currentNumber);
     const isDuplicate = phoneNumbers.some(p => p.number === currentNumber.trim());
@@ -79,15 +93,21 @@ const VoxOutbound: React.FC = () => {
       return;
     }
 
-    const newPhone: PhoneNumber = {
+    const newContact: ContactData = {
       id: Math.random().toString(36).substr(2, 9),
       number: currentNumber.trim(),
+      name: currentName.trim(),
+      email: currentEmail.trim() || undefined,
+      address: currentAddress.trim() || undefined,
       isValid: validation.isValid,
       error: validation.error
     };
 
-    setPhoneNumbers([...phoneNumbers, newPhone]);
-    setCurrentNumber('');
+    setPhoneNumbers([...phoneNumbers, newContact]);
+    setCurrentNumber('+44');
+    setCurrentName('');
+    setCurrentEmail('');
+    setCurrentAddress('');
     setMessage(null);
   };
 
@@ -106,18 +126,24 @@ const VoxOutbound: React.FC = () => {
       const text = await file.text();
       const lines = text.split(/\r?\n/).filter(line => line.trim());
 
-      const newNumbers: PhoneNumber[] = [];
+      const newNumbers: ContactData[] = [];
       const existingNumbers = new Set(phoneNumbers.map(p => p.number));
 
       lines.forEach((line, index) => {
         const cells = line.split(',').map(cell => cell.trim().replace(/['"]/g, ''));
         const number = cells[0];
+        const name = cells[1];
+        const email = cells[2];
+        const address = cells[3];
 
-        if (number && !existingNumbers.has(number)) {
+        if (number && name && !existingNumbers.has(number)) {
           const validation = validatePhoneNumber(number);
           newNumbers.push({
             id: `${Date.now()}-${index}`,
             number,
+            name,
+            email: email || undefined,
+            address: address || undefined,
             isValid: validation.isValid,
             error: validation.error
           });
@@ -155,6 +181,9 @@ const VoxOutbound: React.FC = () => {
         user_id: user.id,
         agent_id: agentId,
         phone_number: phone.number,
+        caller_name: phone.name,
+        caller_email: phone.email || null,
+        caller_address: phone.address || null,
         call_status: 'queued',
         call_duration: 0,
         cost: 0,
@@ -235,27 +264,65 @@ const VoxOutbound: React.FC = () => {
         <div className="p-6">
           {activeTab === 'manual' ? (
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Phone Number
-                </label>
-                <div className="flex gap-3">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="tel"
                     value={currentNumber}
                     onChange={(e) => setCurrentNumber(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addPhoneNumber()}
-                    placeholder="Enter phone number (e.g., +1234567890)"
-                    className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
+                    placeholder="+44 7123 456789"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
                   />
-                  <Button onClick={addPhoneNumber}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Number
-                  </Button>
                 </div>
-                <p className="mt-2 text-sm text-neutral-500">
-                  Enter phone numbers with country code (e.g., +1 for US)
-                </p>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Caller Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={currentName}
+                    onChange={(e) => setCurrentName(e.target.value)}
+                    placeholder="John Smith"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={currentEmail}
+                    onChange={(e) => setCurrentEmail(e.target.value)}
+                    placeholder="john.smith@example.com"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    value={currentAddress}
+                    onChange={(e) => setCurrentAddress(e.target.value)}
+                    placeholder="123 Main St, London, UK"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={addPhoneNumber}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Contact
+                </Button>
               </div>
             </div>
           ) : (
@@ -279,7 +346,7 @@ const VoxOutbound: React.FC = () => {
                     />
                   </label>
                   <p className="mt-2 text-sm text-neutral-500">
-                    CSV file with phone numbers in the first column
+                    CSV format: Phone Number, Name, Email, Address
                   </p>
                 </div>
               </div>
@@ -293,7 +360,7 @@ const VoxOutbound: React.FC = () => {
           <div className="px-6 py-4 border-b border-neutral-200">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-neutral-800">
-                Phone Numbers ({phoneNumbers.length})
+                Contacts ({phoneNumbers.length})
               </h2>
               <div className="flex items-center gap-4 text-sm">
                 <span className="text-green-600 font-medium">
@@ -315,11 +382,28 @@ const VoxOutbound: React.FC = () => {
                   key={phone.id}
                   className="px-6 py-3 flex items-center justify-between hover:bg-neutral-50"
                 >
-                  <div className="flex items-center gap-3 flex-1">
-                    <Phone className={`w-4 h-4 ${phone.isValid ? 'text-green-600' : 'text-red-600'}`} />
-                    <span className="font-mono text-neutral-800">{phone.number}</span>
+                  <div className="flex items-center gap-4 flex-1">
+                    <Phone className={`w-4 h-4 flex-shrink-0 ${phone.isValid ? 'text-green-600' : 'text-red-600'}`} />
+                    <div className="flex-1 grid grid-cols-4 gap-4">
+                      <div>
+                        <span className="text-xs text-neutral-500 block">Phone</span>
+                        <span className="font-mono text-sm text-neutral-800">{phone.number}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-neutral-500 block">Name</span>
+                        <span className="text-sm text-neutral-800">{phone.name}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-neutral-500 block">Email</span>
+                        <span className="text-sm text-neutral-800">{phone.email || '-'}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-neutral-500 block">Address</span>
+                        <span className="text-sm text-neutral-800 truncate">{phone.address || '-'}</span>
+                      </div>
+                    </div>
                     {!phone.isValid && phone.error && (
-                      <span className="text-sm text-red-600">({phone.error})</span>
+                      <span className="text-sm text-red-600 flex-shrink-0">({phone.error})</span>
                     )}
                   </div>
                   <button
