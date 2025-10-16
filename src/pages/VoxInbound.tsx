@@ -209,13 +209,13 @@ const VoxInbound: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-        <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
-          <div className="col-span-3">Date</div>
-          <div className="col-span-2">Agent</div>
-          <div className="col-span-2">Phone Number</div>
-          <div className="col-span-2">Duration</div>
-          <div className="col-span-2">Status</div>
-          <div className="col-span-1"></div>
+        <div className="grid grid-cols-[2fr_3fr_2fr_1.5fr_1.5fr_auto] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
+          <div>Date</div>
+          <div>Agent</div>
+          <div>Phone Number</div>
+          <div>Duration</div>
+          <div>Status</div>
+          <div></div>
         </div>
 
         {filteredCalls.length === 0 ? (
@@ -228,21 +228,21 @@ const VoxInbound: React.FC = () => {
               <div key={call.id}>
                 <div
                   onClick={() => toggleExpand(call.id)}
-                  className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors"
+                  className="grid grid-cols-[2fr_3fr_2fr_1.5fr_1.5fr_auto] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors"
                 >
-                  <div className="col-span-3 text-sm text-neutral-900">
+                  <div className="text-sm text-neutral-900 truncate">
                     {formatDateTime(call.started_at)}
                   </div>
-                  <div className="col-span-2 text-sm text-neutral-900">
+                  <div className="text-sm text-neutral-900 truncate font-mono text-xs">
                     {call.agent_id}
                   </div>
-                  <div className="col-span-2 text-sm text-neutral-900">
+                  <div className="text-sm text-neutral-900 truncate">
                     {call.phone_number}
                   </div>
-                  <div className="col-span-2 text-sm text-neutral-900">
+                  <div className="text-sm text-neutral-900">
                     {formatDuration(call.call_duration)}
                   </div>
-                  <div className="col-span-2">
+                  <div>
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
                         call.call_status
@@ -251,7 +251,7 @@ const VoxInbound: React.FC = () => {
                       {call.call_status.charAt(0).toUpperCase() + call.call_status.slice(1)}
                     </span>
                   </div>
-                  <div className="col-span-1 flex justify-end">
+                  <div className="flex justify-end">
                     {expandedCallId === call.id ? (
                       <ChevronUp className="w-5 h-5 text-neutral-400" />
                     ) : (
