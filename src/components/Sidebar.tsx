@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Share2, Megaphone, Users, Globe, LayoutDashboard, PoundSterling, Users2, LineChart, UserCog, Calendar, Inbox, Settings, ChevronLeft, ChevronRight, ChevronDown, PenSquare, MessageSquare, Palette, Hash, TrendingUp, CalendarDays, Video, Images, Type, BookOpen, Wrench, FileType2, ScanLine, FileSearch, FileCog, FileText, FileSpreadsheet, FileImage, FileAudio, FileVideo, Printer, Newspaper, UserCircle, Shield, AlertCircle, PenLine, Database, Sparkles, UserPlus, Image, FileEdit, FileCheck, Brain, Bot, MessagesSquare, ListFilter, FileUp as FileUser, Bitcoin, Code } from 'lucide-react';
+import { Share2, Megaphone, Users, Globe, LayoutDashboard, PoundSterling, Users2, LineChart, UserCog, Calendar, Inbox, Settings, ChevronLeft, ChevronRight, ChevronDown, PenSquare, MessageSquare, Palette, Hash, TrendingUp, CalendarDays, Video, Images, Type, BookOpen, Wrench, FileType2, ScanLine, FileSearch, FileCog, FileText, FileSpreadsheet, FileImage, FileAudio, FileVideo, Printer, Newspaper, UserCircle, Shield, AlertCircle, PenLine, Database, Sparkles, UserPlus, Image, FileEdit, FileCheck, Brain, Bot, MessagesSquare, ListFilter, FileUp as FileUser, Bitcoin, Code, Mic, PhoneOutgoing, PhoneIncoming, BarChart3 } from 'lucide-react';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import LockedFeature from './LockedFeature';
 import UpgradeModal from './UpgradeModal';
@@ -76,6 +76,12 @@ const advisorSubmenu = [
   { name: 'Code', icon: Code, path: '/advisor/code' },
 ];
 
+const voxSubmenu = [
+  { name: 'Outbound', icon: PhoneOutgoing, path: '/vox/outbound' },
+  { name: 'Inbound', icon: PhoneIncoming, path: '/vox/inbound' },
+  { name: 'Analytics', icon: BarChart3, path: '/vox/analytics' },
+];
+
 const navigation = [
   {
     name: 'Social Media',
@@ -130,6 +136,12 @@ const navigation = [
     path: '/advisor',
     submenu: advisorSubmenu,
   },
+  {
+    name: 'Vox',
+    icon: Mic,
+    path: '/vox',
+    submenu: voxSubmenu,
+  },
   { name: 'Calendar', icon: Calendar, path: '/calendar' },
 ];
 
@@ -182,6 +194,7 @@ const Sidebar: React.FC = () => {
     if (path.includes('/inbox')) return 'settings';
     if (path.includes('/settings')) return 'settings';
     if (path.includes('/advisor') || path.includes('/gpt') || path.includes('/chats')) return null; // These are always unlocked
+    if (path.includes('/vox')) return null; // Vox is always unlocked
     return 'locked';
   };
 
