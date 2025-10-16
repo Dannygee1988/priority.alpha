@@ -41,6 +41,7 @@ export interface VoxInboundCall {
   ended_at?: string;
   created_at: string;
   updated_at: string;
+  is_in_crm?: boolean;
 }
 
 export interface VoxOutboundCall {
