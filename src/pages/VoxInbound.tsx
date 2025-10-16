@@ -365,7 +365,7 @@ const VoxInbound: React.FC = () => {
           <div>Subject</div>
           <div>Phone Number</div>
           <div>Duration</div>
-          <div className="text-center">CRM</div>
+          <div className="text-left">CRM</div>
           <div>Status</div>
           <div></div>
         </div>
