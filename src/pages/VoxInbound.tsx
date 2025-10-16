@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, ChevronDown, ChevronUp, Clock, User, TrendingUp, MessageSquare, DollarSign, Tag } from 'lucide-react';
+import { Phone, ChevronDown, ChevronUp, Clock, User, TrendingUp, MessageSquare, DollarSign, Tag, ShoppingCart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
+import Button from '../components/Button';
 
 const VoxInbound: React.FC = () => {
   const { user } = useAuth();
@@ -10,12 +11,47 @@ const VoxInbound: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [agentEnabled, setAgentEnabled] = useState(true);
+  const [selectedVoice, setSelectedVoice] = useState('alloy');
 
   useEffect(() => {
     if (user) {
       fetchCalls();
+      loadAgentSettings();
     }
   }, [user]);
+
+  const loadAgentSettings = async () => {
+    if (!user) return;
+
+    try {
+      const { data: userCompanies } = await supabase
+        .from('user_companies')
+        .select('company_id')
+        .eq('user_id', user.id);
+
+      if (!userCompanies || userCompanies.length === 0) return;
+
+      const companyIds = userCompanies.map(uc => uc.company_id);
+
+      const { data: companies } = await supabase
+        .from('company_profiles')
+        .select('vox_agent_enabled, vox_agent_voice')
+        .in('id', companyIds)
+        .maybeSingle();
+
+      if (companies) {
+        if (companies.vox_agent_enabled !== undefined) {
+          setAgentEnabled(companies.vox_agent_enabled);
+        }
+        if (companies.vox_agent_voice) {
+          setSelectedVoice(companies.vox_agent_voice);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading agent settings:', error);
+    }
+  };
 
   const fetchCalls = async () => {
     if (!user) return;
@@ -140,6 +176,46 @@ const VoxInbound: React.FC = () => {
     setExpandedCallId(expandedCallId === callId ? null : callId);
   };
 
+  const handleVoiceChange = async (voice: string) => {
+    setSelectedVoice(voice);
+    await saveAgentSettings(agentEnabled, voice);
+  };
+
+  const handleToggleAgent = async () => {
+    const newStatus = !agentEnabled;
+    setAgentEnabled(newStatus);
+    await saveAgentSettings(newStatus, selectedVoice);
+  };
+
+  const saveAgentSettings = async (enabled: boolean, voice: string) => {
+    if (!user) return;
+
+    try {
+      const { data: userCompanies } = await supabase
+        .from('user_companies')
+        .select('company_id')
+        .eq('user_id', user.id);
+
+      if (!userCompanies || userCompanies.length === 0) return;
+
+      const companyId = userCompanies[0].company_id;
+
+      await supabase
+        .from('company_profiles')
+        .update({
+          vox_agent_enabled: enabled,
+          vox_agent_voice: voice
+        })
+        .eq('id', companyId);
+    } catch (error) {
+      console.error('Error saving agent settings:', error);
+    }
+  };
+
+  const handlePurchaseLicenses = () => {
+    window.open('https://example.com/purchase-licenses', '_blank');
+  };
+
   if (loading) {
     return (
       <div className="p-8">
@@ -166,8 +242,63 @@ const VoxInbound: React.FC = () => {
     ? Math.floor(calls.reduce((sum, call) => sum + call.call_duration, 0) / totalConversations)
     : 0;
 
+  const voiceOptions = [
+    { value: 'alloy', label: 'Alloy' },
+    { value: 'echo', label: 'Echo' },
+    { value: 'fable', label: 'Fable' },
+    { value: 'onyx', label: 'Onyx' },
+    { value: 'nova', label: 'Nova' },
+    { value: 'shimmer', label: 'Shimmer' }
+  ];
+
   return (
     <div className="p-8">
+      <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 mb-8">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-neutral-800">Vox Agent Settings</h2>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-neutral-700">Agent Voice</label>
+              <select
+                value={selectedVoice}
+                onChange={(e) => handleVoiceChange(e.target.value)}
+                className="px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent text-sm"
+              >
+                {voiceOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-neutral-700">Agent Status</label>
+              <button
+                onClick={handleToggleAgent}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:ring-offset-2 ${
+                  agentEnabled ? 'bg-green-600' : 'bg-neutral-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    agentEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <span className={`text-sm font-medium ${agentEnabled ? 'text-green-600' : 'text-neutral-500'}`}>
+                {agentEnabled ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+
+            <Button onClick={handlePurchaseLicenses} variant="outline">
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Purchase Licenses
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
           <div className="flex items-center justify-between">
