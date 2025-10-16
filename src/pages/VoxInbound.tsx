@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, ChevronDown, ChevronUp, Clock, User, TrendingUp, MessageSquare, DollarSign, Tag, Settings, CheckCircle } from 'lucide-react';
+import { Phone, ChevronDown, ChevronUp, Clock, User, TrendingUp, MessageSquare, DollarSign, Tag, Settings, CheckCircle, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,7 @@ const VoxInbound: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [agentEnabled, setAgentEnabled] = useState(true);
   const [selectedVoice, setSelectedVoice] = useState('alloy');
+  const [addingToCrm, setAddingToCrm] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -203,6 +204,49 @@ const VoxInbound: React.FC = () => {
     await saveAgentSettings(newStatus, selectedVoice);
   };
 
+  const handleAddToCrm = async (call: VoxInboundCall) => {
+    if (!user) return;
+
+    try {
+      const { data: userCompanies } = await supabase
+        .from('user_companies')
+        .select('company_id')
+        .eq('user_id', user.id);
+
+      if (!userCompanies || userCompanies.length === 0) return;
+
+      const companyId = userCompanies[0].company_id;
+
+      const { error: insertError } = await supabase
+        .from('crm_contacts')
+        .insert({
+          company_id: companyId,
+          name: call.contact_name || 'Unknown',
+          phone: call.phone_number,
+          email: call.contact_email,
+          source: 'vox_inbound',
+          notes: call.summary || ''
+        });
+
+      if (insertError) throw insertError;
+
+      const { error: updateError } = await supabase
+        .from('vox_inbound_calls')
+        .update({ is_in_crm: true })
+        .eq('id', call.id);
+
+      if (updateError) throw updateError;
+
+      setCalls(prevCalls =>
+        prevCalls.map(c =>
+          c.id === call.id ? { ...c, is_in_crm: true } : c
+        )
+      );
+    } catch (error) {
+      console.error('Error adding to CRM:', error);
+    }
+  };
+
   const saveAgentSettings = async (enabled: boolean, voice: string) => {
     if (!user) return;
 
@@ -350,9 +394,25 @@ const VoxInbound: React.FC = () => {
                   <div className="text-sm text-neutral-900">
                     {formatDuration(call.call_duration)}
                   </div>
-                  <div className="flex items-center justify-center border border-neutral-200 rounded-md h-8">
-                    {call.is_in_crm && (
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+                  <div className="flex items-center justify-center">
+                    {call.is_in_crm ? (
+                      <div className="border border-neutral-200 rounded-md h-8 w-full flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      </div>
+                    ) : (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          setAddingToCrm(call.id);
+                          await handleAddToCrm(call);
+                          setAddingToCrm(null);
+                        }}
+                        disabled={addingToCrm === call.id}
+                        className="border border-neutral-200 rounded-md h-8 w-full flex items-center justify-center hover:bg-neutral-50 hover:border-neutral-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Add to CRM"
+                      >
+                        <Plus className="w-5 h-5 text-neutral-400" />
+                      </button>
                     )}
                   </div>
                   <div>
