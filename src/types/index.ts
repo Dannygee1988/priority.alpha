@@ -42,3 +42,24 @@ export interface VoxInboundCall {
   created_at: string;
   updated_at: string;
 }
+
+export interface VoxOutboundCall {
+  id: string;
+  user_id: string;
+  agent_id: string;
+  phone_number: string;
+  call_duration: number;
+  call_status: 'completed' | 'failed' | 'no-answer' | 'busy' | 'cancelled' | 'pending' | 'queued';
+  call_sid?: string;
+  recording_url?: string;
+  transcript?: string;
+  summary?: string;
+  sentiment?: 'positive' | 'neutral' | 'negative';
+  tags?: string[];
+  notes?: string;
+  cost: number;
+  started_at: string;
+  ended_at?: string;
+  created_at: string;
+  updated_at: string;
+}
