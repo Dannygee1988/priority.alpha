@@ -19,6 +19,9 @@ import Gallery from './pages/Gallery';
 import CVLibrary from './pages/CVLibrary';
 import Pr1Bit from './pages/Pr1Bit';
 import AdvisorCode from './pages/AdvisorCode';
+import VoxOutbound from './pages/VoxOutbound';
+import VoxInbound from './pages/VoxInbound';
+import VoxAnalytics from './pages/VoxAnalytics';
 import AppLayout from './layouts/AppLayout';
 
 function App() {
@@ -48,6 +51,9 @@ function App() {
             <Route path="/social-media/gallery" element={<Gallery />} />
             <Route path="/hr/cv-library" element={<CVLibrary />} />
             <Route path="/finance/pr1bit" element={<Pr1Bit />} />
+            <Route path="/vox/outbound" element={<VoxOutbound />} />
+            <Route path="/vox/inbound" element={<VoxInbound />} />
+            <Route path="/vox/analytics" element={<VoxAnalytics />} />
             {/* Add more routes as they're developed */}
             <Route path="/analytics" element={<div className="p-8">Analytics page (coming soon)</div>} />
             <Route path="/team" element={<div className="p-8">Team Management page (coming soon)</div>} />
