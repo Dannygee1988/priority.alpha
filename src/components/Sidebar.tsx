@@ -132,7 +132,7 @@ const navigation = [
   },
   {
     name: 'Advisor',
-    icon: Brain,
+    icon: 'https://res.cloudinary.com/deyzbqzya/image/upload/v1760602803/Advisor_logo_low_res_zmq3ao.png',
     path: '/advisor',
     submenu: advisorSubmenu,
   },
