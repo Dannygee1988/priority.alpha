@@ -268,39 +268,14 @@ const VoxInbound: React.FC = () => {
   ];
 
   return (
-    <div className="p-8">
-      <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-medium text-neutral-700">Vox Status</label>
-              <button
-                onClick={handleToggleAgent}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:ring-offset-2 ${
-                  agentEnabled ? 'bg-green-600' : 'bg-neutral-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    agentEnabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-              <span className={`text-sm font-medium ${agentEnabled ? 'text-green-600' : 'text-neutral-500'}`}>
-                {agentEnabled ? 'Active' : 'Inactive'}
-              </span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleSettings}
-            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-            aria-label="Settings"
-          >
-            <Settings className="w-5 h-5 text-neutral-600" />
-          </button>
-        </div>
-      </div>
+    <div className="p-8 relative">
+      <button
+        onClick={handleSettings}
+        className="fixed bottom-8 right-8 p-4 bg-white hover:bg-neutral-50 rounded-full shadow-lg border border-neutral-200 transition-all hover:shadow-xl z-50"
+        aria-label="Settings"
+      >
+        <Settings className="w-6 h-6 text-neutral-600" />
+      </button>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
