@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, ChevronDown, ChevronUp, Clock, User, TrendingUp, MessageSquare, DollarSign, Tag, ShoppingCart } from 'lucide-react';
+import { Phone, ChevronDown, ChevronUp, Clock, User, TrendingUp, MessageSquare, DollarSign, Tag, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
-import Button from '../components/Button';
 
 const VoxInbound: React.FC = () => {
   const { user } = useAuth();
@@ -212,8 +211,8 @@ const VoxInbound: React.FC = () => {
     }
   };
 
-  const handlePurchaseLicenses = () => {
-    window.open('https://example.com/purchase-licenses', '_blank');
+  const handleSettings = () => {
+    console.log('Settings clicked');
   };
 
   if (loading) {
@@ -255,23 +254,7 @@ const VoxInbound: React.FC = () => {
     <div className="p-8">
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 mb-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-neutral-800">Vox Agent Settings</h2>
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-medium text-neutral-700">Agent Voice</label>
-              <select
-                value={selectedVoice}
-                onChange={(e) => handleVoiceChange(e.target.value)}
-                className="px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent text-sm"
-              >
-                {voiceOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div className="flex items-center gap-3">
               <label className="text-sm font-medium text-neutral-700">Vox Status</label>
               <button
@@ -290,12 +273,15 @@ const VoxInbound: React.FC = () => {
                 {agentEnabled ? 'Active' : 'Inactive'}
               </span>
             </div>
-
-            <Button onClick={handlePurchaseLicenses} variant="outline">
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Purchase Licenses
-            </Button>
           </div>
+
+          <button
+            onClick={handleSettings}
+            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
+            aria-label="Settings"
+          >
+            <Settings className="w-5 h-5 text-neutral-600" />
+          </button>
         </div>
       </div>
 
