@@ -211,7 +211,7 @@ const VoxInbound: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
         <div className="grid grid-cols-[2fr_4fr_2fr_1.5fr_1.5fr_auto] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
           <div>Date</div>
-          <div>Summary</div>
+          <div>Subject</div>
           <div>Phone Number</div>
           <div>Duration</div>
           <div>Status</div>
@@ -234,7 +234,7 @@ const VoxInbound: React.FC = () => {
                     {formatDateTime(call.started_at)}
                   </div>
                   <div className="text-sm text-neutral-700 truncate">
-                    {call.summary || 'No summary available'}
+                    {call.subject || 'No subject'}
                   </div>
                   <div className="text-sm text-neutral-900 truncate">
                     {call.phone_number}
