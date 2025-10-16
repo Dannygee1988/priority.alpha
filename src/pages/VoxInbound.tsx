@@ -341,13 +341,13 @@ const VoxInbound: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-        <div className="grid grid-cols-[2fr_4fr_2fr_1.5fr_1.5fr_auto_auto] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
+        <div className="grid grid-cols-[2fr_4fr_2fr_1.5fr_auto_1.5fr_auto] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
           <div>Date</div>
           <div>Subject</div>
           <div>Phone Number</div>
           <div>Duration</div>
-          <div>Status</div>
           <div>CRM</div>
+          <div>Status</div>
           <div></div>
         </div>
 
@@ -361,7 +361,7 @@ const VoxInbound: React.FC = () => {
               <div key={call.id}>
                 <div
                   onClick={() => toggleExpand(call.id)}
-                  className="grid grid-cols-[2fr_4fr_2fr_1.5fr_1.5fr_auto_auto] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors"
+                  className="grid grid-cols-[2fr_4fr_2fr_1.5fr_auto_1.5fr_auto] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors"
                 >
                   <div className="text-sm text-neutral-900 truncate">
                     {formatDateTime(call.started_at)}
@@ -375,6 +375,11 @@ const VoxInbound: React.FC = () => {
                   <div className="text-sm text-neutral-900">
                     {formatDuration(call.call_duration)}
                   </div>
+                  <div className="flex justify-center border border-neutral-200 rounded-md py-1 px-2">
+                    {call.is_in_crm && (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    )}
+                  </div>
                   <div>
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
@@ -383,11 +388,6 @@ const VoxInbound: React.FC = () => {
                     >
                       {call.call_status.charAt(0).toUpperCase() + call.call_status.slice(1)}
                     </span>
-                  </div>
-                  <div className="flex justify-center">
-                    {call.is_in_crm && (
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                    )}
                   </div>
                   <div className="flex justify-end">
                     {expandedCallId === call.id ? (
