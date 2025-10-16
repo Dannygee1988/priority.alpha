@@ -138,7 +138,7 @@ const navigation = [
   },
   {
     name: 'Vox',
-    icon: Mic,
+    icon: 'https://res.cloudinary.com/deyzbqzya/image/upload/v1760599725/Vox_Logo_pyassc.png',
     path: '/vox',
     submenu: voxSubmenu,
   },
@@ -241,7 +241,15 @@ const Sidebar: React.FC = () => {
           }}
           title={!isExpanded ? item.name : undefined}
         >
-          <item.icon size={20} className={isExpanded ? 'mr-3' : ''} />
+          {typeof item.icon === 'string' ? (
+            <img
+              src={item.icon}
+              alt={item.name}
+              className={`w-5 h-5 object-contain ${isExpanded ? 'mr-3' : ''}`}
+            />
+          ) : (
+            <item.icon size={20} className={isExpanded ? 'mr-3' : ''} />
+          )}
           {isExpanded && (
             <>
               <span className="flex-1">{item.name}</span>
