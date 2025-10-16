@@ -2,30 +2,74 @@ import React, { useEffect, useState } from 'react';
 import { Phone, ChevronDown, ChevronUp, Clock, User, TrendingUp, MessageSquare, DollarSign, Tag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 const VoxInbound: React.FC = () => {
+  const { user } = useAuth();
   const [calls, setCalls] = useState<VoxInboundCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterAgent, setFilterAgent] = useState<string>('all');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchCalls();
-  }, []);
+    if (user) {
+      fetchCalls();
+    }
+  }, [user]);
 
   const fetchCalls = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
+      setError(null);
+
+      const { data: userCompanies, error: companiesError } = await supabase
+        .from('user_companies')
+        .select('company_id')
+        .eq('user_id', user.id);
+
+      if (companiesError) throw companiesError;
+
+      if (!userCompanies || userCompanies.length === 0) {
+        setCalls([]);
+        setLoading(false);
+        return;
+      }
+
+      const companyIds = userCompanies.map(uc => uc.company_id);
+
+      const { data: companies, error: companyError } = await supabase
+        .from('company_profiles')
+        .select('vox_agent_id')
+        .in('id', companyIds);
+
+      if (companyError) throw companyError;
+
+      const agentIds = companies
+        ?.map(c => c.vox_agent_id)
+        .filter(id => id != null) || [];
+
+      if (agentIds.length === 0) {
+        setCalls([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('vox_inbound_calls')
         .select('*')
+        .in('agent_id', agentIds)
         .order('started_at', { ascending: false });
 
       if (error) throw error;
       setCalls(data || []);
     } catch (error) {
       console.error('Error fetching calls:', error);
+      setError('Failed to load call history. Please try again.');
+      setCalls([]);
     } finally {
       setLoading(false);
     }
@@ -96,6 +140,16 @@ const VoxInbound: React.FC = () => {
       <div className="p-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-neutral-600">Loading call history...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-600">{error}</div>
         </div>
       </div>
     );
