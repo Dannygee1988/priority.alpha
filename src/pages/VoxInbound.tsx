@@ -234,7 +234,7 @@ const VoxInbound: React.FC = () => {
                     {formatDateTime(call.started_at)}
                   </div>
                   <div className="text-sm text-neutral-700 truncate">
-                    {call.subject || 'No subject'}
+                    {call.Subject || 'No subject'}
                   </div>
                   <div className="text-sm text-neutral-900 truncate">
                     {call.phone_number}

@@ -32,6 +32,7 @@ export interface VoxInboundCall {
   recording_url?: string;
   transcript?: string;
   summary?: string;
+  Subject?: string;
   sentiment?: 'positive' | 'neutral' | 'negative';
   tags?: string[];
   notes?: string;
