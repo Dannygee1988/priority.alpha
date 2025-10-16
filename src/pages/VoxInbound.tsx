@@ -262,50 +262,20 @@ const VoxInbound: React.FC = () => {
 
                 {expandedCallId === call.id && (
                   <div className="px-6 py-6 bg-neutral-50 border-t border-neutral-200">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
+                    <div className="space-y-6">
+                      {call.summary && (
                         <div>
                           <div className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
-                            <Phone className="w-4 h-4" />
-                            Call Details
+                            <MessageSquare className="w-4 h-4" />
+                            Summary
                           </div>
-                          <div className="space-y-2 text-sm">
-                            {call.call_sid && (
-                              <div className="flex justify-between">
-                                <span className="text-neutral-600">Call SID:</span>
-                                <span className="text-neutral-900 font-mono text-xs">
-                                  {call.call_sid}
-                                </span>
-                              </div>
-                            )}
-                            <div className="flex justify-between">
-                              <span className="text-neutral-600">Started:</span>
-                              <span className="text-neutral-900">
-                                {formatDateTime(call.started_at)}
-                              </span>
-                            </div>
-                            {call.ended_at && (
-                              <div className="flex justify-between">
-                                <span className="text-neutral-600">Ended:</span>
-                                <span className="text-neutral-900">
-                                  {formatDateTime(call.ended_at)}
-                                </span>
-                              </div>
-                            )}
-                            {call.cost > 0 && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-neutral-600 flex items-center gap-1">
-                                  <DollarSign className="w-3 h-3" />
-                                  Cost:
-                                </span>
-                                <span className="text-neutral-900">
-                                  ${call.cost.toFixed(4)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                          <p className="text-sm text-neutral-900 leading-relaxed">
+                            {call.summary}
+                          </p>
                         </div>
+                      )}
 
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {call.sentiment && (
                           <div>
                             <div className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
@@ -338,42 +308,28 @@ const VoxInbound: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="space-y-4">
-                        {call.summary && (
-                          <div>
-                            <div className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
-                              <MessageSquare className="w-4 h-4" />
-                              Summary
-                            </div>
-                            <p className="text-sm text-neutral-900 leading-relaxed">
-                              {call.summary}
-                            </p>
+                      {call.notes && (
+                        <div>
+                          <div className="text-sm font-medium text-neutral-700 mb-2">
+                            Notes
                           </div>
-                        )}
+                          <p className="text-sm text-neutral-900 leading-relaxed">
+                            {call.notes}
+                          </p>
+                        </div>
+                      )}
 
-                        {call.notes && (
-                          <div>
-                            <div className="text-sm font-medium text-neutral-700 mb-2">
-                              Notes
-                            </div>
-                            <p className="text-sm text-neutral-900 leading-relaxed">
-                              {call.notes}
-                            </p>
+                      {call.recording_url && (
+                        <div>
+                          <div className="text-sm font-medium text-neutral-700 mb-2">
+                            Recording
                           </div>
-                        )}
-
-                        {call.recording_url && (
-                          <div>
-                            <div className="text-sm font-medium text-neutral-700 mb-2">
-                              Recording
-                            </div>
-                            <audio controls className="w-full">
-                              <source src={call.recording_url} type="audio/mpeg" />
-                              Your browser does not support the audio element.
-                            </audio>
-                          </div>
-                        )}
-                      </div>
+                          <audio controls className="w-full">
+                            <source src={call.recording_url} type="audio/mpeg" />
+                            Your browser does not support the audio element.
+                          </audio>
+                        </div>
+                      )}
                     </div>
 
                     {call.transcript && (
