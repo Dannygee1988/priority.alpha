@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Share2, Megaphone, Users, Globe, LayoutDashboard, PoundSterling, Users2, LineChart, UserCog, Calendar, Inbox, Settings, ChevronLeft, ChevronRight, ChevronDown, PenSquare, MessageSquare, Palette, Hash, TrendingUp, CalendarDays, Video, Images, Type, BookOpen, Wrench, FileType2, ScanLine, FileSearch, FileCog, FileText, FileSpreadsheet, FileImage, FileAudio, FileVideo, Printer, Newspaper, UserCircle, Shield, AlertCircle, PenLine, Database, Sparkles, UserPlus, Image, FileEdit, FileCheck, Brain, Bot, MessagesSquare, ListFilter, FileUp as FileUser, Bitcoin, Code, Mic, PhoneOutgoing, PhoneIncoming, BarChart3 } from 'lucide-react';
+import { Share2, Megaphone, Users, Globe, LayoutDashboard, PoundSterling, Users2, LineChart, UserCog, Calendar, Inbox, Settings, ChevronLeft, ChevronRight, ChevronDown, PenSquare, MessageSquare, Palette, Hash, TrendingUp, CalendarDays, Video, Images, Type, BookOpen, Wrench, FileType2, ScanLine, FileSearch, FileCog, FileText, FileSpreadsheet, FileImage, FileAudio, FileVideo, Printer, Newspaper, UserCircle, Shield, AlertCircle, PenLine, Database, Sparkles, UserPlus, Image, FileEdit, FileCheck, Brain, Bot, MessagesSquare, ListFilter, FileUp as FileUser, Bitcoin, Code, Mic, PhoneOutgoing, PhoneIncoming, BarChart3, Beaker } from 'lucide-react';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import LockedFeature from './LockedFeature';
 import UpgradeModal from './UpgradeModal';
@@ -82,7 +82,7 @@ const voxSubmenu = [
   { name: 'Analytics', icon: BarChart3, path: '/vox/analytics' },
 ];
 
-const navigation = [
+const labsSubmenu = [
   {
     name: 'Social Media',
     icon: Share2,
@@ -91,16 +91,37 @@ const navigation = [
   },
   { name: 'Marketing', icon: Megaphone, path: '/marketing' },
   {
-    name: 'Investors',
-    icon: Users,
-    path: '/investors',
-    submenu: investorsSubmenu,
-  },
-  {
     name: 'Public Relations',
     icon: Globe,
     path: '/pr',
     submenu: prSubmenu,
+  },
+  {
+    name: 'Community',
+    icon: Users2,
+    path: '/community',
+    submenu: communitySubmenu,
+  },
+  {
+    name: 'Human Resources',
+    icon: UserCog,
+    path: '/hr',
+    submenu: hrSubmenu,
+  },
+];
+
+const navigation = [
+  {
+    name: 'Labs',
+    icon: Beaker,
+    path: '/labs',
+    submenu: labsSubmenu,
+  },
+  {
+    name: 'Investors',
+    icon: Users,
+    path: '/investors',
+    submenu: investorsSubmenu,
   },
   { name: 'Management', icon: LayoutDashboard, path: '/management' },
   {
@@ -109,19 +130,7 @@ const navigation = [
     path: '/finance',
     submenu: financeSubmenu,
   },
-  {
-    name: 'Community',
-    icon: Users2,
-    path: '/community',
-    submenu: communitySubmenu,
-  },
   { name: 'Analytics', icon: LineChart, path: '/analytics' },
-  {
-    name: 'Human Resources',
-    icon: UserCog,
-    path: '/hr',
-    submenu: hrSubmenu,
-  },
   { name: 'CRM', icon: UserPlus, path: '/crm' },
   { name: 'Data', icon: Database, path: '/data' },
   {
