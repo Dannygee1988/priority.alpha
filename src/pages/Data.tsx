@@ -371,14 +371,24 @@ const Data: React.FC = () => {
       }
 
       const result = await response.json();
+      console.log('Sitemap extraction result:', result);
+
       const extractedUrls = result.urls || [];
 
       if (extractedUrls.length === 0) {
         setError('No URLs found in sitemap');
       } else {
-        setUrls([...urls, ...extractedUrls]);
+        // Add unique URLs only
+        const newUrls = [...urls];
+        extractedUrls.forEach((url: string) => {
+          if (!newUrls.includes(url)) {
+            newUrls.push(url);
+          }
+        });
+        setUrls(newUrls);
         setShowSitemapDialog(false);
         setSitemapUrl('');
+        setError(null);
       }
     } catch (err) {
       console.error('Error extracting sitemap:', err);
