@@ -306,18 +306,6 @@ const Data: React.FC = () => {
         throw new Error('No company found');
       }
 
-      // Save URLs to database
-      const urlInserts = urls.map(url => ({
-        company_id: companyId,
-        url: url
-      }));
-
-      const { error: insertError } = await supabase
-        .from('training_urls')
-        .insert(urlInserts);
-
-      if (insertError) throw insertError;
-
       // Send to webhook for processing
       const response = await fetch('https://n8n.srv997647.hstgr.cloud/webhook/b98783c9-e47b-49e0-a8b7-30b78c02e89e', {
         method: 'POST',
@@ -334,9 +322,8 @@ const Data: React.FC = () => {
         throw new Error(`Processing failed with status ${response.status}`);
       }
 
-      // Clear the URLs and reload training URLs
+      // Clear the URLs and reload data
       setUrls([]);
-      loadTrainingUrls();
       loadData(); // Reload documents in case new ones were created
     } catch (err) {
       console.error('Error processing URLs:', err);
