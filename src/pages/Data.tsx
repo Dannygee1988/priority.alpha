@@ -851,13 +851,7 @@ const Data: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                    <div className="flex justify-between items-center">
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowSitemapDialog(true)}
-                      >
-                        Extract Sitemap
-                      </Button>
+                    <div className="flex justify-end">
                       <Button
                         onClick={handleProcessUrls}
                         isLoading={isProcessingUrls}
