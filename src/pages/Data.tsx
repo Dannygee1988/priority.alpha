@@ -845,8 +845,7 @@ const Data: React.FC = () => {
                     <div className="flex justify-between items-center">
                       <Button
                         variant="outline"
-                        onClick={handleExtractSitemap}
-                        isLoading={extractingSitemap}
+                        onClick={() => setShowSitemapDialog(true)}
                       >
                         Extract Sitemap
                       </Button>
@@ -1010,6 +1009,46 @@ const Data: React.FC = () => {
         isLoading={isDeleting}
         variant="danger"
       />
+
+      {showSitemapDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-neutral-800 mb-4">Extract Sitemap</h3>
+            <p className="text-sm text-neutral-600 mb-4">
+              Enter the URL of your sitemap.xml file to extract all URLs for training.
+            </p>
+            <Input
+              placeholder="https://example.com/sitemap.xml"
+              value={sitemapUrl}
+              onChange={(e) => setSitemapUrl(e.target.value)}
+              leftIcon={<Globe size={18} />}
+              fullWidth
+            />
+            {error && (
+              <p className="text-sm text-error-600 mt-2">{error}</p>
+            )}
+            <div className="flex justify-end space-x-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowSitemapDialog(false);
+                  setSitemapUrl('');
+                  setError(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleExtractSitemap}
+                isLoading={extractingSitemap}
+                disabled={!sitemapUrl}
+              >
+                Extract URLs
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
