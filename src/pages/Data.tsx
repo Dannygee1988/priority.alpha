@@ -33,6 +33,8 @@ const Data: React.FC = () => {
   const [url, setUrl] = useState('');
   const [urls, setUrls] = useState<string[]>([]);
   const [extractingSitemap, setExtractingSitemap] = useState(false);
+  const [sitemapUrl, setSitemapUrl] = useState('');
+  const [showSitemapDialog, setShowSitemapDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [stats, setStats] = useState<DocumentStats>({
