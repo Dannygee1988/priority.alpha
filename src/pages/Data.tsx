@@ -319,7 +319,7 @@ const Data: React.FC = () => {
       if (insertError) throw insertError;
 
       // Send to webhook for processing
-      const response = await fetch('https://pri0r1ty.app.n8n.cloud/webhook/url-training', {
+      const response = await fetch('https://n8n.srv997647.hstgr.cloud/webhook/b98783c9-e47b-49e0-a8b7-30b78c02e89e', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
