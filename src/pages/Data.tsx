@@ -795,7 +795,16 @@ const Data: React.FC = () => {
 
             {/* Add URL Section */}
             <div className="bg-neutral-50 rounded-lg border border-neutral-200 p-6 mb-6">
-              <h3 className="text-md font-medium text-neutral-800 mb-4">Add New URLs</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-md font-medium text-neutral-800">Add New URLs</h3>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowSitemapDialog(true)}
+                  size="sm"
+                >
+                  Extract Sitemap
+                </Button>
+              </div>
               <div className="space-y-4">
                 <div className="flex space-x-2">
                   <div className="flex-1">
