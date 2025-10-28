@@ -345,18 +345,45 @@ const Data: React.FC = () => {
   };
 
   const handleExtractSitemap = async () => {
+    if (!sitemapUrl) {
+      setError('Please enter a sitemap URL');
+      return;
+    }
+
     setExtractingSitemap(true);
-    // Simulate sitemap extraction
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const response = await fetch('https://n8n.srv997647.hstgr.cloud/webhook/72f2a100-d168-4c41-a3dc-497ecd0ff751', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sitemap_url: sitemapUrl
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to extract sitemap with status ${response.status}`);
+      }
+
+      const result = await response.json();
+      const extractedUrls = result.urls || [];
+
+      if (extractedUrls.length === 0) {
+        setError('No URLs found in sitemap');
+      } else {
+        setUrls([...urls, ...extractedUrls]);
+        setShowSitemapDialog(false);
+        setSitemapUrl('');
+      }
+    } catch (err) {
+      console.error('Error extracting sitemap:', err);
+      setError('Failed to extract sitemap. Please check the URL and try again.');
+    } finally {
       setExtractingSitemap(false);
-      // Add example URLs from sitemap
-      setUrls([
-        ...urls,
-        'https://example.com/about',
-        'https://example.com/products',
-        'https://example.com/services',
-      ]);
-    }, 2000);
+    }
   };
 
   const handleDeleteDocument = async () => {
