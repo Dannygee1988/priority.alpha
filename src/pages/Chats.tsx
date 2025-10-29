@@ -719,33 +719,6 @@ Keywords: ${message.keywords.join(', ')}
                               </span>
                             )}
                             <button
-                              onClick={() => downloadMessage(message)}
-                              className="p-1.5 hover:bg-neutral-100 rounded-full transition-colors"
-                              title="Download message"
-                            >
-                              <Download size={16} className="text-neutral-400 hover:text-primary" />
-                            </button>
-                            <button
-                              onClick={() => toggleFavorite(message.id)}
-                              className="p-1.5 hover:bg-neutral-100 rounded-full transition-colors"
-                              title={favoriteMessages.has(message.id) ? "Remove from favorites" : "Add to favorites"}
-                            >
-                              <Star
-                                size={16}
-                                className={favoriteMessages.has(message.id) ? "text-warning-500 fill-warning-500" : "text-neutral-400 hover:text-warning-500"}
-                              />
-                            </button>
-                            <button
-                              onClick={() => toggleFlag(message.id)}
-                              className="p-1.5 hover:bg-neutral-100 rounded-full transition-colors"
-                              title={flaggedMessages.has(message.id) ? "Remove review flag" : "Flag for review"}
-                            >
-                              <Flag
-                                size={16}
-                                className={flaggedMessages.has(message.id) ? "text-error-500 fill-error-500" : "text-neutral-400 hover:text-error-500"}
-                              />
-                            </button>
-                            <button
                               onClick={() => setExpandedMessage(
                                 expandedMessage === message.id ? null : message.id
                               )}
@@ -771,15 +744,46 @@ Keywords: ${message.keywords.join(', ')}
                         {/* AI Response Section - Only show when expanded */}
                         {expandedMessage === message.id && message['Ai response'] && message['Ai response'].trim() !== '' && (
                           <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
-                            <div className="flex items-center mb-2">
-                              <div className="w-4 h-4 rounded-full overflow-hidden mr-2 flex items-center justify-center bg-neutral-100">
-                                <img 
-                                  src="https://res.cloudinary.com/deyzbqzya/image/upload/v1750009661/Blue_Pri0r1ty_Icon_fsmbrw.png" 
-                                  alt="Pri0r1ty AI" 
-                                  className="w-full h-full object-cover"
-                                />
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center">
+                                <div className="w-4 h-4 rounded-full overflow-hidden mr-2 flex items-center justify-center bg-neutral-100">
+                                  <img
+                                    src="https://res.cloudinary.com/deyzbqzya/image/upload/v1750009661/Blue_Pri0r1ty_Icon_fsmbrw.png"
+                                    alt="Pri0r1ty AI"
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <span className="text-sm font-medium text-primary">AI Advisor Response</span>
                               </div>
-                              <span className="text-sm font-medium text-primary">AI Advisor Response</span>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => downloadMessage(message)}
+                                  className="p-1.5 hover:bg-white rounded-full transition-colors"
+                                  title="Download message"
+                                >
+                                  <Download size={16} className="text-neutral-400 hover:text-primary" />
+                                </button>
+                                <button
+                                  onClick={() => toggleFavorite(message.id)}
+                                  className="p-1.5 hover:bg-white rounded-full transition-colors"
+                                  title={favoriteMessages.has(message.id) ? "Remove from favorites" : "Add to favorites"}
+                                >
+                                  <Star
+                                    size={16}
+                                    className={favoriteMessages.has(message.id) ? "text-warning-500 fill-warning-500" : "text-neutral-400 hover:text-warning-500"}
+                                  />
+                                </button>
+                                <button
+                                  onClick={() => toggleFlag(message.id)}
+                                  className="p-1.5 hover:bg-white rounded-full transition-colors"
+                                  title={flaggedMessages.has(message.id) ? "Remove review flag" : "Flag for review"}
+                                >
+                                  <Flag
+                                    size={16}
+                                    className={flaggedMessages.has(message.id) ? "text-error-500 fill-error-500" : "text-neutral-400 hover:text-error-500"}
+                                  />
+                                </button>
+                              </div>
                             </div>
                             <p className="text-neutral-700 whitespace-pre-wrap text-sm">
                               {message['Ai response']}
