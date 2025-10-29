@@ -334,16 +334,24 @@ const Data: React.FC = () => {
         throw new Error('No company found');
       }
 
-      // Initialize status for all URLs
+      // Initialize status for all URLs as pending
       const initialStatus: { [key: string]: 'pending' | 'processing' | 'success' | 'error' } = {};
       urls.forEach(url => {
-        initialStatus[url] = 'processing';
+        initialStatus[url] = 'pending';
       });
       setUrlProcessingStatus(initialStatus);
 
-      // Send each URL as a separate webhook request for concurrent processing
-      const webhookPromises = urls.map(async (url) => {
+      // Process URLs sequentially - one at a time
+      const results: { url: string; success: boolean; error?: any }[] = [];
+
+      for (const url of urls) {
         try {
+          // Update status to processing
+          setUrlProcessingStatus(prev => ({
+            ...prev,
+            [url]: 'processing'
+          }));
+
           const response = await fetch('https://n8n.srv997647.hstgr.cloud/webhook/b98783c9-e47b-49e0-a8b7-30b78c02e89e', {
             method: 'POST',
             headers: {
@@ -365,7 +373,7 @@ const Data: React.FC = () => {
             [url]: 'success'
           }));
 
-          return { url, success: true };
+          results.push({ url, success: true });
         } catch (err) {
           // Update status to error
           setUrlProcessingStatus(prev => ({
@@ -373,12 +381,9 @@ const Data: React.FC = () => {
             [url]: 'error'
           }));
 
-          return { url, success: false, error: err };
+          results.push({ url, success: false, error: err });
         }
-      });
-
-      // Wait for all requests to complete
-      const results = await Promise.all(webhookPromises);
+      }
 
       // Check if any failed
       const failedUrls = results.filter(r => !r.success);
