@@ -264,10 +264,17 @@ const Data: React.FC = () => {
       const result = await response.json();
       console.log('Upload successful:', result);
 
-      // Clear selected files after successful upload
+      // Clear selected files and reset file input after successful upload
       setSelectedFiles([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       // Reload documents
       loadData();
+
+      // Show success message
+      setError(null);
+      alert(`Successfully uploaded ${selectedFiles.length} file(s)`);
     } catch (err) {
       console.error('Upload error:', err);
       setError('Failed to upload files. Please try again.');
