@@ -69,6 +69,7 @@ const Chats: React.FC = () => {
   const [messagesPerPage] = useState(25);
   const [favoriteMessages, setFavoriteMessages] = useState<Set<string>>(new Set());
   const [flaggedMessages, setFlaggedMessages] = useState<Set<string>>(new Set());
+  const [activeFilter, setActiveFilter] = useState<'all' | 'favorites' | 'flagged'>('all');
 
   useEffect(() => {
     loadMessages();
@@ -318,7 +319,7 @@ const Chats: React.FC = () => {
 
   const filteredMessages = messages.filter(msg => {
     const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = 
+    const matchesSearch =
       msg.content.toLowerCase().includes(searchLower) ||
       msg.email?.toLowerCase().includes(searchLower) ||
       msg.name?.toLowerCase().includes(searchLower) ||
@@ -327,7 +328,12 @@ const Chats: React.FC = () => {
 
     const matchesPlatform = activePlatform === 'all' || msg.source === activePlatform;
 
-    return matchesSearch && matchesPlatform;
+    const matchesFilter =
+      activeFilter === 'all' ||
+      (activeFilter === 'favorites' && favoriteMessages.has(msg.id)) ||
+      (activeFilter === 'flagged' && flaggedMessages.has(msg.id));
+
+    return matchesSearch && matchesPlatform && matchesFilter;
   });
 
   const getMessageCountByPlatform = (platform: Platform) => {
@@ -363,10 +369,10 @@ const Chats: React.FC = () => {
     setCurrentPage(page);
   };
 
-  // Reset to first page when search or platform changes
+  // Reset to first page when search, platform, or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, activePlatform]);
+  }, [searchQuery, activePlatform, activeFilter]);
 
   const isPlatformLocked = (platform: Platform) => {
     return platform !== 'all' && platform !== 'website';
@@ -616,13 +622,40 @@ Keywords: ${message.keywords.join(', ')}
                 fullWidth
               />
             </div>
-            <Button
-              variant="outline"
-              leftIcon={<Filter size={18} />}
-              className="ml-2"
-            >
-              Filter
-            </Button>
+            <div className="flex items-center space-x-2 ml-2">
+              <button
+                onClick={() => setActiveFilter('all')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  activeFilter === 'all'
+                    ? 'bg-primary text-white'
+                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setActiveFilter('favorites')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center space-x-1 ${
+                  activeFilter === 'favorites'
+                    ? 'bg-warning-500 text-white'
+                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                }`}
+              >
+                <Star size={16} />
+                <span>Favorites</span>
+              </button>
+              <button
+                onClick={() => setActiveFilter('flagged')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center space-x-1 ${
+                  activeFilter === 'flagged'
+                    ? 'bg-error-500 text-white'
+                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                }`}
+              >
+                <Flag size={16} />
+                <span>Flagged</span>
+              </button>
+            </div>
           </div>
 
           {error && (
