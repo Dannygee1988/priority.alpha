@@ -351,7 +351,7 @@ const Data: React.FC = () => {
             },
             body: JSON.stringify({
               company_id: companyId,
-              urls: [url]
+              url: url
             })
           });
 
