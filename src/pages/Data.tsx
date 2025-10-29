@@ -50,6 +50,7 @@ const Data: React.FC = () => {
   const [isProcessingUrls, setIsProcessingUrls] = useState(false);
   const [trainingUrls, setTrainingUrls] = useState<string[]>([]);
   const [isLoadingUrls, setIsLoadingUrls] = useState(false);
+  const [urlProcessingStatus, setUrlProcessingStatus] = useState<{ [key: string]: 'pending' | 'processing' | 'success' | 'error' }>({});
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
@@ -333,25 +334,68 @@ const Data: React.FC = () => {
         throw new Error('No company found');
       }
 
-      // Send to webhook for processing
-      const response = await fetch('https://n8n.srv997647.hstgr.cloud/webhook/b98783c9-e47b-49e0-a8b7-30b78c02e89e', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          company_id: companyId,
-          urls: urls
-        })
+      // Initialize status for all URLs
+      const initialStatus: { [key: string]: 'pending' | 'processing' | 'success' | 'error' } = {};
+      urls.forEach(url => {
+        initialStatus[url] = 'processing';
+      });
+      setUrlProcessingStatus(initialStatus);
+
+      // Send each URL as a separate webhook request for concurrent processing
+      const webhookPromises = urls.map(async (url) => {
+        try {
+          const response = await fetch('https://n8n.srv997647.hstgr.cloud/webhook/b98783c9-e47b-49e0-a8b7-30b78c02e89e', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              company_id: companyId,
+              urls: [url]
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`Processing failed with status ${response.status}`);
+          }
+
+          // Update status to success
+          setUrlProcessingStatus(prev => ({
+            ...prev,
+            [url]: 'success'
+          }));
+
+          return { url, success: true };
+        } catch (err) {
+          // Update status to error
+          setUrlProcessingStatus(prev => ({
+            ...prev,
+            [url]: 'error'
+          }));
+
+          return { url, success: false, error: err };
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`Processing failed with status ${response.status}`);
+      // Wait for all requests to complete
+      const results = await Promise.all(webhookPromises);
+
+      // Check if any failed
+      const failedUrls = results.filter(r => !r.success);
+
+      if (failedUrls.length > 0) {
+        setError(`${failedUrls.length} URL(s) failed to process. Please try again.`);
+      } else {
+        setSuccessMessage(`Successfully processed ${urls.length} URL(s)`);
       }
 
-      // Clear the URLs and reload data
-      setUrls([]);
-      loadData(); // Reload documents in case new ones were created
+      // Clear the URLs and reload data after a short delay to allow processing
+      setTimeout(() => {
+        setUrls([]);
+        setUrlProcessingStatus({});
+        loadData();
+        loadTrainingUrls();
+      }, 2000);
     } catch (err) {
       console.error('Error processing URLs:', err);
       setError('Failed to process URLs. Please try again.');
@@ -855,31 +899,50 @@ const Data: React.FC = () => {
                       URLs to Process ({urls.length})
                     </h4>
                     <div className="space-y-2 mb-4">
-                      {urls.map((url, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between bg-neutral-50 p-3 rounded-lg border border-neutral-200"
-                        >
-                          <div className="flex items-center">
-                            <Globe size={18} className="text-primary mr-2" />
-                            <span className="text-sm text-neutral-700 break-all">{url}</span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveUrl(url)}
-                            className="text-error-600 hover:text-error-700"
+                      {urls.map((url, index) => {
+                        const status = urlProcessingStatus[url];
+                        return (
+                          <div
+                            key={index}
+                            className={`flex items-center justify-between p-3 rounded-lg border ${
+                              status === 'processing' ? 'bg-blue-50 border-blue-200' :
+                              status === 'success' ? 'bg-green-50 border-green-200' :
+                              status === 'error' ? 'bg-red-50 border-red-200' :
+                              'bg-neutral-50 border-neutral-200'
+                            }`}
                           >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
+                            <div className="flex items-center flex-1 min-w-0">
+                              {status === 'processing' ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2 flex-shrink-0"></div>
+                              ) : status === 'success' ? (
+                                <div className="text-green-600 mr-2 flex-shrink-0">✓</div>
+                              ) : status === 'error' ? (
+                                <div className="text-red-600 mr-2 flex-shrink-0">✗</div>
+                              ) : (
+                                <Globe size={18} className="text-primary mr-2 flex-shrink-0" />
+                              )}
+                              <span className="text-sm text-neutral-700 break-all">{url}</span>
+                            </div>
+                            {!isProcessingUrls && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveUrl(url)}
+                                className="text-error-600 hover:text-error-700 ml-2 flex-shrink-0"
+                              >
+                                Remove
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                     <div className="flex justify-end">
                       <Button
                         onClick={handleProcessUrls}
                         isLoading={isProcessingUrls}
                         leftIcon={<Plus size={18} />}
+                        disabled={isProcessingUrls}
                       >
                         {isProcessingUrls ? 'Processing URLs...' : 'Start Training'}
                       </Button>
