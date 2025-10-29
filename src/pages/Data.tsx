@@ -180,8 +180,14 @@ const Data: React.FC = () => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      setSelectedFiles(Array.from(files));
+      const fileArray = Array.from(files);
+      if (fileArray.length > 10) {
+        setError('You can upload a maximum of 10 files at once');
+        return;
+      }
+      setSelectedFiles(fileArray);
       setUploadProgress({});
+      setError(null);
     }
   };
 
@@ -192,8 +198,14 @@ const Data: React.FC = () => {
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const files = event.dataTransfer.files;
-    setSelectedFiles(Array.from(files));
+    const fileArray = Array.from(files);
+    if (fileArray.length > 10) {
+      setError('You can upload a maximum of 10 files at once');
+      return;
+    }
+    setSelectedFiles(fileArray);
     setUploadProgress({});
+    setError(null);
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
@@ -944,6 +956,9 @@ const Data: React.FC = () => {
                   <p className="mt-2 text-xs text-neutral-500">
                     Supported formats: PDF, TXT, DOC, DOCX, CSV, JSON
                   </p>
+                  <p className="mt-1 text-xs text-neutral-400">
+                    Maximum 10 files per upload
+                  </p>
                   <div className="mt-6">
                     <Button onClick={triggerFileInput}>
                       Browse Files
@@ -952,9 +967,14 @@ const Data: React.FC = () => {
                 </div>
               ) : (
                 <div>
-                  <h3 className="text-sm font-medium text-neutral-900 mb-4">
-                    Selected Files ({selectedFiles.length})
-                  </h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-medium text-neutral-900">
+                      Selected Files ({selectedFiles.length}/10)
+                    </h3>
+                    <span className="text-xs text-neutral-500">
+                      Total: {formatFileSize(selectedFiles.reduce((acc, file) => acc + file.size, 0))}
+                    </span>
+                  </div>
                   <div className="space-y-2">
                     {selectedFiles.map((file, index) => (
                       <div
