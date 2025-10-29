@@ -939,13 +939,59 @@ const Data: React.FC = () => {
         {/* Upload Section */}
         {activeTab === 'upload' && (
           <div className="p-6">
-            {/* File Upload Section */}
+            {/* Selected Files Section */}
+            {selectedFiles.length > 0 && (
+              <div className="bg-white rounded-lg border border-neutral-200 p-6 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-neutral-900">
+                    Selected Files ({selectedFiles.length}/10)
+                  </h3>
+                  <span className="text-xs text-neutral-500">
+                    Total: {formatFileSize(selectedFiles.reduce((acc, file) => acc + file.size, 0))}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {selectedFiles.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-neutral-50 p-3 rounded-lg border border-neutral-200"
+                    >
+                      <div className="flex items-center">
+                        {getFileIcon(file.type.split('/')[1].toUpperCase())}
+                        <span className="ml-2 text-sm text-neutral-700">{file.name}</span>
+                      </div>
+                      <span className="text-sm text-neutral-500">
+                        {formatFileSize(file.size)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedFiles([]);
+                      setUploadProgress({});
+                    }}
+                  >
+                    Clear
+                  </Button>
+                  <Button
+                    onClick={handleUpload}
+                    isLoading={isUploading}
+                  >
+                    Upload Files
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* File Upload Section - Always visible */}
             <div
-              className={`border-2 border-dashed border-neutral-200 rounded-lg p-8 ${
-                selectedFiles.length > 0 ? 'bg-neutral-50' : ''
-              }`}
+              className="border-2 border-dashed border-neutral-200 rounded-lg p-8 cursor-pointer hover:border-neutral-300 transition-colors"
               onDrop={handleDrop}
               onDragOver={handleDragOver}
+              onClick={triggerFileInput}
             >
               <input
                 type="file"
@@ -955,73 +1001,22 @@ const Data: React.FC = () => {
                 multiple
                 accept=".pdf,.txt,.doc,.docx,.csv,.json"
               />
-              
-              {selectedFiles.length === 0 ? (
-                <div className="text-center">
-                  <Upload className="mx-auto h-12 w-12 text-neutral-400" />
-                  <h3 className="mt-2 text-sm font-medium text-neutral-900">
-                    Drag & drop files here
-                  </h3>
-                  <p className="mt-1 text-sm text-neutral-500">
-                    or click to browse files
-                  </p>
-                  <p className="mt-2 text-xs text-neutral-500">
-                    Supported formats: PDF, TXT, DOC, DOCX, CSV, JSON
-                  </p>
-                  <p className="mt-1 text-xs text-neutral-400">
-                    Maximum 10 files per upload
-                  </p>
-                  <div className="mt-6">
-                    <Button onClick={triggerFileInput}>
-                      Browse Files
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-neutral-900">
-                      Selected Files ({selectedFiles.length}/10)
-                    </h3>
-                    <span className="text-xs text-neutral-500">
-                      Total: {formatFileSize(selectedFiles.reduce((acc, file) => acc + file.size, 0))}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {selectedFiles.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between bg-white p-3 rounded-lg border border-neutral-200"
-                      >
-                        <div className="flex items-center">
-                          {getFileIcon(file.type.split('/')[1].toUpperCase())}
-                          <span className="ml-2 text-sm text-neutral-700">{file.name}</span>
-                        </div>
-                        <span className="text-sm text-neutral-500">
-                          {formatFileSize(file.size)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 flex justify-end space-x-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedFiles([]);
-                        setUploadProgress({});
-                      }}
-                    >
-                      Clear
-                    </Button>
-                    <Button
-                      onClick={handleUpload}
-                      isLoading={isUploading}
-                    >
-                      Upload Files
-                    </Button>
-                  </div>
-                </div>
-              )}
+
+              <div className="text-center">
+                <Upload className="mx-auto h-12 w-12 text-neutral-400" />
+                <h3 className="mt-2 text-sm font-medium text-neutral-900">
+                  {selectedFiles.length > 0 ? 'Add more files' : 'Drag & drop files here'}
+                </h3>
+                <p className="mt-1 text-sm text-neutral-500">
+                  or click to browse files
+                </p>
+                <p className="mt-2 text-xs text-neutral-500">
+                  Supported formats: PDF, TXT, DOC, DOCX, CSV, JSON
+                </p>
+                <p className="mt-1 text-xs text-neutral-400">
+                  Maximum 10 files per upload
+                </p>
+              </div>
             </div>
 
             {error && (
