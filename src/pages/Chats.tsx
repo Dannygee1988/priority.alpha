@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MessageSquare, User, Bot, ChevronDown, ChevronUp, Tag as TagIcon, Lock, Hash, Heart, Users, ChevronLeft, ChevronRight, Download, Star } from 'lucide-react';
+import { Search, Filter, MessageSquare, User, Bot, ChevronDown, ChevronUp, Tag as TagIcon, Lock, Hash, Heart, Users, ChevronLeft, ChevronRight, Download, Star, Flag } from 'lucide-react';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +23,7 @@ interface ChatMessage {
   'Ai response': string | null;
   'Topic': string | null;
   is_favorite?: boolean;
+  needs_review?: boolean;
 }
 
 interface CompanyProfile {
@@ -67,12 +68,14 @@ const Chats: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [messagesPerPage] = useState(25);
   const [favoriteMessages, setFavoriteMessages] = useState<Set<string>>(new Set());
+  const [flaggedMessages, setFlaggedMessages] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadMessages();
     loadCompanyLogo();
     loadConversationStats();
     loadFavoritesFromLocalStorage();
+    loadFlagsFromLocalStorage();
   }, [user]);
 
   const loadFavoritesFromLocalStorage = () => {
@@ -84,6 +87,18 @@ const Chats: React.FC = () => {
       }
     } catch (err) {
       console.error('Error loading favorites from localStorage:', err);
+    }
+  };
+
+  const loadFlagsFromLocalStorage = () => {
+    try {
+      const stored = localStorage.getItem('flaggedMessages');
+      if (stored) {
+        const flags = JSON.parse(stored);
+        setFlaggedMessages(new Set(flags));
+      }
+    } catch (err) {
+      console.error('Error loading flags from localStorage:', err);
     }
   };
 
@@ -214,6 +229,12 @@ const Chats: React.FC = () => {
         mappedData.filter(m => m.is_favorite).map(m => m.id)
       );
       setFavoriteMessages(favorites);
+
+      // Load flagged messages
+      const flags = new Set(
+        mappedData.filter(m => m.needs_review).map(m => m.id)
+      );
+      setFlaggedMessages(flags);
     } catch (err) {
       console.error('Error loading messages:', err);
       setError('Failed to load messages. Please try again.');
@@ -429,6 +450,43 @@ Keywords: ${message.keywords.join(', ')}
       ));
     } catch (err) {
       console.error('Error toggling favorite:', err);
+    }
+  };
+
+  const toggleFlag = async (messageId: string) => {
+    try {
+      const isFlagged = flaggedMessages.has(messageId);
+      const newFlagStatus = !isFlagged;
+
+      // Try to update in database
+      const { error } = await supabase
+        .from('chatbot_messages')
+        .update({ needs_review: newFlagStatus })
+        .eq('id', messageId);
+
+      if (error) {
+        console.error('Error updating flag status:', error);
+        // Still update local state even if database update fails
+      }
+
+      // Update local state
+      const newFlags = new Set(flaggedMessages);
+      if (isFlagged) {
+        newFlags.delete(messageId);
+      } else {
+        newFlags.add(messageId);
+      }
+      setFlaggedMessages(newFlags);
+
+      // Save to localStorage as backup
+      localStorage.setItem('flaggedMessages', JSON.stringify(Array.from(newFlags)));
+
+      // Update messages state
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId ? { ...msg, needs_review: newFlagStatus } : msg
+      ));
+    } catch (err) {
+      console.error('Error toggling flag:', err);
     }
   };
 
@@ -675,6 +733,16 @@ Keywords: ${message.keywords.join(', ')}
                               <Star
                                 size={16}
                                 className={favoriteMessages.has(message.id) ? "text-warning-500 fill-warning-500" : "text-neutral-400 hover:text-warning-500"}
+                              />
+                            </button>
+                            <button
+                              onClick={() => toggleFlag(message.id)}
+                              className="p-1.5 hover:bg-neutral-100 rounded-full transition-colors"
+                              title={flaggedMessages.has(message.id) ? "Remove review flag" : "Flag for review"}
+                            >
+                              <Flag
+                                size={16}
+                                className={flaggedMessages.has(message.id) ? "text-error-500 fill-error-500" : "text-neutral-400 hover:text-error-500"}
                               />
                             </button>
                             <button
