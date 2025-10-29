@@ -62,9 +62,7 @@ const Data: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    if (activeTab === 'urls') {
-      loadTrainingUrls();
-    }
+    loadTrainingUrls();
   }, [user]);
 
   useEffect(() => {
@@ -643,6 +641,18 @@ const Data: React.FC = () => {
               </h3>
             </div>
             <Database className="text-accent" size={24} />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border border-neutral-200">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-neutral-600 text-sm font-medium">Training URLs</p>
+              <h3 className="text-2xl font-bold text-neutral-800 mt-1">
+                {trainingUrls.length || '-'}
+              </h3>
+            </div>
+            <Globe className="text-warning-500" size={24} />
           </div>
         </div>
       </div>
