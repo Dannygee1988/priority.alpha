@@ -235,35 +235,38 @@ const Data: React.FC = () => {
 
       if (companyError) throw companyError;
 
-      const formData = new FormData();
+      // Send separate webhook for each file concurrently
+      const uploadPromises = selectedFiles.map(async (file) => {
+        const formData = new FormData();
 
-      // Add files with their names and extensions
-      selectedFiles.forEach((file, index) => {
-        formData.append(`file${index}`, file);
-        formData.append(`filename${index}`, file.name);
+        // Add single file
+        formData.append('file', file);
+        formData.append('filename', file.name);
         const extension = file.name.split('.').pop()?.toLowerCase() || '';
-        formData.append(`extension${index}`, extension);
+        formData.append('extension', extension);
+
+        // Add company details
+        formData.append('company_id', companyId);
+        formData.append('company_name', companyData.name);
+        if (companyData.gcp_id) {
+          formData.append('gcp_id', companyData.gcp_id);
+        }
+
+        const response = await fetch('https://n8n.srv997647.hstgr.cloud/webhook/821b6f3f-f635-422b-916c-b1aed0f2d96f', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed for ${file.name} with status ${response.status}`);
+        }
+
+        return await response.json();
       });
 
-      // Add company details and number of files
-      formData.append('company_id', companyId);
-      formData.append('company_name', companyData.name);
-      if (companyData.gcp_id) {
-        formData.append('gcp_id', companyData.gcp_id);
-      }
-      formData.append('file_count', selectedFiles.length.toString());
-
-      const response = await fetch('https://n8n.srv997647.hstgr.cloud/webhook/821b6f3f-f635-422b-916c-b1aed0f2d96f', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upload failed with status ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('Upload successful:', result);
+      // Wait for all uploads to complete
+      const results = await Promise.all(uploadPromises);
+      console.log('All uploads successful:', results);
 
       // Clear selected files and reset file input after successful upload
       setSelectedFiles([]);
