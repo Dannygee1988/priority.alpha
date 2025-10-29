@@ -45,6 +45,7 @@ const Data: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isProcessingUrls, setIsProcessingUrls] = useState(false);
   const [trainingUrls, setTrainingUrls] = useState<string[]>([]);
@@ -274,7 +275,8 @@ const Data: React.FC = () => {
 
       // Show success message
       setError(null);
-      alert(`Successfully uploaded ${selectedFiles.length} file(s)`);
+      setSuccessMessage(`Successfully uploaded ${selectedFiles.length} file(s)`);
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (err) {
       console.error('Upload error:', err);
       setError('Failed to upload files. Please try again.');
@@ -1022,6 +1024,12 @@ const Data: React.FC = () => {
             {error && (
               <div className="mt-4 p-4 bg-error-50 text-error-700 rounded-md">
                 {error}
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-md border border-green-200">
+                {successMessage}
               </div>
             )}
           </div>
