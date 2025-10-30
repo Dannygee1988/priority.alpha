@@ -181,8 +181,8 @@ const Data: React.FC = () => {
     const files = event.target.files;
     if (files) {
       const fileArray = Array.from(files);
-      if (fileArray.length > 10) {
-        setError('You can upload a maximum of 10 files at once');
+      if (fileArray.length > 5) {
+        setError('You can upload a maximum of 5 files at once');
         return;
       }
       setSelectedFiles(fileArray);
@@ -199,8 +199,8 @@ const Data: React.FC = () => {
     event.preventDefault();
     const files = event.dataTransfer.files;
     const fileArray = Array.from(files);
-    if (fileArray.length > 10) {
-      setError('You can upload a maximum of 10 files at once');
+    if (fileArray.length > 5) {
+      setError('You can upload a maximum of 5 files at once');
       return;
     }
     setSelectedFiles(fileArray);
@@ -1022,7 +1022,7 @@ const Data: React.FC = () => {
               <div className="bg-white rounded-lg border border-neutral-200 p-6 mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-medium text-neutral-900">
-                    Selected Files ({selectedFiles.length}/10)
+                    Selected Files ({selectedFiles.length}/5)
                   </h3>
                   <span className="text-xs text-neutral-500">
                     Total: {formatFileSize(selectedFiles.reduce((acc, file) => acc + file.size, 0))}
@@ -1092,7 +1092,7 @@ const Data: React.FC = () => {
                   Supported formats: PDF, TXT, DOC, DOCX, CSV, JSON
                 </p>
                 <p className="mt-1 text-xs text-neutral-400">
-                  Maximum 10 files per upload
+                  Maximum 5 files per upload
                 </p>
               </div>
             </div>
