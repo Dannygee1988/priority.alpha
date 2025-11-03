@@ -80,7 +80,6 @@ const voxSubmenu = [
   { name: 'Outbound', icon: PhoneOutgoing, path: '/vox/outbound' },
   { name: 'Inbound', icon: PhoneIncoming, path: '/vox/inbound' },
   { name: 'Call Logs', icon: ListFilter, path: '/vox/call-logs' },
-  { name: 'Analytics', icon: BarChart3, path: '/vox/analytics' },
 ];
 
 const labsSubmenu = [
