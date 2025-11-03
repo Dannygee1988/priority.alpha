@@ -27,10 +27,13 @@ const VoxOutbound: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [agentId, setAgentId] = useState<string>('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [queuedCalls, setQueuedCalls] = useState<VoxOutboundCall[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchAgentId();
+      fetchQueuedCalls();
     }
   }, [user]);
 
@@ -57,6 +60,27 @@ const VoxOutbound: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching agent ID:', error);
+    }
+  };
+
+  const fetchQueuedCalls = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('vox_outbound_calls')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setQueuedCalls(data || []);
+    } catch (error) {
+      console.error('Error fetching queued calls:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -199,6 +223,7 @@ const VoxOutbound: React.FC = () => {
 
       setMessage({ type: 'success', text: `Successfully queued ${validNumbers.length} calls` });
       setPhoneNumbers([]);
+      await fetchQueuedCalls();
     } catch (error) {
       console.error('Error submitting calls:', error);
       setMessage({ type: 'error', text: 'Failed to queue calls. Please try again.' });
@@ -454,6 +479,97 @@ const VoxOutbound: React.FC = () => {
           </div>
         </div>
       )}
+
+      <div className="mt-8 bg-white rounded-lg shadow-sm border border-neutral-200">
+        <div className="px-6 py-4 border-b border-neutral-200">
+          <h2 className="text-lg font-semibold text-neutral-800">
+            Queued Calls ({queuedCalls.length})
+          </h2>
+        </div>
+
+        {loading ? (
+          <div className="p-8 text-center text-neutral-500">
+            Loading calls...
+          </div>
+        ) : queuedCalls.length === 0 ? (
+          <div className="p-8 text-center text-neutral-500">
+            No calls queued yet. Add contacts above to get started.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-neutral-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    Phone Number
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    Call Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    Created
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-200">
+                {queuedCalls.map((call) => (
+                  <tr key={call.id} className="hover:bg-neutral-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        call.status === 'Complete'
+                          ? 'bg-green-100 text-green-800'
+                          : call.status === 'Waiting'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {call.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-800">
+                      {call.caller_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-neutral-800">
+                      {call.phone_number}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                      {call.caller_email || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`text-sm ${
+                        call.call_status === 'completed'
+                          ? 'text-green-600'
+                          : call.call_status === 'failed'
+                          ? 'text-red-600'
+                          : 'text-neutral-600'
+                      }`}>
+                        {call.call_status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                      {new Date(call.created_at).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

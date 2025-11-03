@@ -54,6 +54,7 @@ export interface VoxOutboundCall {
   caller_address?: string;
   call_duration: number;
   call_status: 'completed' | 'failed' | 'no-answer' | 'busy' | 'cancelled' | 'pending' | 'queued';
+  status: 'Unprocessed' | 'Waiting' | 'Complete';
   call_sid?: string;
   recording_url?: string;
   transcript?: string;
