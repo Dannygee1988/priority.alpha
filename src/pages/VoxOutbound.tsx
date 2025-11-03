@@ -216,6 +216,19 @@ const VoxOutbound: React.FC = () => {
         <p className="text-neutral-600">Schedule outbound calls by adding phone numbers manually or uploading a CSV file.</p>
       </div>
 
+      <div className="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200 flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0 text-blue-600" />
+        <div className="text-sm text-blue-900">
+          <p className="font-medium mb-1">Important Information</p>
+          <p>
+            Pri0r1ty Vox should only be used for consented outbound calling and in the normal course of your business.
+            Outbound calling is only available during the working hours of 9am - 5pm Monday - Friday (including bank holidays).
+            Batch calls will be scheduled and processed at regular intervals based on your Vox subscription concurrency.
+            Vox is designed to maximise your outbound calling success using AI so will always adhere to data compliance and telephone compliance rules.
+          </p>
+        </div>
+      </div>
+
       {message && (
         <div className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${
           message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
