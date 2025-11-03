@@ -163,6 +163,11 @@ const VoxOutbound: React.FC = () => {
       return;
     }
 
+    if (phoneNumbers.length >= 10) {
+      setMessage({ type: 'error', text: 'Maximum of 10 calls can be added at once' });
+      return;
+    }
+
     const validation = validatePhoneNumber(currentNumber);
     const isDuplicate = phoneNumbers.some(p => p.number === currentNumber.trim());
 
