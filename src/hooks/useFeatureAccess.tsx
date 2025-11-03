@@ -22,11 +22,11 @@ export const useFeatureAccess = () => {
       }
 
       try {
-        const { data: userCompany, error: userCompanyError } = await supabase
+        const { data: userCompanies, error: userCompanyError } = await supabase
           .from('user_companies')
           .select('company_id')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .order('created_at', { ascending: false });
 
         if (userCompanyError) {
           console.error('Error fetching user company:', userCompanyError);
@@ -35,17 +35,19 @@ export const useFeatureAccess = () => {
           return;
         }
 
-        if (!userCompany?.company_id) {
-          console.error('No company_id found for user');
+        if (!userCompanies || userCompanies.length === 0) {
+          console.error('No company found for user');
           setCompanyProfile(null);
           setLoading(false);
           return;
         }
 
+        const companyId = userCompanies[0].company_id;
+
         const { data, error } = await supabase
           .from('company_profiles')
           .select('id, name, subscription_products')
-          .eq('id', userCompany.company_id)
+          .eq('id', companyId)
           .maybeSingle();
 
         if (error) {
