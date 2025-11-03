@@ -208,7 +208,6 @@ const VoxOutbound: React.FC = () => {
         caller_name: phone.name,
         caller_email: phone.email || null,
         caller_address: phone.address || null,
-        call_status: 'completed',
         status: 'Waiting',
         call_duration: 0,
         cost: 0
