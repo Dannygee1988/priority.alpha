@@ -512,9 +512,6 @@ const VoxOutbound: React.FC = () => {
                     Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                    Call Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                     Created
                   </th>
                 </tr>
@@ -541,17 +538,6 @@ const VoxOutbound: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
                       {call.caller_email || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-sm ${
-                        call.call_status === 'completed'
-                          ? 'text-green-600'
-                          : call.call_status === 'failed'
-                          ? 'text-red-600'
-                          : 'text-neutral-600'
-                      }`}>
-                        {call.call_status}
-                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
                       {new Date(call.created_at).toLocaleDateString('en-GB', {
