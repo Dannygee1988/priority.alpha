@@ -213,11 +213,28 @@ const VoxOutbound: React.FC = () => {
         cost: 0
       }));
 
-      const { error } = await supabase
+      const { data: insertedCalls, error } = await supabase
         .from('vox_outbound_calls')
-        .insert(callsToInsert);
+        .insert(callsToInsert)
+        .select();
 
       if (error) throw error;
+
+      if (insertedCalls && insertedCalls.length > 0) {
+        try {
+          const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vox-outbound-webhook`;
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ calls: insertedCalls }),
+          });
+        } catch (webhookError) {
+          console.error('Failed to send webhook:', webhookError);
+        }
+      }
 
       setMessage({ type: 'success', text: `Successfully queued ${validNumbers.length} calls` });
       setPhoneNumbers([]);
