@@ -316,7 +316,7 @@ const Dashboard: React.FC = () => {
   const isFreeTier = subscriptionProducts.length === 0;
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8 animate-fade-in relative">
+    <div className="px-4 py-6 sm:px-6 lg:px-8 animate-fade-in">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-neutral-800">Dashboard</h1>
       </div>
@@ -325,66 +325,38 @@ const Dashboard: React.FC = () => {
         <DashboardStatistics stats={stats} />
       </div>
 
-      <div className={`grid grid-cols-1 lg:grid-cols-4 gap-6 relative ${isFreeTier ? 'pointer-events-none' : ''}`}>
-        {Object.entries(toolCategories).map(([key, category]) => (
-          <div key={key} className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-neutral-800">{category.title}</h2>
-              <p className="text-neutral-500 text-sm">{category.description}</p>
-            </div>
-            <div className="space-y-6">
-              {category.tools.map((tool) => (
-                <div key={tool.id} className={`h-[200px] ${isFreeTier && tool.featureKey !== 'advisor' ? 'opacity-30' : ''}`}>
-                  <ToolTile
-                    title={tool.name}
-                    description={tool.description}
-                    icon={getToolIcon(tool.icon)}
-                    path={tool.path}
-                    featureKey={tool.featureKey}
-                  />
-                </div>
-              ))}
-            </div>
+      <div className="flex items-center justify-center py-16">
+        <div className="text-center p-8 max-w-md">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-warning-400 to-warning-600 text-white flex items-center justify-center mx-auto mb-6">
+            <Crown size={32} />
           </div>
-        ))}
-        
-        {/* Single Upgrade Overlay for Free Tier */}
-        {isFreeTier && (
-          <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center rounded-lg pointer-events-auto">
-            <div className="text-center p-8 max-w-md">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-warning-400 to-warning-600 text-white flex items-center justify-center mx-auto mb-6">
-                <Crown size={32} />
-              </div>
-              
-              <h2 className="text-2xl font-bold text-neutral-800 mb-4">
-                Unlock Full Platform Access
-              </h2>
-              
-              <p className="text-neutral-600 mb-6 leading-relaxed">
-                You're currently on the <strong>Advisor</strong> plan. Upgrade to <strong>Pri0r1ty Generate </strong> 
-                or <strong>Fan Sonar</strong> from £250/month to unlock all business management features including CRM, 
-                Social Media, Finance, HR, and more.
-              </p>
-              
-              <div className="space-y-3">
-                <Button
-                  size="lg"
-                  leftIcon={<Crown size={20} />}
-                  disabled={true}
-                  className="bg-gradient-to-r from-warning-500 to-warning-600 hover:from-warning-600 hover:to-warning-700 text-white w-full"
-                >
-                  Upgrade Now
-                </Button>
-                
-                <p className="text-sm text-neutral-500">
-                  Starting from £250/month • Cancel anytime
-                </p>
-              </div>
-            </div>
+
+          <h2 className="text-2xl font-bold text-neutral-800 mb-4">
+            Unlock Full Platform Access
+          </h2>
+
+          <p className="text-neutral-600 mb-6 leading-relaxed">
+            Upgrade your subscription to unlock all business management features including CRM,
+            Social Media, Finance, HR, and more.
+          </p>
+
+          <div className="space-y-3">
+            <Button
+              size="lg"
+              leftIcon={<Crown size={20} />}
+              disabled={true}
+              className="bg-gradient-to-r from-warning-500 to-warning-600 hover:from-warning-600 hover:to-warning-700 text-white w-full"
+            >
+              Upgrade Now
+            </Button>
+
+            <p className="text-sm text-neutral-500">
+              Starting from £250/month • Cancel anytime
+            </p>
           </div>
-        )}
+        </div>
       </div>
-      
+
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
