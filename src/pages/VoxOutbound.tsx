@@ -90,10 +90,42 @@ const VoxOutbound: React.FC = () => {
 
     setLoading(true);
     try {
+      const { data: userCompanies, error: userCompaniesError } = await supabase
+        .from('user_companies')
+        .select('company_id')
+        .eq('user_id', user.id);
+
+      if (userCompaniesError) throw userCompaniesError;
+
+      if (!userCompanies || userCompanies.length === 0) {
+        setQueuedCalls([]);
+        setLoading(false);
+        return;
+      }
+
+      const companyIds = userCompanies.map(uc => uc.company_id);
+
+      const { data: companies, error: companiesError } = await supabase
+        .from('company_profiles')
+        .select('vox_agent_id')
+        .in('id', companyIds);
+
+      if (companiesError) throw companiesError;
+
+      const agentIds = companies
+        ?.map(c => c.vox_agent_id)
+        .filter(id => id != null) || [];
+
+      if (agentIds.length === 0) {
+        setQueuedCalls([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('vox_outbound_calls')
         .select('*')
-        .eq('user_id', user.id)
+        .in('agent_id', agentIds)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
