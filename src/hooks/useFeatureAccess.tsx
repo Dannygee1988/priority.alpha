@@ -2,95 +2,88 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
-interface UserProfile {
+interface CompanyProfile {
   id: string;
-  email: string;
-  profile_type: 'free' | 'premium' | 'enterprise';
-  created_at: string;
+  name: string;
+  subscription_products: string[];
 }
-
-const FEATURE_ACCESS = {
-  free: ['advisor', 'gpt', 'chats', 'data'],
-  premium: [
-    'advisor', 'gpt', 'chats', 'social-media', 'marketing', 'analytics', 
-    'calendar', 'crm', 'data', 'tools'
-  ],
-  enterprise: [
-    'advisor', 'gpt', 'chats', 'social-media', 'marketing', 'investors', 
-    'pr', 'management', 'finance', 'community', 'analytics', 'hr', 
-    'calendar', 'crm', 'data', 'tools'
-  ]
-};
 
 export const useFeatureAccess = () => {
   const { user } = useAuth();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
+    const fetchCompanyProfile = async () => {
       if (!user) {
-        setUserProfile(null);
+        setCompanyProfile(null);
         setLoading(false);
         return;
       }
 
       try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+
+        if (userError) {
+          console.error('Error fetching user:', userError);
+          setLoading(false);
+          return;
+        }
+
+        const companyId = userData.user?.user_metadata?.company_id;
+
+        if (!companyId) {
+          console.error('No company_id found in user metadata');
+          setCompanyProfile(null);
+          setLoading(false);
+          return;
+        }
+
         const { data, error } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
+          .from('company_profiles')
+          .select('id, name, subscription_products')
+          .eq('id', companyId)
+          .maybeSingle();
 
         if (error) {
-          console.error('Error fetching user profile:', error);
-          // Default to free tier if profile not found
-          setUserProfile({
-            id: user.id,
-            email: user.email || '',
-            profile_type: 'free',
-            created_at: new Date().toISOString()
-          });
+          console.error('Error fetching company profile:', error);
+          setCompanyProfile(null);
+        } else if (data) {
+          setCompanyProfile(data);
         } else {
-          setUserProfile(data);
+          setCompanyProfile(null);
         }
       } catch (error) {
-        console.error('Error fetching user profile:', error);
-        // Default to free tier on error
-        setUserProfile({
-          id: user.id,
-          email: user.email || '',
-          profile_type: 'free',
-          created_at: new Date().toISOString()
-        });
+        console.error('Error fetching company profile:', error);
+        setCompanyProfile(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserProfile();
+    fetchCompanyProfile();
   }, [user]);
 
   const hasFeatureAccess = (featureKey: string): boolean => {
-    if (!userProfile) return false;
-    
-    const userFeatures = FEATURE_ACCESS[userProfile.profile_type] || [];
-    return userFeatures.includes(featureKey);
+    if (!companyProfile) return false;
+
+    const subscriptionProducts = companyProfile.subscription_products || [];
+    return subscriptionProducts.includes(featureKey);
   };
 
   const isFeatureLocked = (featureKey: string): boolean => {
     return !hasFeatureAccess(featureKey);
   };
 
-  const getUserTier = (): 'free' | 'premium' | 'enterprise' => {
-    return userProfile?.profile_type || 'free';
+  const getSubscriptionProducts = (): string[] => {
+    return companyProfile?.subscription_products || [];
   };
 
   return {
-    userProfile,
+    companyProfile,
     loading,
     hasFeatureAccess,
     isFeatureLocked,
-    getUserTier
+    getSubscriptionProducts
   };
 };

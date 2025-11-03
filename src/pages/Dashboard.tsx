@@ -225,7 +225,7 @@ const getToolIcon = (icon: string) => {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { hasFeatureAccess, getUserTier } = useFeatureAccess();
+  const { hasFeatureAccess, getSubscriptionProducts } = useFeatureAccess();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [stats, setStats] = useState<Stat[]>([
     {
@@ -312,8 +312,8 @@ const Dashboard: React.FC = () => {
     loadSocialMetrics();
   }, [user]);
 
-  const userTier = getUserTier();
-  const isFreeTier = userTier === 'free';
+  const subscriptionProducts = getSubscriptionProducts();
+  const isFreeTier = subscriptionProducts.length === 0;
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8 animate-fade-in relative">

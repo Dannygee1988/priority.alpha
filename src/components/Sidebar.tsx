@@ -192,11 +192,11 @@ const Sidebar: React.FC = () => {
   };
 
   const getFeatureKeyFromPath = (path: string): string | null => {
-    if (path.includes('/vox')) return null; // Vox is always unlocked - check this first before /analytics
-    if (path.includes('/fan-sonar')) return null; // Fan Sonar is always unlocked
-    if (path.includes('/advisor') || path.includes('/gpt') || path.includes('/chats')) return null; // These are always unlocked
+    if (path.includes('/vox')) return 'vox';
+    if (path.includes('/fan-sonar')) return 'fan-sonar';
+    if (path.includes('/advisor') || path.includes('/gpt') || path.includes('/chats')) return 'advisor';
     if (path.includes('/social-media')) return 'social-media';
-    if (path.includes('/marketing')) return 'pr';
+    if (path.includes('/marketing')) return 'marketing';
     if (path.includes('/investors')) return 'investors';
     if (path.includes('/pr')) return 'pr';
     if (path.includes('/management')) return 'management';
@@ -204,13 +204,12 @@ const Sidebar: React.FC = () => {
     if (path.includes('/community')) return 'community';
     if (path.includes('/analytics')) return 'analytics';
     if (path.includes('/hr')) return 'hr';
-    if (path.includes('/crm')) return null; // CRM is now unlocked for all users
-    if (path.includes('/data')) return null; // Data is now unlocked for all users
+    if (path.includes('/crm')) return 'crm';
+    if (path.includes('/data')) return 'data';
     if (path.includes('/tools')) return 'tools';
     if (path.includes('/calendar')) return 'calendar';
-    if (path.includes('/inbox')) return 'settings';
-    if (path.includes('/settings')) return 'settings';
-    return 'locked';
+    if (path.includes('/labs')) return 'labs';
+    return null;
   };
 
   const NavLink = ({ 
