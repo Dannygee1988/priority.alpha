@@ -22,6 +22,7 @@ import AdvisorCode from './pages/AdvisorCode';
 import VoxOutbound from './pages/VoxOutbound';
 import VoxInbound from './pages/VoxInbound';
 import VoxAnalytics from './pages/VoxAnalytics';
+import VoxCallLogs from './pages/VoxCallLogs';
 import AppLayout from './layouts/AppLayout';
 
 function App() {
@@ -54,6 +55,7 @@ function App() {
             <Route path="/vox/outbound" element={<VoxOutbound />} />
             <Route path="/vox/inbound" element={<VoxInbound />} />
             <Route path="/vox/analytics" element={<VoxAnalytics />} />
+            <Route path="/vox/call-logs" element={<VoxCallLogs />} />
             {/* Add more routes as they're developed */}
             <Route path="/analytics" element={<div className="p-8">Analytics page (coming soon)</div>} />
             <Route path="/team" element={<div className="p-8">Team Management page (coming soon)</div>} />
