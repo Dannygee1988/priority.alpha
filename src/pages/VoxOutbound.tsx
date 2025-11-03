@@ -209,6 +209,7 @@ const VoxOutbound: React.FC = () => {
         caller_email: phone.email || null,
         caller_address: phone.address || null,
         status: 'Unprocessed',
+        call_status: 'queued',
         call_duration: 0,
         cost: 0
       }));

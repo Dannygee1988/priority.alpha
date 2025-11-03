@@ -155,7 +155,7 @@ const VoxCallLogs: React.FC = () => {
       case 'cancelled':
         return 'bg-gray-100 text-gray-800';
       case 'queued':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-50 text-blue-700';
       default:
         return 'bg-gray-100 text-gray-800';
     }
