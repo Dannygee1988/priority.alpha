@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Upload, Plus, X, FileSpreadsheet, AlertCircle, CheckCircle } from 'lucide-react';
+import { Phone, Plus, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxOutboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -17,13 +17,11 @@ interface ContactData {
 
 const VoxOutbound: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'manual' | 'upload'>('manual');
   const [phoneNumbers, setPhoneNumbers] = useState<ContactData[]>([]);
   const [currentNumber, setCurrentNumber] = useState('+44');
   const [currentName, setCurrentName] = useState('');
   const [currentEmail, setCurrentEmail] = useState('');
   const [currentAddress, setCurrentAddress] = useState('');
-  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [agentId, setAgentId] = useState<string>('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -139,52 +137,6 @@ const VoxOutbound: React.FC = () => {
     setPhoneNumbers(phoneNumbers.filter(p => p.id !== id));
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    setMessage(null);
-
-    try {
-      const text = await file.text();
-      const lines = text.split(/\r?\n/).filter(line => line.trim());
-
-      const newNumbers: ContactData[] = [];
-      const existingNumbers = new Set(phoneNumbers.map(p => p.number));
-
-      lines.forEach((line, index) => {
-        const cells = line.split(',').map(cell => cell.trim().replace(/['"]/g, ''));
-        const number = cells[0];
-        const name = cells[1];
-        const email = cells[2];
-        const address = cells[3];
-
-        if (number && name && !existingNumbers.has(number)) {
-          const validation = validatePhoneNumber(number);
-          newNumbers.push({
-            id: `${Date.now()}-${index}`,
-            number,
-            name,
-            email: email || undefined,
-            address: address || undefined,
-            isValid: validation.isValid,
-            error: validation.error
-          });
-          existingNumbers.add(number);
-        }
-      });
-
-      setPhoneNumbers([...phoneNumbers, ...newNumbers]);
-      setMessage({ type: 'success', text: `Added ${newNumbers.length} phone numbers` });
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to parse file. Please use a CSV format.' });
-    } finally {
-      setUploading(false);
-      event.target.value = '';
-    }
-  };
-
   const submitCalls = async () => {
     if (!user || !agentId) {
       setMessage({ type: 'error', text: 'Agent ID not found. Please ensure your company profile is set up.' });
@@ -254,7 +206,7 @@ const VoxOutbound: React.FC = () => {
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-neutral-800 mb-2">Vox Outbound</h1>
-        <p className="text-neutral-600">Schedule outbound calls by adding phone numbers manually or uploading a CSV file.</p>
+        <p className="text-neutral-600">Schedule outbound calls by adding phone numbers manually.</p>
       </div>
 
       <div className="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200 flex items-start gap-3">
@@ -288,36 +240,18 @@ const VoxOutbound: React.FC = () => {
           <div className="flex">
             <button
               onClick={() => setActiveTab('manual')}
-              className={`px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === 'manual'
-                  ? 'text-neutral-800 border-b-2 border-neutral-800'
-                  : 'text-neutral-600 hover:text-neutral-800'
-              }`}
+              className="px-6 py-4 text-sm font-medium text-neutral-800 border-b-2 border-neutral-800"
             >
               <div className="flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Manual Entry
               </div>
             </button>
-            <button
-              onClick={() => setActiveTab('upload')}
-              className={`px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === 'upload'
-                  ? 'text-neutral-800 border-b-2 border-neutral-800'
-                  : 'text-neutral-600 hover:text-neutral-800'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Upload className="w-4 h-4" />
-                Upload CSV
-              </div>
-            </button>
           </div>
         </div>
 
         <div className="p-6">
-          {activeTab === 'manual' ? (
-            <div className="space-y-4">
+          <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
@@ -379,33 +313,6 @@ const VoxOutbound: React.FC = () => {
                 </Button>
               </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Upload CSV File
-                </label>
-                <div className="border-2 border-dashed border-neutral-300 rounded-lg p-8 text-center hover:border-neutral-400 transition-colors">
-                  <FileSpreadsheet className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
-                  <label className="cursor-pointer">
-                    <span className="text-neutral-600">
-                      Click to upload or drag and drop
-                    </span>
-                    <input
-                      type="file"
-                      accept=".csv,.txt"
-                      onChange={handleFileUpload}
-                      disabled={uploading}
-                      className="hidden"
-                    />
-                  </label>
-                  <p className="mt-2 text-sm text-neutral-500">
-                    CSV format: Phone Number, Name, Email, Address
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
