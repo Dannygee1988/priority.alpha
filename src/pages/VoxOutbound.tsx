@@ -39,25 +39,49 @@ const VoxOutbound: React.FC = () => {
     if (!user) return;
 
     try {
-      const { data: userCompanies } = await supabase
+      const { data: userCompanies, error: userCompaniesError } = await supabase
         .from('user_companies')
         .select('company_id')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-      if (!userCompanies || userCompanies.length === 0) return;
+      if (userCompaniesError) {
+        console.error('Error fetching user companies:', userCompaniesError);
+        setMessage({ type: 'error', text: 'Failed to load company information. Please try refreshing the page.' });
+        return;
+      }
+
+      if (!userCompanies || userCompanies.length === 0) {
+        setMessage({ type: 'error', text: 'No company association found. Please contact support.' });
+        return;
+      }
 
       const companyIds = userCompanies.map(uc => uc.company_id);
 
-      const { data: companies } = await supabase
+      const { data: companies, error: companiesError } = await supabase
         .from('company_profiles')
         .select('vox_agent_id')
         .in('id', companyIds);
 
-      if (companies && companies.length > 0 && companies[0].vox_agent_id) {
-        setAgentId(companies[0].vox_agent_id);
+      if (companiesError) {
+        console.error('Error fetching company profiles:', companiesError);
+        setMessage({ type: 'error', text: 'Failed to load company profile. Please try refreshing the page.' });
+        return;
+      }
+
+      if (companies && companies.length > 0) {
+        const companyWithAgent = companies.find(c => c.vox_agent_id);
+        if (companyWithAgent?.vox_agent_id) {
+          setAgentId(companyWithAgent.vox_agent_id);
+        } else {
+          setMessage({ type: 'error', text: 'Agent ID not found. Please ensure your company profile is set up.' });
+        }
+      } else {
+        setMessage({ type: 'error', text: 'No company profiles found. Please contact support.' });
       }
     } catch (error) {
       console.error('Error fetching agent ID:', error);
+      setMessage({ type: 'error', text: 'An unexpected error occurred. Please try refreshing the page.' });
     }
   };
 
@@ -238,15 +262,12 @@ const VoxOutbound: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
         <div className="border-b border-neutral-200">
           <div className="flex">
-            <button
-              onClick={() => setActiveTab('manual')}
-              className="px-6 py-4 text-sm font-medium text-neutral-800 border-b-2 border-neutral-800"
-            >
+            <div className="px-6 py-4 text-sm font-medium text-neutral-800 border-b-2 border-neutral-800">
               <div className="flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Manual Entry
               </div>
-            </button>
+            </div>
           </div>
         </div>
 
