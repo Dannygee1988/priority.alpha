@@ -22,18 +22,21 @@ export const useFeatureAccess = () => {
       }
 
       try {
-        const { data: userData, error: userError } = await supabase.auth.getUser();
+        const { data: userCompany, error: userCompanyError } = await supabase
+          .from('user_companies')
+          .select('company_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-        if (userError) {
-          console.error('Error fetching user:', userError);
+        if (userCompanyError) {
+          console.error('Error fetching user company:', userCompanyError);
+          setCompanyProfile(null);
           setLoading(false);
           return;
         }
 
-        const companyId = userData.user?.user_metadata?.company_id;
-
-        if (!companyId) {
-          console.error('No company_id found in user metadata');
+        if (!userCompany?.company_id) {
+          console.error('No company_id found for user');
           setCompanyProfile(null);
           setLoading(false);
           return;
@@ -42,7 +45,7 @@ export const useFeatureAccess = () => {
         const { data, error } = await supabase
           .from('company_profiles')
           .select('id, name, subscription_products')
-          .eq('id', companyId)
+          .eq('id', userCompany.company_id)
           .maybeSingle();
 
         if (error) {
