@@ -208,7 +208,7 @@ const VoxOutbound: React.FC = () => {
         caller_name: phone.name,
         caller_email: phone.email || null,
         caller_address: phone.address || null,
-        status: 'Waiting',
+        status: 'Queued',
         call_duration: 0,
         cost: 0
       }));
@@ -522,7 +522,7 @@ const VoxOutbound: React.FC = () => {
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                         call.status === 'Complete'
                           ? 'bg-green-100 text-green-800'
-                          : call.status === 'Waiting'
+                          : call.status === 'Queued' || call.status === 'Waiting'
                           ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-gray-100 text-gray-800'
                       }`}>
