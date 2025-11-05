@@ -107,6 +107,7 @@ const VoxInbound: React.FC = () => {
         .from('vox_inbound_calls')
         .select('*')
         .in('agent_id', agentIds)
+        .eq('call_direction', 'inbound')
         .order('started_at', { ascending: false });
 
       console.log('Calls data:', data, 'Error:', error);
