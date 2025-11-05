@@ -136,6 +136,7 @@ const VoxOutbound: React.FC = () => {
         .from('vox_outbound_calls')
         .select('*')
         .in('agent_id', agentIds)
+        .eq('call_status', 'queued')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
