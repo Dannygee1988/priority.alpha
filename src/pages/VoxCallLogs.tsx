@@ -24,6 +24,7 @@ interface CombinedCall {
   recording_url?: string;
   is_in_crm?: boolean;
   Subject?: string;
+  source_table: 'vox_inbound_calls' | 'vox_outbound_calls';
 }
 
 const VoxCallLogs: React.FC = () => {
@@ -101,13 +102,15 @@ const VoxCallLogs: React.FC = () => {
       const combinedInbound: CombinedCall[] = (inboundCalls || []).map(call => ({
         ...call,
         direction: (call.call_direction || 'inbound') as 'inbound' | 'outbound',
-        is_in_crm: crmPhoneNumbers.has(call.phone_number)
+        is_in_crm: crmPhoneNumbers.has(call.phone_number),
+        source_table: 'vox_inbound_calls' as const
       }));
 
       const combinedOutbound: CombinedCall[] = (outboundCalls || []).map(call => ({
         ...call,
         direction: 'outbound' as const,
-        is_in_crm: crmPhoneNumbers.has(call.phone_number)
+        is_in_crm: crmPhoneNumbers.has(call.phone_number),
+        source_table: 'vox_outbound_calls' as const
       }));
 
       const allCalls = [...combinedInbound, ...combinedOutbound].sort(
@@ -345,7 +348,7 @@ const VoxCallLogs: React.FC = () => {
                     {formatDateTime(call.started_at)}
                   </div>
                   <div className="text-sm text-neutral-700 truncate">
-                    {call.direction === 'inbound'
+                    {call.source_table === 'vox_inbound_calls'
                       ? (call.Subject || 'No subject')
                       : (call.caller_name || 'Unknown')}
                   </div>
