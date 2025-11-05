@@ -13,13 +13,13 @@ interface CallData {
   user_id: string;
   agent_id: string;
   phone_number: string;
-  first_name: string;
+  name: string;
   last_name: string;
   caller_email?: string;
   street?: string;
   city?: string;
   post_code?: string;
-  additional_information?: string;
+  reason_for_sale?: string;
   last_contacted?: string;
   call_status: string;
   call_duration: number;
@@ -65,13 +65,13 @@ Deno.serve(async (req: Request) => {
             user_id: call.user_id,
             agent_id: call.agent_id,
             phone_number: call.phone_number,
-            first_name: call.first_name,
+            name: call.name,
             last_name: call.last_name,
             caller_email: call.caller_email,
             street: call.street,
             city: call.city,
             post_code: call.post_code,
-            additional_information: call.additional_information,
+            reason_for_sale: call.reason_for_sale,
             last_contacted: call.last_contacted,
             call_status: call.call_status,
             call_duration: call.call_duration,
