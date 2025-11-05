@@ -265,18 +265,21 @@ const VoxOutbound: React.FC = () => {
       if (error) throw error;
 
       if (insertedCalls && insertedCalls.length > 0) {
-        try {
-          const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vox-outbound-webhook`;
-          await fetch(webhookUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ calls: insertedCalls }),
-          });
-        } catch (webhookError) {
-          console.error('Failed to send webhook:', webhookError);
+        const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vox-outbound-webhook`;
+
+        for (const call of insertedCalls) {
+          try {
+            await fetch(webhookUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ call }),
+            });
+          } catch (webhookError) {
+            console.error('Failed to send webhook for call:', call.id, webhookError);
+          }
         }
       }
 
