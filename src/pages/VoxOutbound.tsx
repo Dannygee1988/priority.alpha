@@ -8,9 +8,14 @@ import Button from '../components/Button';
 interface ContactData {
   id: string;
   number: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email?: string;
-  address?: string;
+  street?: string;
+  city?: string;
+  postCode?: string;
+  additionalInformation?: string;
+  lastContacted?: string;
   isValid: boolean;
   error?: string;
 }
@@ -19,9 +24,14 @@ const VoxOutbound: React.FC = () => {
   const { user } = useAuth();
   const [phoneNumbers, setPhoneNumbers] = useState<ContactData[]>([]);
   const [currentNumber, setCurrentNumber] = useState('+44');
-  const [currentName, setCurrentName] = useState('');
+  const [currentFirstName, setCurrentFirstName] = useState('');
+  const [currentLastName, setCurrentLastName] = useState('');
   const [currentEmail, setCurrentEmail] = useState('');
-  const [currentAddress, setCurrentAddress] = useState('');
+  const [currentStreet, setCurrentStreet] = useState('');
+  const [currentCity, setCurrentCity] = useState('');
+  const [currentPostCode, setCurrentPostCode] = useState('');
+  const [currentAdditionalInfo, setCurrentAdditionalInfo] = useState('');
+  const [currentLastContacted, setCurrentLastContacted] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [agentId, setAgentId] = useState<string>('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -158,8 +168,13 @@ const VoxOutbound: React.FC = () => {
       return;
     }
 
-    if (!currentName.trim()) {
-      setMessage({ type: 'error', text: 'Caller name is required' });
+    if (!currentFirstName.trim()) {
+      setMessage({ type: 'error', text: 'First name is required' });
+      return;
+    }
+
+    if (!currentLastName.trim()) {
+      setMessage({ type: 'error', text: 'Last name is required' });
       return;
     }
 
@@ -179,18 +194,28 @@ const VoxOutbound: React.FC = () => {
     const newContact: ContactData = {
       id: Math.random().toString(36).substr(2, 9),
       number: currentNumber.trim(),
-      name: currentName.trim(),
+      firstName: currentFirstName.trim(),
+      lastName: currentLastName.trim(),
       email: currentEmail.trim() || undefined,
-      address: currentAddress.trim() || undefined,
+      street: currentStreet.trim() || undefined,
+      city: currentCity.trim() || undefined,
+      postCode: currentPostCode.trim() || undefined,
+      additionalInformation: currentAdditionalInfo.trim() || undefined,
+      lastContacted: currentLastContacted.trim() || undefined,
       isValid: validation.isValid,
       error: validation.error
     };
 
     setPhoneNumbers([...phoneNumbers, newContact]);
     setCurrentNumber('+44');
-    setCurrentName('');
+    setCurrentFirstName('');
+    setCurrentLastName('');
     setCurrentEmail('');
-    setCurrentAddress('');
+    setCurrentStreet('');
+    setCurrentCity('');
+    setCurrentPostCode('');
+    setCurrentAdditionalInfo('');
+    setCurrentLastContacted('');
     setMessage(null);
   };
 
@@ -218,9 +243,14 @@ const VoxOutbound: React.FC = () => {
         user_id: user.id,
         agent_id: agentId,
         phone_number: phone.number,
-        caller_name: phone.name,
+        first_name: phone.firstName,
+        last_name: phone.lastName,
         caller_email: phone.email || null,
-        caller_address: phone.address || null,
+        street: phone.street || null,
+        city: phone.city || null,
+        post_code: phone.postCode || null,
+        additional_information: phone.additionalInformation || null,
+        last_contacted: phone.lastContacted ? new Date(phone.lastContacted).toISOString() : null,
         call_status: 'queued',
         call_duration: 0,
         cost: 0
@@ -310,7 +340,7 @@ const VoxOutbound: React.FC = () => {
 
         <div className="p-6">
           <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Phone Number <span className="text-red-500">*</span>
@@ -325,13 +355,25 @@ const VoxOutbound: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Caller Name <span className="text-red-500">*</span>
+                    First Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    value={currentName}
-                    onChange={(e) => setCurrentName(e.target.value)}
-                    placeholder="John Smith"
+                    value={currentFirstName}
+                    onChange={(e) => setCurrentFirstName(e.target.value)}
+                    placeholder="John"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={currentLastName}
+                    onChange={(e) => setCurrentLastName(e.target.value)}
+                    placeholder="Smith"
                     className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
                   />
                 </div>
@@ -352,16 +394,67 @@ const VoxOutbound: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Address
+                    Last Contacted
                   </label>
                   <input
-                    type="text"
-                    value={currentAddress}
-                    onChange={(e) => setCurrentAddress(e.target.value)}
-                    placeholder="123 Main St, London, UK"
+                    type="date"
+                    value={currentLastContacted}
+                    onChange={(e) => setCurrentLastContacted(e.target.value)}
                     className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Street
+                  </label>
+                  <input
+                    type="text"
+                    value={currentStreet}
+                    onChange={(e) => setCurrentStreet(e.target.value)}
+                    placeholder="123 Main St"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={currentCity}
+                    onChange={(e) => setCurrentCity(e.target.value)}
+                    placeholder="London"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Post Code
+                  </label>
+                  <input
+                    type="text"
+                    value={currentPostCode}
+                    onChange={(e) => setCurrentPostCode(e.target.value)}
+                    placeholder="SW1A 1AA"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Additional Information
+                </label>
+                <textarea
+                  value={currentAdditionalInfo}
+                  onChange={(e) => setCurrentAdditionalInfo(e.target.value)}
+                  placeholder="Any additional notes or context about this contact..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent resize-none"
+                />
               </div>
 
               <div className="flex justify-end">
@@ -403,22 +496,28 @@ const VoxOutbound: React.FC = () => {
                 >
                   <div className="flex items-center gap-4 flex-1">
                     <Phone className={`w-4 h-4 flex-shrink-0 ${phone.isValid ? 'text-green-600' : 'text-red-600'}`} />
-                    <div className="flex-1 grid grid-cols-4 gap-4">
+                    <div className="flex-1 grid grid-cols-5 gap-4">
                       <div>
                         <span className="text-xs text-neutral-500 block">Phone</span>
                         <span className="font-mono text-sm text-neutral-800">{phone.number}</span>
                       </div>
                       <div>
                         <span className="text-xs text-neutral-500 block">Name</span>
-                        <span className="text-sm text-neutral-800">{phone.name}</span>
+                        <span className="text-sm text-neutral-800">{phone.firstName} {phone.lastName}</span>
                       </div>
                       <div>
                         <span className="text-xs text-neutral-500 block">Email</span>
-                        <span className="text-sm text-neutral-800">{phone.email || '-'}</span>
+                        <span className="text-sm text-neutral-800 truncate">{phone.email || '-'}</span>
                       </div>
                       <div>
                         <span className="text-xs text-neutral-500 block">Address</span>
-                        <span className="text-sm text-neutral-800 truncate">{phone.address || '-'}</span>
+                        <span className="text-sm text-neutral-800 truncate">
+                          {[phone.street, phone.city, phone.postCode].filter(Boolean).join(', ') || '-'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-neutral-500 block">Last Contacted</span>
+                        <span className="text-sm text-neutral-800">{phone.lastContacted || '-'}</span>
                       </div>
                     </div>
                     {!phone.isValid && phone.error && (
