@@ -77,14 +77,16 @@ const VoxCallLogs: React.FC = () => {
       const { data: inboundCalls, error: inboundError } = await supabase
         .from('vox_inbound_calls')
         .select('*')
-        .in('agent_id', agentIds);
+        .in('agent_id', agentIds)
+        .eq('call_status', 'completed');
 
       if (inboundError) throw inboundError;
 
       const { data: outboundCalls, error: outboundError } = await supabase
         .from('vox_outbound_calls')
         .select('*')
-        .in('agent_id', agentIds);
+        .in('agent_id', agentIds)
+        .eq('call_status', 'completed');
 
       if (outboundError) throw outboundError;
 
