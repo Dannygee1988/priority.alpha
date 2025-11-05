@@ -100,7 +100,7 @@ const VoxCallLogs: React.FC = () => {
 
       const combinedInbound: CombinedCall[] = (inboundCalls || []).map(call => ({
         ...call,
-        direction: 'inbound' as const,
+        direction: (call.call_direction || 'inbound') as 'inbound' | 'outbound',
         is_in_crm: crmPhoneNumbers.has(call.phone_number)
       }));
 
