@@ -36,11 +36,11 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { calls }: { calls: CallData[] } = await req.json();
+    const { call }: { call: CallData } = await req.json();
 
-    if (!calls || !Array.isArray(calls) || calls.length === 0) {
+    if (!call) {
       return new Response(
-        JSON.stringify({ error: "No calls provided" }),
+        JSON.stringify({ error: "No call provided" }),
         {
           status: 400,
           headers: {
@@ -51,68 +51,75 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const webhookPromises = calls.map(async (call) => {
-      try {
-        const response = await fetch(WEBHOOK_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            event: "outbound_call_queued",
-            timestamp: new Date().toISOString(),
-            call: {
-              id: call.id,
-              user_id: call.user_id,
-              agent_id: call.agent_id,
-              phone_number: call.phone_number,
-              first_name: call.first_name,
-              last_name: call.last_name,
-              caller_email: call.caller_email,
-              street: call.street,
-              city: call.city,
-              post_code: call.post_code,
-              additional_information: call.additional_information,
-              last_contacted: call.last_contacted,
-              call_status: call.call_status,
-              call_duration: call.call_duration,
-              cost: call.cost,
-              created_at: call.created_at,
-            },
-          }),
-        });
-
-        if (!response.ok) {
-          console.error(`Failed to send webhook for call ${call.id}: ${response.status}`);
-          return { success: false, call_id: call.id, error: response.statusText };
-        }
-
-        return { success: true, call_id: call.id };
-      } catch (error) {
-        console.error(`Error sending webhook for call ${call.id}:`, error);
-        return { success: false, call_id: call.id, error: error.message };
-      }
-    });
-
-    const results = await Promise.all(webhookPromises);
-    const successCount = results.filter(r => r.success).length;
-    const failureCount = results.filter(r => !r.success).length;
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        total: calls.length,
-        sent: successCount,
-        failed: failureCount,
-        results,
-      }),
-      {
+    try {
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
         headers: {
-          ...corsHeaders,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          event: "outbound_call_queued",
+          timestamp: new Date().toISOString(),
+          call: {
+            id: call.id,
+            user_id: call.user_id,
+            agent_id: call.agent_id,
+            phone_number: call.phone_number,
+            first_name: call.first_name,
+            last_name: call.last_name,
+            caller_email: call.caller_email,
+            street: call.street,
+            city: call.city,
+            post_code: call.post_code,
+            additional_information: call.additional_information,
+            last_contacted: call.last_contacted,
+            call_status: call.call_status,
+            call_duration: call.call_duration,
+            cost: call.cost,
+            created_at: call.created_at,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        console.error(`Failed to send webhook for call ${call.id}: ${response.status}`);
+        return new Response(
+          JSON.stringify({ success: false, call_id: call.id, error: response.statusText }),
+          {
+            status: 500,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+          }
+        );
       }
-    );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          call_id: call.id,
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    } catch (error) {
+      console.error(`Error sending webhook for call ${call.id}:`, error);
+      return new Response(
+        JSON.stringify({ success: false, call_id: call.id, error: error.message }),
+        {
+          status: 500,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
   } catch (error) {
     console.error("Error processing webhook request:", error);
     return new Response(
