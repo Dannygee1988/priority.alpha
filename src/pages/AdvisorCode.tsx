@@ -192,7 +192,7 @@ const AdvisorCode: React.FC = () => {
               ) : (
                 <>
                   <Copy size={16} />
-                  <span className="text-sm">Copy Code</span>
+                  <span className="text-sm">Copy </span>
                 </>
               )}
             </button>
