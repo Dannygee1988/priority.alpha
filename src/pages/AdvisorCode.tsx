@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, Code, FileCode, Palette, Globe } from 'lucide-react';
+import { Copy, Check, Code, FileCode, Palette, Globe, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
@@ -79,6 +79,24 @@ const AdvisorCode: React.FC = () => {
     }
   };
 
+  const handleDownload = () => {
+    const code = getCurrentCode();
+    if (!code) return;
+
+    const fileExtension = activeTab === 'live' ? 'html' : activeTab;
+    const fileName = `advisor-code.${fileExtension}`;
+
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const renderCodeWithLineNumbers = (code: string) => {
     if (!code) return <div className="text-neutral-400 p-4">No code available</div>;
 
@@ -152,7 +170,15 @@ const AdvisorCode: React.FC = () => {
         </div>
 
         <div className="relative">
-          <div className="absolute top-4 right-4 z-10">
+          <div className="absolute top-4 right-4 z-10 flex gap-2">
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 transition-colors shadow-sm"
+              disabled={!getCurrentCode()}
+            >
+              <Download size={16} />
+              <span className="text-sm">Download</span>
+            </button>
             <button
               onClick={handleCopy}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-md hover:bg-neutral-50 transition-colors shadow-sm"
