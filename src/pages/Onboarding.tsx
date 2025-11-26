@@ -10,10 +10,7 @@ const Onboarding: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-neutral-50">
       <div className="max-w-4xl w-full p-8">
         <div className="bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-3xl font-bold text-neutral-800">Welcome to Priority</h1>
-          <p className="text-neutral-600 mt-2">Let's get you set up</p>
-
-          <div className="mt-8 space-y-6">
+          <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-3">
                 Company Location
