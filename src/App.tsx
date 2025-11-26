@@ -23,6 +23,7 @@ import VoxOutbound from './pages/VoxOutbound';
 import VoxInbound from './pages/VoxInbound';
 import VoxAnalytics from './pages/VoxAnalytics';
 import VoxCallLogs from './pages/VoxCallLogs';
+import Onboarding from './pages/Onboarding';
 import AppLayout from './layouts/AppLayout';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           
           {/* Protected routes */}
           <Route element={<AppLayout />}>
