@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Plus, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { Phone, Plus, X, AlertCircle, CheckCircle, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxOutboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,7 @@ interface ContactData {
 
 const VoxOutbound: React.FC = () => {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'manual' | 'bulk'>('manual');
   const [phoneNumbers, setPhoneNumbers] = useState<ContactData[]>([]);
   const [currentNumber, setCurrentNumber] = useState('+44');
   const [currentFirstName, setCurrentFirstName] = useState('');
@@ -37,6 +38,8 @@ const VoxOutbound: React.FC = () => {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [queuedCalls, setQueuedCalls] = useState<VoxOutboundCall[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedContacts, setUploadedContacts] = useState<ContactData[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -224,6 +227,168 @@ const VoxOutbound: React.FC = () => {
     setPhoneNumbers(phoneNumbers.filter(p => p.id !== id));
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      setMessage({ type: 'error', text: 'Please upload a CSV file' });
+      return;
+    }
+
+    setUploadedFile(file);
+    setMessage(null);
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target?.result as string;
+      parseCSV(text);
+    };
+    reader.readAsText(file);
+  };
+
+  const parseCSV = (csvText: string) => {
+    const lines = csvText.split('\n').filter(line => line.trim());
+
+    if (lines.length === 0) {
+      setMessage({ type: 'error', text: 'CSV file is empty' });
+      return;
+    }
+
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const dataLines = lines.slice(1);
+
+    if (dataLines.length > 10) {
+      setMessage({ type: 'error', text: 'Maximum of 10 records allowed. Please reduce the number of entries.' });
+      return;
+    }
+
+    const contacts: ContactData[] = [];
+
+    for (let i = 0; i < dataLines.length; i++) {
+      const values = dataLines[i].split(',').map(v => v.trim());
+
+      const phoneIndex = headers.findIndex(h => h.includes('phone') || h.includes('number'));
+      const firstNameIndex = headers.findIndex(h => h.includes('first') && h.includes('name'));
+      const lastNameIndex = headers.findIndex(h => h.includes('last') && h.includes('name'));
+      const emailIndex = headers.findIndex(h => h.includes('email'));
+      const streetIndex = headers.findIndex(h => h.includes('street') || h.includes('address'));
+      const cityIndex = headers.findIndex(h => h.includes('city'));
+      const postCodeIndex = headers.findIndex(h => h.includes('postcode') || h.includes('post') || h.includes('zip'));
+      const additionalInfoIndex = headers.findIndex(h => h.includes('additional') || h.includes('notes') || h.includes('info'));
+      const lastContactedIndex = headers.findIndex(h => h.includes('last') && h.includes('contact'));
+
+      const phoneNumber = phoneIndex >= 0 ? values[phoneIndex] : '';
+      const firstName = firstNameIndex >= 0 ? values[firstNameIndex] : '';
+      const lastName = lastNameIndex >= 0 ? values[lastNameIndex] : '';
+
+      if (!phoneNumber || !firstName || !lastName) {
+        continue;
+      }
+
+      const validation = validatePhoneNumber(phoneNumber);
+
+      contacts.push({
+        id: Math.random().toString(36).substr(2, 9),
+        number: phoneNumber,
+        firstName: firstName,
+        lastName: lastName,
+        email: emailIndex >= 0 ? values[emailIndex] : undefined,
+        street: streetIndex >= 0 ? values[streetIndex] : undefined,
+        city: cityIndex >= 0 ? values[cityIndex] : undefined,
+        postCode: postCodeIndex >= 0 ? values[postCodeIndex] : undefined,
+        additionalInformation: additionalInfoIndex >= 0 ? values[additionalInfoIndex] : undefined,
+        lastContacted: lastContactedIndex >= 0 ? values[lastContactedIndex] : undefined,
+        isValid: validation.isValid,
+        error: validation.error
+      });
+    }
+
+    if (contacts.length === 0) {
+      setMessage({ type: 'error', text: 'No valid contacts found in CSV. Ensure headers include: phone_number, first_name, last_name' });
+      return;
+    }
+
+    setUploadedContacts(contacts);
+    setMessage({ type: 'success', text: `Successfully loaded ${contacts.length} contact${contacts.length !== 1 ? 's' : ''} from CSV` });
+  };
+
+  const clearBulkUpload = () => {
+    setUploadedFile(null);
+    setUploadedContacts([]);
+    setMessage(null);
+  };
+
+  const submitBulkCalls = async () => {
+    if (!user || !agentId) {
+      setMessage({ type: 'error', text: 'Agent ID not found. Please ensure your company profile is set up.' });
+      return;
+    }
+
+    const validNumbers = uploadedContacts.filter(p => p.isValid);
+    if (validNumbers.length === 0) {
+      setMessage({ type: 'error', text: 'No valid phone numbers to submit' });
+      return;
+    }
+
+    setSubmitting(true);
+    setMessage(null);
+
+    try {
+      const callsToInsert = validNumbers.map(phone => ({
+        user_id: user.id,
+        agent_id: agentId,
+        phone_number: phone.number,
+        name: phone.firstName,
+        last_name: phone.lastName,
+        caller_email: phone.email || null,
+        street: phone.street || null,
+        city: phone.city || null,
+        post_code: phone.postCode || null,
+        reason_for_sale: phone.additionalInformation || null,
+        last_contacted: phone.lastContacted ? new Date(phone.lastContacted).toISOString() : null,
+        call_status: 'queued',
+        call_duration: 0,
+        cost: 0
+      }));
+
+      const { data: insertedCalls, error } = await supabase
+        .from('vox_outbound_calls')
+        .insert(callsToInsert)
+        .select();
+
+      if (error) throw error;
+
+      if (insertedCalls && insertedCalls.length > 0) {
+        const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vox-outbound-webhook`;
+
+        for (const call of insertedCalls) {
+          try {
+            await fetch(webhookUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ call }),
+            });
+          } catch (webhookError) {
+            console.error('Failed to send webhook for call:', call.id, webhookError);
+          }
+        }
+      }
+
+      setMessage({ type: 'success', text: `Successfully queued ${validNumbers.length} calls` });
+      clearBulkUpload();
+      await fetchQueuedCalls();
+    } catch (error) {
+      console.error('Error submitting calls:', error);
+      setMessage({ type: 'error', text: 'Failed to queue calls. Please try again.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const submitCalls = async () => {
     if (!user || !agentId) {
       setMessage({ type: 'error', text: 'Agent ID not found. Please ensure your company profile is set up.' });
@@ -333,16 +498,36 @@ const VoxOutbound: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
         <div className="border-b border-neutral-200">
           <div className="flex">
-            <div className="px-6 py-4 text-sm font-medium text-neutral-800 border-b-2 border-neutral-800">
+            <button
+              onClick={() => setActiveTab('manual')}
+              className={`px-6 py-4 text-sm font-medium transition-colors ${
+                activeTab === 'manual'
+                  ? 'text-neutral-800 border-b-2 border-neutral-800'
+                  : 'text-neutral-500 hover:text-neutral-700'
+              }`}
+            >
               <div className="flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Manual Entry
               </div>
-            </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('bulk')}
+              className={`px-6 py-4 text-sm font-medium transition-colors ${
+                activeTab === 'bulk'
+                  ? 'text-neutral-800 border-b-2 border-neutral-800'
+                  : 'text-neutral-500 hover:text-neutral-700'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Upload className="w-4 h-4" />
+                Bulk Upload
+              </div>
+            </button>
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-6">{activeTab === 'manual' ? (
           <div className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -468,23 +653,63 @@ const VoxOutbound: React.FC = () => {
                 </Button>
               </div>
             </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="text-center py-8">
+                <Upload className="w-12 h-12 mx-auto text-neutral-400 mb-4" />
+                <h3 className="text-lg font-medium text-neutral-800 mb-2">Upload CSV File</h3>
+                <p className="text-sm text-neutral-600 mb-6">
+                  Upload a CSV file with up to 10 contacts. Required columns: phone_number, first_name, last_name
+                </p>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="csv-upload"
+                />
+                <label
+                  htmlFor="csv-upload"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-neutral-800 text-white rounded-md font-medium cursor-pointer hover:bg-neutral-700 transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  Choose CSV File
+                </label>
+                {uploadedFile && (
+                  <p className="mt-4 text-sm text-neutral-600">
+                    Uploaded: <span className="font-medium">{uploadedFile.name}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-900 font-medium mb-2">CSV Format Guide:</p>
+                <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+                  <li>Required columns: phone_number, first_name, last_name</li>
+                  <li>Optional columns: email, street, city, postcode, additional_information, last_contacted</li>
+                  <li>Maximum 10 records per upload</li>
+                  <li>Phone numbers should include country code (e.g., +447123456789)</li>
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {phoneNumbers.length > 0 && (
+      {(activeTab === 'manual' ? phoneNumbers.length > 0 : uploadedContacts.length > 0) && (
         <div className="mt-6 bg-white rounded-lg shadow-sm border border-neutral-200">
           <div className="px-6 py-4 border-b border-neutral-200">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-neutral-800">
-                Contacts ({phoneNumbers.length})
+                Contacts ({activeTab === 'manual' ? phoneNumbers.length : uploadedContacts.length})
               </h2>
               <div className="flex items-center gap-4 text-sm">
                 <span className="text-green-600 font-medium">
-                  {validCount} valid
+                  {activeTab === 'manual' ? validCount : uploadedContacts.filter(p => p.isValid).length} valid
                 </span>
-                {invalidCount > 0 && (
+                {(activeTab === 'manual' ? invalidCount : uploadedContacts.length - uploadedContacts.filter(p => p.isValid).length) > 0 && (
                   <span className="text-red-600 font-medium">
-                    {invalidCount} invalid
+                    {activeTab === 'manual' ? invalidCount : uploadedContacts.length - uploadedContacts.filter(p => p.isValid).length} invalid
                   </span>
                 )}
               </div>
@@ -493,7 +718,7 @@ const VoxOutbound: React.FC = () => {
 
           <div className="max-h-96 overflow-y-auto">
             <div className="divide-y divide-neutral-200">
-              {phoneNumbers.map((phone) => (
+              {(activeTab === 'manual' ? phoneNumbers : uploadedContacts).map((phone) => (
                 <div
                   key={phone.id}
                   className="px-6 py-3 flex items-center justify-between hover:bg-neutral-50"
@@ -529,7 +754,13 @@ const VoxOutbound: React.FC = () => {
                     )}
                   </div>
                   <button
-                    onClick={() => removePhoneNumber(phone.id)}
+                    onClick={() => {
+                      if (activeTab === 'manual') {
+                        removePhoneNumber(phone.id);
+                      } else {
+                        setUploadedContacts(uploadedContacts.filter(p => p.id !== phone.id));
+                      }
+                    }}
                     className="text-neutral-400 hover:text-red-600 transition-colors"
                   >
                     <X className="w-4 h-4" />
@@ -542,20 +773,36 @@ const VoxOutbound: React.FC = () => {
           <div className="px-6 py-4 border-t border-neutral-200 bg-neutral-50">
             <div className="flex items-center justify-between">
               <p className="text-sm text-neutral-600">
-                {validCount > 0 ? `${validCount} call${validCount !== 1 ? 's' : ''} will be queued` : 'No valid numbers to queue'}
+                {activeTab === 'manual'
+                  ? validCount > 0 ? `${validCount} call${validCount !== 1 ? 's' : ''} will be queued` : 'No valid numbers to queue'
+                  : uploadedContacts.filter(p => p.isValid).length > 0
+                    ? `${uploadedContacts.filter(p => p.isValid).length} call${uploadedContacts.filter(p => p.isValid).length !== 1 ? 's' : ''} will be queued`
+                    : 'No valid numbers to queue'
+                }
               </p>
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => setPhoneNumbers([])}
+                  onClick={() => {
+                    if (activeTab === 'manual') {
+                      setPhoneNumbers([]);
+                    } else {
+                      clearBulkUpload();
+                    }
+                  }}
                 >
                   Clear All
                 </Button>
                 <Button
-                  onClick={submitCalls}
-                  disabled={validCount === 0 || submitting}
+                  onClick={activeTab === 'manual' ? submitCalls : submitBulkCalls}
+                  disabled={(activeTab === 'manual' ? validCount : uploadedContacts.filter(p => p.isValid).length) === 0 || submitting}
                 >
-                  {submitting ? 'Queueing...' : `Queue ${validCount} Call${validCount !== 1 ? 's' : ''}`}
+                  {submitting
+                    ? 'Queueing...'
+                    : activeTab === 'manual'
+                      ? `Queue ${validCount} Call${validCount !== 1 ? 's' : ''}`
+                      : `Queue ${uploadedContacts.filter(p => p.isValid).length} Call${uploadedContacts.filter(p => p.isValid).length !== 1 ? 's' : ''}`
+                  }
                 </Button>
               </div>
             </div>
