@@ -281,8 +281,9 @@ const VoxOutbound: React.FC = () => {
       const phoneNumber = phoneIndex >= 0 ? values[phoneIndex] : '';
       const firstName = firstNameIndex >= 0 ? values[firstNameIndex] : '';
       const lastName = lastNameIndex >= 0 ? values[lastNameIndex] : '';
+      const street = streetIndex >= 0 ? values[streetIndex] : '';
 
-      if (!phoneNumber || !firstName || !lastName) {
+      if (!phoneNumber || !firstName || !lastName || !street) {
         continue;
       }
 
@@ -293,8 +294,8 @@ const VoxOutbound: React.FC = () => {
         number: phoneNumber,
         firstName: firstName,
         lastName: lastName,
+        street: street,
         email: emailIndex >= 0 ? values[emailIndex] : undefined,
-        street: streetIndex >= 0 ? values[streetIndex] : undefined,
         city: cityIndex >= 0 ? values[cityIndex] : undefined,
         postCode: postCodeIndex >= 0 ? values[postCodeIndex] : undefined,
         additionalInformation: additionalInfoIndex >= 0 ? values[additionalInfoIndex] : undefined,
@@ -305,7 +306,7 @@ const VoxOutbound: React.FC = () => {
     }
 
     if (contacts.length === 0) {
-      setMessage({ type: 'error', text: 'No valid contacts found in CSV. Ensure headers include: phone_number, first_name, last_name' });
+      setMessage({ type: 'error', text: 'No valid contacts found in CSV. Ensure headers include: phone_number, first_name, last_name, street' });
       return;
     }
 
@@ -659,7 +660,7 @@ const VoxOutbound: React.FC = () => {
                 <Upload className="w-12 h-12 mx-auto text-neutral-400 mb-4" />
                 <h3 className="text-lg font-medium text-neutral-800 mb-2">Upload CSV File</h3>
                 <p className="text-sm text-neutral-600 mb-6">
-                  Upload a CSV file with up to 10 contacts. Required columns: phone_number, first_name, last_name
+                  Upload a CSV file with up to 10 contacts. Required columns: phone_number, first_name, last_name, street
                 </p>
                 <input
                   type="file"
@@ -685,8 +686,8 @@ const VoxOutbound: React.FC = () => {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-900 font-medium mb-2">CSV Format Guide:</p>
                 <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                  <li>Required columns: phone_number, first_name, last_name</li>
-                  <li>Optional columns: email, street, city, postcode, additional_information, last_contacted</li>
+                  <li>Required columns: phone_number, first_name, last_name, street</li>
+                  <li>Optional columns: email, city, postcode, additional_information, last_contacted</li>
                   <li>Maximum 10 records per upload</li>
                   <li>Phone numbers should include country code (e.g., +447123456789)</li>
                 </ul>
