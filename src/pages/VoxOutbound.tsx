@@ -185,6 +185,11 @@ const VoxOutbound: React.FC = () => {
       return;
     }
 
+    if (!currentStreet.trim()) {
+      setMessage({ type: 'error', text: 'Street is required' });
+      return;
+    }
+
     if (phoneNumbers.length >= 10) {
       setMessage({ type: 'error', text: 'Maximum of 10 calls can be added at once' });
       return;
@@ -757,7 +762,7 @@ const VoxOutbound: React.FC = () => {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Street
+                    Street <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
