@@ -34,6 +34,7 @@ export interface VoxInboundCall {
   summary?: string;
   Subject?: string;
   sentiment?: 'positive' | 'neutral' | 'negative';
+  sentiment_tags?: string[];
   tags?: string[];
   notes?: string;
   cost: number;
@@ -59,6 +60,7 @@ export interface VoxOutboundCall {
   transcript?: string;
   summary?: string;
   sentiment?: 'positive' | 'neutral' | 'negative';
+  sentiment_tags?: string[];
   tags?: string[];
   notes?: string;
   cost: number;

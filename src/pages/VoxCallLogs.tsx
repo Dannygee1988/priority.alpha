@@ -15,6 +15,7 @@ interface CombinedCall {
   summary?: string;
   transcript?: string;
   sentiment?: 'positive' | 'neutral' | 'negative';
+  sentiment_tags?: string[];
   tags?: string[];
   notes?: string;
   cost: number;
@@ -411,6 +412,25 @@ const VoxCallLogs: React.FC = () => {
                           <p className="text-sm text-neutral-900 leading-relaxed">
                             {call.summary}
                           </p>
+                        </div>
+                      )}
+
+                      {call.sentiment_tags && call.sentiment_tags.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
+                            <Tag className="w-4 h-4" />
+                            Sentiment
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {call.sentiment_tags.map((tag, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 text-xs bg-neutral-100 text-neutral-700 rounded-full"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       )}
 
