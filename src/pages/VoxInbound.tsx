@@ -361,7 +361,7 @@ const VoxInbound: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-        <div className="grid grid-cols-[2fr_4fr_2fr_1.5fr_60px_1.5fr_auto] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
+        <div className="grid grid-cols-[2fr_4fr_2fr_1.5fr_60px_2fr_auto] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
           <div>Date</div>
           <div>Subject</div>
           <div>Phone Number</div>
@@ -381,7 +381,7 @@ const VoxInbound: React.FC = () => {
               <div key={call.id}>
                 <div
                   onClick={() => toggleExpand(call.id)}
-                  className="grid grid-cols-[2fr_4fr_2fr_1.5fr_60px_1.5fr_auto] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-center"
+                  className="grid grid-cols-[2fr_4fr_2fr_1.5fr_60px_2fr_auto] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-center"
                 >
                   <div className="text-sm text-neutral-900 truncate">
                     {formatDateTime(call.started_at)}
@@ -416,7 +416,7 @@ const VoxInbound: React.FC = () => {
                       </button>
                     )}
                   </div>
-                  <div>
+                  <div className="flex items-center gap-2">
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
                         call.call_status
@@ -424,6 +424,18 @@ const VoxInbound: React.FC = () => {
                     >
                       {call.call_status.charAt(0).toUpperCase() + call.call_status.slice(1)}
                     </span>
+                    {call.sentiment_tags && call.sentiment_tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {call.sentiment_tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="flex justify-end">
                     {expandedCallId === call.id ? (
@@ -446,6 +458,25 @@ const VoxInbound: React.FC = () => {
                           <p className="text-sm text-neutral-900 leading-relaxed">
                             {call.summary}
                           </p>
+                        </div>
+                      )}
+
+                      {call.sentiment_tags && call.sentiment_tags.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
+                            <Tag className="w-4 h-4" />
+                            Sentiment
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {call.sentiment_tags.map((tag, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       )}
 

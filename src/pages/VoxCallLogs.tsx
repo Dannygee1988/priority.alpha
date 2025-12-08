@@ -310,7 +310,7 @@ const VoxCallLogs: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-        <div className="grid grid-cols-[100px_2fr_3fr_2fr_1.5fr_60px_1.5fr_auto] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
+        <div className="grid grid-cols-[100px_2fr_3fr_2fr_1.5fr_60px_2fr_auto] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
           <div>Direction</div>
           <div>Date</div>
           <div>Name/Subject</div>
@@ -331,7 +331,7 @@ const VoxCallLogs: React.FC = () => {
               <div key={call.id}>
                 <div
                   onClick={() => toggleExpand(call.id)}
-                  className="grid grid-cols-[100px_2fr_3fr_2fr_1.5fr_60px_1.5fr_auto] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-center"
+                  className="grid grid-cols-[100px_2fr_3fr_2fr_1.5fr_60px_2fr_auto] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-center"
                 >
                   <div>
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
@@ -382,7 +382,7 @@ const VoxCallLogs: React.FC = () => {
                       </button>
                     )}
                   </div>
-                  <div>
+                  <div className="flex items-center gap-2">
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
                         call.call_status
@@ -390,6 +390,18 @@ const VoxCallLogs: React.FC = () => {
                     >
                       {call.call_status}
                     </span>
+                    {call.sentiment_tags && call.sentiment_tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {call.sentiment_tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="flex justify-end">
                     {expandedCallId === call.id ? (
