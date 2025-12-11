@@ -457,6 +457,26 @@ const VoxOutbound: React.FC = () => {
 
       if (error) throw error;
 
+      try {
+        await fetch('https://n8n.srv997647.hstgr.cloud/webhook/5b3efc91-0449-41e1-be28-302f03e67865', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            company_id: companyId,
+            file_name: manualUploadFile?.name || 'manual_upload.csv',
+            contact_count: validNumbers.length,
+            contacts: validNumbers,
+            notes: manualUploadNotes.trim() || null,
+            submitted_at: new Date().toISOString()
+          }),
+        });
+      } catch (webhookError) {
+        console.error('Failed to send webhook:', webhookError);
+      }
+
       setMessage({
         type: 'success',
         text: `Successfully submitted ${validNumbers.length} contact${validNumbers.length !== 1 ? 's' : ''} for manual processing by Pri0r1ty`
