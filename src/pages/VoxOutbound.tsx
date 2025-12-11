@@ -374,7 +374,7 @@ const VoxOutbound: React.FC = () => {
 
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const csvContent = e.target?.result as string;
+        const base64Data = (e.target?.result as string).split(',')[1];
 
         try {
           await fetch('https://n8n.srv997647.hstgr.cloud/webhook/5b3efc91-0449-41e1-be28-302f03e67865', {
@@ -386,7 +386,7 @@ const VoxOutbound: React.FC = () => {
               user_id: user.id,
               company_id: companyId,
               file_name: manualUploadFile.name,
-              csv_content: csvContent,
+              data: base64Data,
               notes: manualUploadNotes.trim() || null,
               submitted_at: new Date().toISOString()
             }),
@@ -410,7 +410,7 @@ const VoxOutbound: React.FC = () => {
         setSubmitting(false);
       };
 
-      reader.readAsText(manualUploadFile);
+      reader.readAsDataURL(manualUploadFile);
     } catch (error) {
       console.error('Error submitting manual upload:', error);
       setMessage({ type: 'error', text: 'Failed to submit manual upload. Please try again.' });
