@@ -41,7 +41,6 @@ const VoxOutbound: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedContacts, setUploadedContacts] = useState<ContactData[]>([]);
   const [manualUploadFile, setManualUploadFile] = useState<File | null>(null);
-  const [manualUploadContacts, setManualUploadContacts] = useState<ContactData[]>([]);
   const [manualUploadNotes, setManualUploadNotes] = useState('');
 
   useEffect(() => {
@@ -338,81 +337,12 @@ const VoxOutbound: React.FC = () => {
     }
 
     setManualUploadFile(file);
-    setMessage(null);
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const text = e.target?.result as string;
-      parseManualUploadCSV(text);
-    };
-    reader.readAsText(file);
+    setMessage({ type: 'success', text: `File "${file.name}" ready to upload` });
   };
 
-  const parseManualUploadCSV = (csvText: string) => {
-    const lines = csvText.split('\n').filter(line => line.trim());
-
-    if (lines.length === 0) {
-      setMessage({ type: 'error', text: 'CSV file is empty' });
-      return;
-    }
-
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    const dataLines = lines.slice(1);
-
-    const contacts: ContactData[] = [];
-
-    for (let i = 0; i < dataLines.length; i++) {
-      const values = dataLines[i].split(',').map(v => v.trim());
-
-      const phoneIndex = headers.findIndex(h => h.includes('phone') || h.includes('number'));
-      const firstNameIndex = headers.findIndex(h => h.includes('first') && h.includes('name'));
-      const lastNameIndex = headers.findIndex(h => h.includes('last') && h.includes('name'));
-      const emailIndex = headers.findIndex(h => h.includes('email'));
-      const streetIndex = headers.findIndex(h => h.includes('street') || h.includes('address'));
-      const cityIndex = headers.findIndex(h => h.includes('city'));
-      const postCodeIndex = headers.findIndex(h => h.includes('postcode') || h.includes('post') || h.includes('zip'));
-      const additionalInfoIndex = headers.findIndex(h => h.includes('additional') || h.includes('notes') || h.includes('info'));
-      const lastContactedIndex = headers.findIndex(h => h.includes('last') && h.includes('contact'));
-
-      const phoneNumber = phoneIndex >= 0 ? values[phoneIndex] : '';
-      const firstName = firstNameIndex >= 0 ? values[firstNameIndex] : '';
-      const lastName = lastNameIndex >= 0 ? values[lastNameIndex] : '';
-      const street = streetIndex >= 0 ? values[streetIndex] : '';
-
-      if (!phoneNumber || !firstName || !lastName || !street) {
-        continue;
-      }
-
-      const validation = validatePhoneNumber(phoneNumber);
-
-      contacts.push({
-        id: Math.random().toString(36).substr(2, 9),
-        number: phoneNumber,
-        firstName: firstName,
-        lastName: lastName,
-        street: street,
-        email: emailIndex >= 0 ? values[emailIndex] : undefined,
-        city: cityIndex >= 0 ? values[cityIndex] : undefined,
-        postCode: postCodeIndex >= 0 ? values[postCodeIndex] : undefined,
-        additionalInformation: additionalInfoIndex >= 0 ? values[additionalInfoIndex] : undefined,
-        lastContacted: lastContactedIndex >= 0 ? values[lastContactedIndex] : undefined,
-        isValid: validation.isValid,
-        error: validation.error
-      });
-    }
-
-    if (contacts.length === 0) {
-      setMessage({ type: 'error', text: 'No valid contacts found in CSV. Ensure headers include: phone_number, first_name, last_name, street' });
-      return;
-    }
-
-    setManualUploadContacts(contacts);
-    setMessage({ type: 'success', text: `Successfully loaded ${contacts.length} contact${contacts.length !== 1 ? 's' : ''} from CSV` });
-  };
 
   const clearManualUpload = () => {
     setManualUploadFile(null);
-    setManualUploadContacts([]);
     setManualUploadNotes('');
     setMessage(null);
   };
@@ -423,9 +353,8 @@ const VoxOutbound: React.FC = () => {
       return;
     }
 
-    const validNumbers = manualUploadContacts.filter(p => p.isValid);
-    if (validNumbers.length === 0) {
-      setMessage({ type: 'error', text: 'No valid contacts to submit' });
+    if (!manualUploadFile) {
+      setMessage({ type: 'error', text: 'Please select a CSV file to upload' });
       return;
     }
 
@@ -443,49 +372,48 @@ const VoxOutbound: React.FC = () => {
 
       const companyId = userCompanies && userCompanies.length > 0 ? userCompanies[0].company_id : null;
 
-      const { error } = await supabase
-        .from('vox_manual_upload_requests')
-        .insert({
-          user_id: user.id,
-          company_id: companyId,
-          file_name: manualUploadFile?.name || 'manual_upload.csv',
-          contact_count: validNumbers.length,
-          csv_data: validNumbers,
-          status: 'pending',
-          notes: manualUploadNotes.trim() || null
-        });
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const csvContent = e.target?.result as string;
 
-      if (error) throw error;
+        try {
+          await fetch('https://n8n.srv997647.hstgr.cloud/webhook/5b3efc91-0449-41e1-be28-302f03e67865', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              user_id: user.id,
+              company_id: companyId,
+              file_name: manualUploadFile.name,
+              csv_content: csvContent,
+              notes: manualUploadNotes.trim() || null,
+              submitted_at: new Date().toISOString()
+            }),
+          });
 
-      try {
-        await fetch('https://n8n.srv997647.hstgr.cloud/webhook/5b3efc91-0449-41e1-be28-302f03e67865', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: user.id,
-            company_id: companyId,
-            file_name: manualUploadFile?.name || 'manual_upload.csv',
-            contact_count: validNumbers.length,
-            contacts: validNumbers,
-            notes: manualUploadNotes.trim() || null,
-            submitted_at: new Date().toISOString()
-          }),
-        });
-      } catch (webhookError) {
-        console.error('Failed to send webhook:', webhookError);
-      }
+          setMessage({
+            type: 'success',
+            text: `Successfully submitted ${manualUploadFile.name} for manual processing by Pri0r1ty`
+          });
+          clearManualUpload();
+        } catch (webhookError) {
+          console.error('Failed to send webhook:', webhookError);
+          setMessage({ type: 'error', text: 'Failed to send file to webhook. Please try again.' });
+        } finally {
+          setSubmitting(false);
+        }
+      };
 
-      setMessage({
-        type: 'success',
-        text: `Successfully submitted ${validNumbers.length} contact${validNumbers.length !== 1 ? 's' : ''} for manual processing by Pri0r1ty`
-      });
-      clearManualUpload();
+      reader.onerror = () => {
+        setMessage({ type: 'error', text: 'Failed to read file. Please try again.' });
+        setSubmitting(false);
+      };
+
+      reader.readAsText(manualUploadFile);
     } catch (error) {
       console.error('Error submitting manual upload:', error);
       setMessage({ type: 'error', text: 'Failed to submit manual upload. Please try again.' });
-    } finally {
       setSubmitting(false);
     }
   };
@@ -905,35 +833,44 @@ const VoxOutbound: React.FC = () => {
                 </label>
                 {manualUploadFile && (
                   <p className="mt-4 text-sm text-neutral-600">
-                    Uploaded: <span className="font-medium">{manualUploadFile.name}</span>
+                    Selected: <span className="font-medium">{manualUploadFile.name}</span>
                   </p>
                 )}
               </div>
 
-              {manualUploadContacts.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Notes (Optional)
-                  </label>
-                  <textarea
-                    value={manualUploadNotes}
-                    onChange={(e) => setManualUploadNotes(e.target.value)}
-                    placeholder="Add any additional notes or instructions for Pri0r1ty..."
-                    rows={4}
-                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent resize-none"
-                  />
-                </div>
+              {manualUploadFile && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Notes (Optional)
+                    </label>
+                    <textarea
+                      value={manualUploadNotes}
+                      onChange={(e) => setManualUploadNotes(e.target.value)}
+                      placeholder="Add any additional notes or instructions for Pri0r1ty..."
+                      rows={4}
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent resize-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <Button variant="outline" onClick={clearManualUpload}>
+                      Cancel
+                    </Button>
+                    <Button onClick={submitManualUpload} disabled={submitting}>
+                      {submitting ? 'Submitting...' : 'Submit to Pri0r1ty'}
+                    </Button>
+                  </div>
+                </>
               )}
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-900 font-medium mb-2">Manual Upload Information:</p>
                 <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-                  <li>Required columns: phone_number, first_name, last_name, street</li>
-                  <li>Optional columns: email, city, postcode, additional_information, last_contacted</li>
+                  <li>Upload any CSV file - no specific format required</li>
                   <li>No limit on number of records</li>
-                  <li>Contacts will be sent to Pri0r1ty for manual processing</li>
+                  <li>File will be sent to Pri0r1ty for manual processing</li>
                   <li>These contacts will NOT be automatically queued for calling</li>
-                  <li>Phone numbers should include country code (e.g., +447123456789)</li>
                 </ul>
               </div>
             </div>
@@ -942,31 +879,26 @@ const VoxOutbound: React.FC = () => {
       </div>
 
       {((activeTab === 'manual' && phoneNumbers.length > 0) ||
-        (activeTab === 'bulk' && uploadedContacts.length > 0) ||
-        (activeTab === 'manualUpload' && manualUploadContacts.length > 0)) && (
+        (activeTab === 'bulk' && uploadedContacts.length > 0)) && (
         <div className="mt-6 bg-white rounded-lg shadow-sm border border-neutral-200">
           <div className="px-6 py-4 border-b border-neutral-200">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-neutral-800">
                 Contacts ({
                   activeTab === 'manual' ? phoneNumbers.length :
-                  activeTab === 'bulk' ? uploadedContacts.length :
-                  manualUploadContacts.length
+                  uploadedContacts.length
                 })
               </h2>
               <div className="flex items-center gap-4 text-sm">
                 <span className="text-green-600 font-medium">
                   {activeTab === 'manual' ? validCount :
-                   activeTab === 'bulk' ? uploadedContacts.filter(p => p.isValid).length :
-                   manualUploadContacts.filter(p => p.isValid).length} valid
+                   uploadedContacts.filter(p => p.isValid).length} valid
                 </span>
                 {((activeTab === 'manual' && invalidCount > 0) ||
-                  (activeTab === 'bulk' && uploadedContacts.length - uploadedContacts.filter(p => p.isValid).length > 0) ||
-                  (activeTab === 'manualUpload' && manualUploadContacts.length - manualUploadContacts.filter(p => p.isValid).length > 0)) && (
+                  (activeTab === 'bulk' && uploadedContacts.length - uploadedContacts.filter(p => p.isValid).length > 0)) && (
                   <span className="text-red-600 font-medium">
                     {activeTab === 'manual' ? invalidCount :
-                     activeTab === 'bulk' ? uploadedContacts.length - uploadedContacts.filter(p => p.isValid).length :
-                     manualUploadContacts.length - manualUploadContacts.filter(p => p.isValid).length} invalid
+                     uploadedContacts.length - uploadedContacts.filter(p => p.isValid).length} invalid
                   </span>
                 )}
               </div>
@@ -975,9 +907,7 @@ const VoxOutbound: React.FC = () => {
 
           <div className="max-h-96 overflow-y-auto">
             <div className="divide-y divide-neutral-200">
-              {(activeTab === 'manual' ? phoneNumbers :
-                activeTab === 'bulk' ? uploadedContacts :
-                manualUploadContacts).map((phone) => (
+              {(activeTab === 'manual' ? phoneNumbers : uploadedContacts).map((phone) => (
                 <div
                   key={phone.id}
                   className="px-6 py-3 flex items-center justify-between hover:bg-neutral-50"
@@ -1016,10 +946,8 @@ const VoxOutbound: React.FC = () => {
                     onClick={() => {
                       if (activeTab === 'manual') {
                         removePhoneNumber(phone.id);
-                      } else if (activeTab === 'bulk') {
-                        setUploadedContacts(uploadedContacts.filter(p => p.id !== phone.id));
                       } else {
-                        setManualUploadContacts(manualUploadContacts.filter(p => p.id !== phone.id));
+                        setUploadedContacts(uploadedContacts.filter(p => p.id !== phone.id));
                       }
                     }}
                     className="text-neutral-400 hover:text-red-600 transition-colors"
@@ -1036,13 +964,9 @@ const VoxOutbound: React.FC = () => {
               <p className="text-sm text-neutral-600">
                 {activeTab === 'manual'
                   ? validCount > 0 ? `${validCount} call${validCount !== 1 ? 's' : ''} will be queued` : 'No valid numbers to queue'
-                  : activeTab === 'bulk'
-                    ? uploadedContacts.filter(p => p.isValid).length > 0
-                      ? `${uploadedContacts.filter(p => p.isValid).length} call${uploadedContacts.filter(p => p.isValid).length !== 1 ? 's' : ''} will be queued`
-                      : 'No valid numbers to queue'
-                    : manualUploadContacts.filter(p => p.isValid).length > 0
-                      ? `${manualUploadContacts.filter(p => p.isValid).length} contact${manualUploadContacts.filter(p => p.isValid).length !== 1 ? 's' : ''} will be sent for manual processing`
-                      : 'No valid contacts to submit'
+                  : uploadedContacts.filter(p => p.isValid).length > 0
+                    ? `${uploadedContacts.filter(p => p.isValid).length} call${uploadedContacts.filter(p => p.isValid).length !== 1 ? 's' : ''} will be queued`
+                    : 'No valid numbers to queue'
                 }
               </p>
               <div className="flex gap-3">
@@ -1051,34 +975,25 @@ const VoxOutbound: React.FC = () => {
                   onClick={() => {
                     if (activeTab === 'manual') {
                       setPhoneNumbers([]);
-                    } else if (activeTab === 'bulk') {
-                      clearBulkUpload();
                     } else {
-                      clearManualUpload();
+                      clearBulkUpload();
                     }
                   }}
                 >
                   Clear All
                 </Button>
                 <Button
-                  onClick={
-                    activeTab === 'manual' ? submitCalls :
-                    activeTab === 'bulk' ? submitBulkCalls :
-                    submitManualUpload
-                  }
+                  onClick={activeTab === 'manual' ? submitCalls : submitBulkCalls}
                   disabled={
                     (activeTab === 'manual' && (validCount === 0 || submitting)) ||
-                    (activeTab === 'bulk' && (uploadedContacts.filter(p => p.isValid).length === 0 || submitting)) ||
-                    (activeTab === 'manualUpload' && (manualUploadContacts.filter(p => p.isValid).length === 0 || submitting))
+                    (activeTab === 'bulk' && (uploadedContacts.filter(p => p.isValid).length === 0 || submitting))
                   }
                 >
                   {submitting
-                    ? activeTab === 'manualUpload' ? 'Submitting...' : 'Queueing...'
+                    ? 'Queueing...'
                     : activeTab === 'manual'
                       ? `Queue ${validCount} Call${validCount !== 1 ? 's' : ''}`
-                      : activeTab === 'bulk'
-                        ? `Queue ${uploadedContacts.filter(p => p.isValid).length} Call${uploadedContacts.filter(p => p.isValid).length !== 1 ? 's' : ''}`
-                        : `Submit ${manualUploadContacts.filter(p => p.isValid).length} Contact${manualUploadContacts.filter(p => p.isValid).length !== 1 ? 's' : ''}`
+                      : `Queue ${uploadedContacts.filter(p => p.isValid).length} Call${uploadedContacts.filter(p => p.isValid).length !== 1 ? 's' : ''}`
                   }
                 </Button>
               </div>
