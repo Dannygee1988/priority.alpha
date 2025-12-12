@@ -475,13 +475,13 @@ const VoxOutbound: React.FC = () => {
           user_id: user.id,
           agent_id: agentId,
           phone_number: phone.number,
-          name: phone.firstName,
+          first_name: phone.firstName,
           last_name: phone.lastName,
           caller_email: phone.email || null,
           street: phone.street || null,
           city: phone.city || null,
           post_code: phone.postCode || null,
-          reason_for_sale: phone.additionalInformation || null,
+          additional_information: phone.additionalInformation || null,
           last_contacted: lastContactedValue,
           call_status: 'queued',
           call_duration: 0,
@@ -555,13 +555,13 @@ const VoxOutbound: React.FC = () => {
           user_id: user.id,
           agent_id: agentId,
           phone_number: phone.number,
-          name: phone.firstName,
+          first_name: phone.firstName,
           last_name: phone.lastName,
           caller_email: phone.email || null,
           street: phone.street || null,
           city: phone.city || null,
           post_code: phone.postCode || null,
-          reason_for_sale: phone.additionalInformation || null,
+          additional_information: phone.additionalInformation || null,
           last_contacted: lastContactedValue,
           call_status: 'queued',
           call_duration: 0,
@@ -1104,7 +1104,7 @@ const VoxOutbound: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-800">
-                      {call.caller_name}
+                      {call.first_name} {call.last_name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-neutral-800">
                       {call.phone_number}
