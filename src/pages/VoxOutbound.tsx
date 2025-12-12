@@ -254,6 +254,34 @@ const VoxOutbound: React.FC = () => {
     reader.readAsText(file);
   };
 
+  const parseCsvLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    result.push(current.trim());
+    return result;
+  };
+
   const parseCSV = (csvText: string) => {
     const lines = csvText.split('\n').filter(line => line.trim());
 
@@ -262,7 +290,7 @@ const VoxOutbound: React.FC = () => {
       return;
     }
 
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const headers = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
     const dataLines = lines.slice(1);
 
     if (dataLines.length > 10) {
@@ -273,7 +301,7 @@ const VoxOutbound: React.FC = () => {
     const contacts: ContactData[] = [];
 
     for (let i = 0; i < dataLines.length; i++) {
-      const values = dataLines[i].split(',').map(v => v.trim());
+      const values = parseCsvLine(dataLines[i]).map(v => v.trim());
 
       const phoneIndex = headers.findIndex(h => h.includes('phone') || h.includes('number'));
       const firstNameIndex = headers.findIndex(h => h.includes('first') && h.includes('name'));
