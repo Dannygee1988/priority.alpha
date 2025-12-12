@@ -8,7 +8,7 @@ interface CombinedCall {
   id: string;
   direction: 'inbound' | 'outbound';
   phone_number: string;
-  first_name?: string;
+  name?: string;
   last_name?: string;
   call_duration: number;
   call_status: string;
@@ -202,7 +202,7 @@ const VoxCallLogs: React.FC = () => {
         .from('crm_contacts')
         .insert({
           company_id: companyId,
-          name: call.first_name && call.last_name ? `${call.first_name} ${call.last_name}` : 'Unknown',
+          name: call.name && call.last_name ? `${call.name} ${call.last_name}` : 'Unknown',
           phone: call.phone_number,
           source: `vox_${call.direction}`,
           notes: call.summary || ''
@@ -354,7 +354,7 @@ const VoxCallLogs: React.FC = () => {
                   <div className="text-sm text-neutral-700 truncate">
                     {call.source_table === 'vox_inbound_calls'
                       ? (call.Subject || 'No subject')
-                      : (call.first_name && call.last_name ? `${call.first_name} ${call.last_name}` : 'Unknown')}
+                      : (call.name && call.last_name ? `${call.name} ${call.last_name}` : 'Unknown')}
                   </div>
                   <div className="text-sm text-neutral-900 truncate">
                     {call.phone_number}

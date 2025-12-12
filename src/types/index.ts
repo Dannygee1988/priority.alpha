@@ -50,13 +50,13 @@ export interface VoxOutboundCall {
   user_id: string;
   agent_id: string;
   phone_number: string;
-  first_name: string;
+  name: string;
   last_name: string;
   caller_email?: string;
   street?: string;
   city?: string;
   post_code?: string;
-  additional_information?: string;
+  reason_for_sale?: string;
   last_contacted?: string;
   call_duration: number;
   call_status: 'completed' | 'failed' | 'no-answer' | 'busy' | 'cancelled' | 'queued';
