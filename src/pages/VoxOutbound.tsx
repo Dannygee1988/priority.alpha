@@ -434,22 +434,32 @@ const VoxOutbound: React.FC = () => {
     setMessage(null);
 
     try {
-      const callsToInsert = validNumbers.map(phone => ({
-        user_id: user.id,
-        agent_id: agentId,
-        phone_number: phone.number,
-        name: phone.firstName,
-        last_name: phone.lastName,
-        caller_email: phone.email || null,
-        street: phone.street || null,
-        city: phone.city || null,
-        post_code: phone.postCode || null,
-        reason_for_sale: phone.additionalInformation || null,
-        last_contacted: phone.lastContacted ? new Date(phone.lastContacted).toISOString() : null,
-        call_status: 'queued',
-        call_duration: 0,
-        cost: 0
-      }));
+      const callsToInsert = validNumbers.map(phone => {
+        let lastContactedValue = null;
+        if (phone.lastContacted && phone.lastContacted.trim()) {
+          const date = new Date(phone.lastContacted);
+          if (!isNaN(date.getTime())) {
+            lastContactedValue = date.toISOString();
+          }
+        }
+
+        return {
+          user_id: user.id,
+          agent_id: agentId,
+          phone_number: phone.number,
+          name: phone.firstName,
+          last_name: phone.lastName,
+          caller_email: phone.email || null,
+          street: phone.street || null,
+          city: phone.city || null,
+          post_code: phone.postCode || null,
+          reason_for_sale: phone.additionalInformation || null,
+          last_contacted: lastContactedValue,
+          call_status: 'queued',
+          call_duration: 0,
+          cost: 0
+        };
+      });
 
       const { data: insertedCalls, error } = await supabase
         .from('vox_outbound_calls')
@@ -504,22 +514,32 @@ const VoxOutbound: React.FC = () => {
     setMessage(null);
 
     try {
-      const callsToInsert = validNumbers.map(phone => ({
-        user_id: user.id,
-        agent_id: agentId,
-        phone_number: phone.number,
-        name: phone.firstName,
-        last_name: phone.lastName,
-        caller_email: phone.email || null,
-        street: phone.street || null,
-        city: phone.city || null,
-        post_code: phone.postCode || null,
-        reason_for_sale: phone.additionalInformation || null,
-        last_contacted: phone.lastContacted ? new Date(phone.lastContacted).toISOString() : null,
-        call_status: 'queued',
-        call_duration: 0,
-        cost: 0
-      }));
+      const callsToInsert = validNumbers.map(phone => {
+        let lastContactedValue = null;
+        if (phone.lastContacted && phone.lastContacted.trim()) {
+          const date = new Date(phone.lastContacted);
+          if (!isNaN(date.getTime())) {
+            lastContactedValue = date.toISOString();
+          }
+        }
+
+        return {
+          user_id: user.id,
+          agent_id: agentId,
+          phone_number: phone.number,
+          name: phone.firstName,
+          last_name: phone.lastName,
+          caller_email: phone.email || null,
+          street: phone.street || null,
+          city: phone.city || null,
+          post_code: phone.postCode || null,
+          reason_for_sale: phone.additionalInformation || null,
+          last_contacted: lastContactedValue,
+          call_status: 'queued',
+          call_duration: 0,
+          cost: 0
+        };
+      });
 
       const { data: insertedCalls, error } = await supabase
         .from('vox_outbound_calls')
