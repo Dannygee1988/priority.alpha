@@ -935,27 +935,27 @@ const VoxOutbound: React.FC = () => {
                   <div className="flex items-center gap-4 flex-1">
                     <Phone className={`w-4 h-4 flex-shrink-0 ${phone.isValid ? 'text-green-600' : 'text-red-600'}`} />
                     <div className="flex-1 grid grid-cols-5 gap-4">
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-xs text-neutral-500 block">Phone</span>
                         <span className="font-mono text-sm text-neutral-800">{phone.number}</span>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-xs text-neutral-500 block">Name</span>
                         <span className="text-sm text-neutral-800">{phone.firstName} {phone.lastName}</span>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-xs text-neutral-500 block">Email</span>
-                        <span className="text-sm text-neutral-800 truncate">{phone.email || '-'}</span>
+                        <span className="text-sm text-neutral-800 truncate block">{phone.email || '-'}</span>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-xs text-neutral-500 block">Address</span>
-                        <span className="text-sm text-neutral-800 truncate">
+                        <span className="text-sm text-neutral-800 truncate block">
                           {[phone.street, phone.city, phone.postCode].filter(Boolean).join(', ') || '-'}
                         </span>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <span className="text-xs text-neutral-500 block">Last Contacted</span>
-                        <span className="text-sm text-neutral-800">{phone.lastContacted || '-'}</span>
+                        <span className="text-sm text-neutral-800 truncate block">{phone.lastContacted || '-'}</span>
                       </div>
                     </div>
                     {!phone.isValid && phone.error && (
