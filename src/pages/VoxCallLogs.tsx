@@ -184,8 +184,7 @@ const VoxCallLogs: React.FC = () => {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-neutral-800 mb-2">Call Logs</h1>
-        <p className="text-neutral-600">Complete history of all inbound calls.</p>
+        <h1 className="text-3xl font-bold text-neutral-800">Call Logs</h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
