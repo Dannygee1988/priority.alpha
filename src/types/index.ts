@@ -38,6 +38,8 @@ export interface VoxInboundCall {
   tags?: string[];
   notes?: string;
   cost: number;
+  voicemail?: boolean;
+  agent_termination?: boolean;
   started_at: string;
   ended_at?: string;
   created_at: string;
