@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, MessageSquare, Tag, Filter, Calendar } from 'lucide-react';
+import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, MessageSquare, Tag, Filter } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall, VoxOutboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -41,8 +41,6 @@ const VoxCallLogs: React.FC = () => {
   const [directionFilter, setDirectionFilter] = useState<string>('all');
   const [sentimentFilter, setSentimentFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [dateFrom, setDateFrom] = useState<string>('');
-  const [dateTo, setDateTo] = useState<string>('');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -224,22 +222,6 @@ const VoxCallLogs: React.FC = () => {
         return false;
       }
 
-      if (dateFrom) {
-        const callDate = new Date(call.started_at).setHours(0, 0, 0, 0);
-        const fromDate = new Date(dateFrom).setHours(0, 0, 0, 0);
-        if (callDate < fromDate) {
-          return false;
-        }
-      }
-
-      if (dateTo) {
-        const callDate = new Date(call.started_at).setHours(0, 0, 0, 0);
-        const toDate = new Date(dateTo).setHours(23, 59, 59, 999);
-        if (callDate > toDate) {
-          return false;
-        }
-      }
-
       if (sentimentFilter !== 'all') {
         if (sentimentFilter === 'none') {
           if (call.sentiment_tags && call.sentiment_tags.length > 0) {
@@ -258,7 +240,7 @@ const VoxCallLogs: React.FC = () => {
 
       return true;
     });
-  }, [calls, hideVoicemail, directionFilter, sentimentFilter, statusFilter, dateFrom, dateTo]);
+  }, [calls, hideVoicemail, directionFilter, sentimentFilter, statusFilter]);
 
   const groupedCalls = useMemo(() => {
     const groups: Record<string, CombinedCall[]> = {};
@@ -348,41 +330,6 @@ const VoxCallLogs: React.FC = () => {
               <Clock className="w-6 h-6 text-slate-600" />
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-4 mb-6">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-neutral-700">
-            <Calendar className="w-5 h-5" />
-            <span className="text-sm font-medium">Date Range:</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <span className="text-neutral-500">to</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="px-3 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          {(dateFrom || dateTo) && (
-            <button
-              onClick={() => {
-                setDateFrom('');
-                setDateTo('');
-              }}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Clear
-            </button>
-          )}
         </div>
       </div>
 
