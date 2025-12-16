@@ -310,28 +310,20 @@ const VoxCallLogs: React.FC = () => {
                     {formatDuration(call.call_duration)}
                   </div>
                   <div className="flex justify-center items-center w-[70px] pt-0.5">
-                    {call.source_table === 'vox_inbound_calls' ? (
-                      <input
-                        type="checkbox"
-                        checked={call.voicemail || false}
-                        disabled
-                        className="w-4 h-4 rounded border-neutral-300 text-green-600 focus:ring-0 cursor-not-allowed"
-                      />
-                    ) : (
-                      <span className="text-neutral-300">-</span>
-                    )}
+                    <input
+                      type="checkbox"
+                      checked={call.voicemail || false}
+                      disabled
+                      className="w-4 h-4 rounded border-neutral-300 text-green-600 focus:ring-0 cursor-not-allowed"
+                    />
                   </div>
                   <div className="flex justify-center items-center w-[90px] pt-0.5">
-                    {call.source_table === 'vox_inbound_calls' ? (
-                      <input
-                        type="checkbox"
-                        checked={call.agent_termination || false}
-                        disabled
-                        className="w-4 h-4 rounded border-neutral-300 text-green-600 focus:ring-0 cursor-not-allowed"
-                      />
-                    ) : (
-                      <span className="text-neutral-300">-</span>
-                    )}
+                    <input
+                      type="checkbox"
+                      checked={call.agent_termination || false}
+                      disabled
+                      className="w-4 h-4 rounded border-neutral-300 text-green-600 focus:ring-0 cursor-not-allowed"
+                    />
                   </div>
                   <div className="flex items-start w-[120px]">
                     <span
