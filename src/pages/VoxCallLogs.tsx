@@ -38,6 +38,7 @@ const VoxCallLogs: React.FC = () => {
   const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hideVoicemail, setHideVoicemail] = useState(false);
+  const [directionFilter, setDirectionFilter] = useState<string>('all');
   const [sentimentFilter, setSentimentFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -217,6 +218,10 @@ const VoxCallLogs: React.FC = () => {
         return false;
       }
 
+      if (directionFilter !== 'all' && call.direction !== directionFilter) {
+        return false;
+      }
+
       if (sentimentFilter !== 'all') {
         if (sentimentFilter === 'none') {
           if (call.sentiment_tags && call.sentiment_tags.length > 0) {
@@ -235,7 +240,7 @@ const VoxCallLogs: React.FC = () => {
 
       return true;
     });
-  }, [calls, hideVoicemail, sentimentFilter, statusFilter]);
+  }, [calls, hideVoicemail, directionFilter, sentimentFilter, statusFilter]);
 
   const groupedCalls = useMemo(() => {
     const groups: Record<string, CombinedCall[]> = {};
@@ -330,7 +335,52 @@ const VoxCallLogs: React.FC = () => {
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
         <div className="grid grid-cols-[140px_180px_280px_160px_110px_110px_90px_120px_150px_70px] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
-          <div>Direction</div>
+          <div className="relative">
+            <button
+              onClick={() => setOpenDropdown(openDropdown === 'direction' ? null : 'direction')}
+              className="flex items-center gap-1 hover:text-neutral-900 transition-colors"
+            >
+              Direction
+              <Filter className={`w-3 h-3 ${directionFilter !== 'all' ? 'text-blue-600' : ''}`} />
+            </button>
+            {openDropdown === 'direction' && (
+              <div ref={dropdownRef} className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-neutral-200 py-1 z-50 min-w-[160px]">
+                <button
+                  onClick={() => {
+                    setDirectionFilter('all');
+                    setOpenDropdown(null);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors ${
+                    directionFilter === 'all' ? 'text-blue-600 font-medium' : 'text-neutral-700'
+                  }`}
+                >
+                  All Directions
+                </button>
+                <button
+                  onClick={() => {
+                    setDirectionFilter('inbound');
+                    setOpenDropdown(null);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors ${
+                    directionFilter === 'inbound' ? 'text-blue-600 font-medium' : 'text-neutral-700'
+                  }`}
+                >
+                  Inbound
+                </button>
+                <button
+                  onClick={() => {
+                    setDirectionFilter('outbound');
+                    setOpenDropdown(null);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors ${
+                    directionFilter === 'outbound' ? 'text-blue-600 font-medium' : 'text-neutral-700'
+                  }`}
+                >
+                  Outbound
+                </button>
+              </div>
+            )}
+          </div>
           <div>Time</div>
           <div>Name/Subject</div>
           <div>Phone Number</div>
