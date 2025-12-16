@@ -308,24 +308,26 @@ const VoxCallLogs: React.FC = () => {
                   <div className="text-sm text-neutral-900">
                     {formatDuration(call.call_duration)}
                   </div>
-                  <div className="text-center">
+                  <div className="flex justify-center">
                     {call.source_table === 'vox_inbound_calls' ? (
-                      call.voicemail ? (
-                        <span className="text-green-600 font-medium">Yes</span>
-                      ) : (
-                        <span className="text-neutral-400">No</span>
-                      )
+                      <input
+                        type="checkbox"
+                        checked={call.voicemail || false}
+                        disabled
+                        className="w-4 h-4 rounded border-neutral-300 text-green-600 focus:ring-0 cursor-not-allowed"
+                      />
                     ) : (
                       <span className="text-neutral-300">-</span>
                     )}
                   </div>
-                  <div className="text-center">
+                  <div className="flex justify-center">
                     {call.source_table === 'vox_inbound_calls' ? (
-                      call.agent_termination ? (
-                        <span className="text-green-600 font-medium">Yes</span>
-                      ) : (
-                        <span className="text-neutral-400">No</span>
-                      )
+                      <input
+                        type="checkbox"
+                        checked={call.agent_termination || false}
+                        disabled
+                        className="w-4 h-4 rounded border-neutral-300 text-green-600 focus:ring-0 cursor-not-allowed"
+                      />
                     ) : (
                       <span className="text-neutral-300">-</span>
                     )}
