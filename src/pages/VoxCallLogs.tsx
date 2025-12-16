@@ -256,7 +256,7 @@ const VoxCallLogs: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-        <div className="grid grid-cols-[140px_180px_280px_160px_110px_70px_90px_200px_70px] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
+        <div className="grid grid-cols-[140px_180px_280px_160px_110px_70px_90px_120px_150px_70px] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
           <div>Direction</div>
           <div>Date</div>
           <div>Name/Subject</div>
@@ -265,6 +265,7 @@ const VoxCallLogs: React.FC = () => {
           <div className="text-center">Voicemail</div>
           <div className="text-center">Hang up</div>
           <div>Status</div>
+          <div>Sentiment</div>
           <div></div>
         </div>
 
@@ -278,7 +279,7 @@ const VoxCallLogs: React.FC = () => {
               <div key={call.id}>
                 <div
                   onClick={() => toggleExpand(call.id)}
-                  className="grid grid-cols-[140px_180px_280px_160px_110px_70px_90px_200px_70px] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-start"
+                  className="grid grid-cols-[140px_180px_280px_160px_110px_70px_90px_120px_150px_70px] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-start"
                 >
                   <div className="w-[140px]">
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
@@ -332,7 +333,7 @@ const VoxCallLogs: React.FC = () => {
                       <span className="text-neutral-300">-</span>
                     )}
                   </div>
-                  <div className="flex items-start gap-2 w-[200px] flex-wrap">
+                  <div className="flex items-start w-[120px]">
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
                         call.call_status
@@ -340,17 +341,19 @@ const VoxCallLogs: React.FC = () => {
                     >
                       {call.call_status}
                     </span>
-                    {call.sentiment_tags && call.sentiment_tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {call.sentiment_tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
+                  </div>
+                  <div className="flex items-start gap-1 w-[150px] flex-wrap">
+                    {call.sentiment_tags && call.sentiment_tags.length > 0 ? (
+                      call.sentiment_tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-neutral-300">-</span>
                     )}
                   </div>
                   <div className="flex justify-end">
