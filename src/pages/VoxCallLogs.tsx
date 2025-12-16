@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, MessageSquare, Tag } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, MessageSquare, Tag, Filter } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall, VoxOutboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -37,6 +37,9 @@ const VoxCallLogs: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hideVoicemail, setHideVoicemail] = useState(false);
+  const [sentimentFilter, setSentimentFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
     if (user) {
@@ -157,6 +160,27 @@ const VoxCallLogs: React.FC = () => {
     setExpandedCallId(expandedCallId === callId ? null : callId);
   };
 
+  const filteredCalls = useMemo(() => {
+    return calls.filter(call => {
+      if (hideVoicemail && call.voicemail) {
+        return false;
+      }
+
+      if (sentimentFilter !== 'all') {
+        const callSentiment = call.sentiment || 'none';
+        if (callSentiment !== sentimentFilter) {
+          return false;
+        }
+      }
+
+      if (statusFilter !== 'all' && call.call_status !== statusFilter) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [calls, hideVoicemail, sentimentFilter, statusFilter]);
+
   if (loading) {
     return (
       <div className="p-8">
@@ -177,14 +201,74 @@ const VoxCallLogs: React.FC = () => {
     );
   }
 
-  const totalMinutes = Math.floor(calls.reduce((sum, call) => sum + call.call_duration, 0) / 60);
-  const totalCalls = calls.length;
-  const inboundCount = calls.filter(c => c.direction === 'inbound').length;
+  const totalMinutes = Math.floor(filteredCalls.reduce((sum, call) => sum + call.call_duration, 0) / 60);
+  const totalCalls = filteredCalls.length;
+  const inboundCount = filteredCalls.filter(c => c.direction === 'inbound').length;
+
+  const uniqueStatuses = Array.from(new Set(calls.map(c => c.call_status))).sort();
+  const uniqueSentiments = Array.from(new Set(calls.map(c => c.sentiment).filter(Boolean))).sort();
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-neutral-800">Call Logs</h1>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-5 h-5 text-neutral-600" />
+          <h2 className="text-lg font-semibold text-neutral-800">Filters</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hideVoicemail}
+                onChange={(e) => setHideVoicemail(e.target.checked)}
+                className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+              />
+              Hide Voicemail Calls
+            </label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
+              Sentiment
+            </label>
+            <select
+              value={sentimentFilter}
+              onChange={(e) => setSentimentFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            >
+              <option value="all">All Sentiments</option>
+              {uniqueSentiments.map(sentiment => (
+                <option key={sentiment} value={sentiment}>
+                  {sentiment!.charAt(0).toUpperCase() + sentiment!.slice(1)}
+                </option>
+              ))}
+              <option value="none">No Sentiment</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
+              Status
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            >
+              <option value="all">All Statuses</option>
+              {uniqueStatuses.map(status => (
+                <option key={status} value={status}>
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -239,13 +323,13 @@ const VoxCallLogs: React.FC = () => {
           <div></div>
         </div>
 
-          {calls.length === 0 ? (
+          {filteredCalls.length === 0 ? (
             <div className="px-6 py-12 text-center text-neutral-500">
-              No calls found. Call history will appear here.
+              {calls.length === 0 ? 'No calls found. Call history will appear here.' : 'No calls match the selected filters.'}
             </div>
           ) : (
             <div className="divide-y divide-neutral-200">
-              {calls.map((call) => (
+              {filteredCalls.map((call) => (
               <div key={call.id}>
                 <div
                   onClick={() => toggleExpand(call.id)}
