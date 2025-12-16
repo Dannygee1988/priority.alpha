@@ -31,8 +31,8 @@ const AppLayout: React.FC = () => {
         <div className={`transition-colors duration-300 ${hasModalOpen ? 'bg-black/50' : ''}`}>
           <Header />
         </div>
-        <main className={`p-6 transition-colors duration-300 ${hasModalOpen ? 'bg-black/50' : ''}`}>
-          <div className="max-w-7xl mx-auto">
+        <main className={`px-4 py-6 transition-colors duration-300 ${hasModalOpen ? 'bg-black/50' : ''}`}>
+          <div className="max-w-[1800px] mx-auto">
             <Outlet />
           </div>
         </main>

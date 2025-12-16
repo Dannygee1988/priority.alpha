@@ -199,7 +199,7 @@ const VoxCallLogs: React.FC = () => {
   const outboundCount = calls.filter(c => c.direction === 'outbound').length;
 
   return (
-    <div className="p-8">
+    <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-neutral-800 mb-2">Call Logs</h1>
         <p className="text-neutral-600">Complete history of all inbound and outbound calls.</p>
@@ -256,7 +256,7 @@ const VoxCallLogs: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-        <div className="grid grid-cols-[120px_160px_200px_140px_100px_60px_80px_150px_60px] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
+        <div className="grid grid-cols-[140px_180px_280px_160px_110px_70px_90px_200px_70px] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
           <div>Direction</div>
           <div>Date</div>
           <div>Name/Subject</div>
@@ -278,9 +278,9 @@ const VoxCallLogs: React.FC = () => {
               <div key={call.id}>
                 <div
                   onClick={() => toggleExpand(call.id)}
-                  className="grid grid-cols-[120px_160px_200px_140px_100px_60px_80px_150px_60px] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-start"
+                  className="grid grid-cols-[140px_180px_280px_160px_110px_70px_90px_200px_70px] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-start"
                 >
-                  <div className="w-[120px]">
+                  <div className="w-[140px]">
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                       call.direction === 'inbound'
                         ? 'bg-green-100 text-green-800'
@@ -294,21 +294,21 @@ const VoxCallLogs: React.FC = () => {
                       {call.direction}
                     </span>
                   </div>
-                  <div className="text-sm text-neutral-900 w-[160px] break-words">
+                  <div className="text-sm text-neutral-900 w-[180px] break-words">
                     {formatDateTime(call.started_at)}
                   </div>
-                  <div className="text-sm text-neutral-700 w-[200px] break-words">
+                  <div className="text-sm text-neutral-700 w-[280px] break-words">
                     {call.source_table === 'vox_inbound_calls'
                       ? (call.Subject || 'No subject')
                       : (call.name && call.last_name ? `${call.name} ${call.last_name}` : 'Unknown')}
                   </div>
-                  <div className="text-sm text-neutral-900 w-[140px] break-words">
+                  <div className="text-sm text-neutral-900 w-[160px] break-words">
                     {call.phone_number}
                   </div>
-                  <div className="text-sm text-neutral-900 w-[100px]">
+                  <div className="text-sm text-neutral-900 w-[110px]">
                     {formatDuration(call.call_duration)}
                   </div>
-                  <div className="flex justify-center items-center w-[60px] pt-0.5">
+                  <div className="flex justify-center items-center w-[70px] pt-0.5">
                     {call.source_table === 'vox_inbound_calls' ? (
                       <input
                         type="checkbox"
@@ -320,7 +320,7 @@ const VoxCallLogs: React.FC = () => {
                       <span className="text-neutral-300">-</span>
                     )}
                   </div>
-                  <div className="flex justify-center items-center w-[80px] pt-0.5">
+                  <div className="flex justify-center items-center w-[90px] pt-0.5">
                     {call.source_table === 'vox_inbound_calls' ? (
                       <input
                         type="checkbox"
@@ -332,7 +332,7 @@ const VoxCallLogs: React.FC = () => {
                       <span className="text-neutral-300">-</span>
                     )}
                   </div>
-                  <div className="flex items-start gap-2 w-[150px] flex-wrap">
+                  <div className="flex items-start gap-2 w-[200px] flex-wrap">
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
                         call.call_status
