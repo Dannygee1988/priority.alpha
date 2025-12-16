@@ -32,7 +32,7 @@ const AppLayout: React.FC = () => {
           <Header />
         </div>
         <main className={`pl-4 pr-8 py-6 transition-colors duration-300 ${hasModalOpen ? 'bg-black/50' : ''}`}>
-          <div className="max-w-[1800px] mx-auto">
+          <div className="max-w-[1600px] mx-auto">
             <Outlet />
           </div>
         </main>
