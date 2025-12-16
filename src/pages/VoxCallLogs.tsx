@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, User, MessageSquare, Tag, CheckCircle, Plus } from 'lucide-react';
+import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, User, MessageSquare, Tag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall, VoxOutboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -35,7 +35,6 @@ const VoxCallLogs: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [addingToCrm, setAddingToCrm] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -92,28 +91,15 @@ const VoxCallLogs: React.FC = () => {
 
       if (outboundError) throw outboundError;
 
-      const { data: crmContacts } = await supabase
-        .from('crm_customers')
-        .select('phone')
-        .in('company_id', companyIds);
-
-      const crmPhoneNumbers = new Set(
-        (crmContacts || [])
-          .map(contact => contact.phone)
-          .filter(phone => phone != null)
-      );
-
       const combinedInbound: CombinedCall[] = (inboundCalls || []).map(call => ({
         ...call,
         direction: (call.call_direction || 'inbound') as 'inbound' | 'outbound',
-        is_in_crm: crmPhoneNumbers.has(call.phone_number),
         source_table: 'vox_inbound_calls' as const
       }));
 
       const combinedOutbound: CombinedCall[] = (outboundCalls || []).map(call => ({
         ...call,
         direction: 'outbound' as const,
-        is_in_crm: crmPhoneNumbers.has(call.phone_number),
         source_table: 'vox_outbound_calls' as const
       }));
 
@@ -183,49 +169,6 @@ const VoxCallLogs: React.FC = () => {
 
   const toggleExpand = (callId: string) => {
     setExpandedCallId(expandedCallId === callId ? null : callId);
-  };
-
-  const handleAddToCrm = async (call: CombinedCall) => {
-    if (!user) return;
-
-    try {
-      const { data: userCompanies } = await supabase
-        .from('user_companies')
-        .select('company_id')
-        .eq('user_id', user.id);
-
-      if (!userCompanies || userCompanies.length === 0) return;
-
-      const companyId = userCompanies[0].company_id;
-
-      const { error: insertError } = await supabase
-        .from('crm_contacts')
-        .insert({
-          company_id: companyId,
-          name: call.name && call.last_name ? `${call.name} ${call.last_name}` : 'Unknown',
-          phone: call.phone_number,
-          source: `vox_${call.direction}`,
-          notes: call.summary || ''
-        });
-
-      if (insertError) throw insertError;
-
-      const tableName = call.direction === 'inbound' ? 'vox_inbound_calls' : 'vox_outbound_calls';
-      const { error: updateError } = await supabase
-        .from(tableName)
-        .update({ is_in_crm: true })
-        .eq('id', call.id);
-
-      if (updateError) throw updateError;
-
-      setCalls(prevCalls =>
-        prevCalls.map(c =>
-          c.id === call.id ? { ...c, is_in_crm: true } : c
-        )
-      );
-    } catch (error) {
-      console.error('Error adding to CRM:', error);
-    }
   };
 
   if (loading) {
@@ -311,13 +254,12 @@ const VoxCallLogs: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-        <div className="grid grid-cols-[100px_2fr_3fr_2fr_1.5fr_60px_2fr_auto] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
+        <div className="grid grid-cols-[100px_2fr_3fr_2fr_1.5fr_2fr_auto] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
           <div>Direction</div>
           <div>Date</div>
           <div>Name/Subject</div>
           <div>Phone Number</div>
           <div className="text-left">Duration</div>
-          <div className="text-left">CRM</div>
           <div>Status</div>
           <div></div>
         </div>
@@ -332,7 +274,7 @@ const VoxCallLogs: React.FC = () => {
               <div key={call.id}>
                 <div
                   onClick={() => toggleExpand(call.id)}
-                  className="grid grid-cols-[100px_2fr_3fr_2fr_1.5fr_60px_2fr_auto] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-center"
+                  className="grid grid-cols-[100px_2fr_3fr_2fr_1.5fr_2fr_auto] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-center"
                 >
                   <div>
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
@@ -361,27 +303,6 @@ const VoxCallLogs: React.FC = () => {
                   </div>
                   <div className="text-sm text-neutral-900">
                     {formatDuration(call.call_duration)}
-                  </div>
-                  <div className="flex items-center justify-center">
-                    {call.is_in_crm ? (
-                      <div className="border border-neutral-200 rounded-md h-8 w-full flex items-center justify-center">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      </div>
-                    ) : (
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          setAddingToCrm(call.id);
-                          await handleAddToCrm(call);
-                          setAddingToCrm(null);
-                        }}
-                        disabled={addingToCrm === call.id}
-                        className="border border-neutral-200 rounded-md h-8 w-full flex items-center justify-center hover:bg-neutral-50 hover:border-neutral-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Add to CRM"
-                      >
-                        <Plus className="w-5 h-5 text-neutral-400" />
-                      </button>
-                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span
