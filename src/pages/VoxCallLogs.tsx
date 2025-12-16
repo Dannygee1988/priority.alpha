@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, MessageSquare, Tag } from 'lucide-react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, MessageSquare, Tag, Filter } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall, VoxOutboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -40,12 +40,25 @@ const VoxCallLogs: React.FC = () => {
   const [hideVoicemail, setHideVoicemail] = useState(false);
   const [sentimentFilter, setSentimentFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
       fetchAllCalls();
     }
   }, [user]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchAllCalls = async () => {
     if (!user) return;
@@ -210,46 +223,8 @@ const VoxCallLogs: React.FC = () => {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-neutral-800 mb-4">Call Logs</h1>
-        <div className="flex items-center gap-4 flex-wrap">
-          <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={hideVoicemail}
-              onChange={(e) => setHideVoicemail(e.target.checked)}
-              className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-            />
-            Hide Voicemail
-          </label>
-
-          <select
-            value={sentimentFilter}
-            onChange={(e) => setSentimentFilter(e.target.value)}
-            className="px-3 py-1.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          >
-            <option value="all">All Sentiments</option>
-            {uniqueSentiments.map(sentiment => (
-              <option key={sentiment} value={sentiment}>
-                {sentiment!.charAt(0).toUpperCase() + sentiment!.slice(1)}
-              </option>
-            ))}
-            <option value="none">No Sentiment</option>
-          </select>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          >
-            <option value="all">All Statuses</option>
-            {uniqueStatuses.map(status => (
-              <option key={status} value={status}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-neutral-800">Call Logs</h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -297,10 +272,119 @@ const VoxCallLogs: React.FC = () => {
           <div>Name/Subject</div>
           <div>Phone Number</div>
           <div className="text-left">Duration</div>
-          <div className="text-center">Voicemail</div>
+          <div className="text-center relative">
+            <button
+              onClick={() => setOpenDropdown(openDropdown === 'voicemail' ? null : 'voicemail')}
+              className="flex items-center gap-1 justify-center hover:text-neutral-900 transition-colors w-full"
+            >
+              Voicemail
+              <Filter className={`w-3 h-3 ${hideVoicemail ? 'text-blue-600' : ''}`} />
+            </button>
+            {openDropdown === 'voicemail' && (
+              <div ref={dropdownRef} className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-neutral-200 p-3 z-50 min-w-[180px]">
+                <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hideVoicemail}
+                    onChange={(e) => {
+                      setHideVoicemail(e.target.checked);
+                      setOpenDropdown(null);
+                    }}
+                    className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  Hide Voicemail Calls
+                </label>
+              </div>
+            )}
+          </div>
           <div className="text-center">Hang up</div>
-          <div>Status</div>
-          <div>Sentiment</div>
+          <div className="relative">
+            <button
+              onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
+              className="flex items-center gap-1 hover:text-neutral-900 transition-colors"
+            >
+              Status
+              <Filter className={`w-3 h-3 ${statusFilter !== 'all' ? 'text-blue-600' : ''}`} />
+            </button>
+            {openDropdown === 'status' && (
+              <div ref={dropdownRef} className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 z-50 min-w-[180px]">
+                <button
+                  onClick={() => {
+                    setStatusFilter('all');
+                    setOpenDropdown(null);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors ${
+                    statusFilter === 'all' ? 'text-blue-600 font-medium' : 'text-neutral-700'
+                  }`}
+                >
+                  All Statuses
+                </button>
+                {uniqueStatuses.map(status => (
+                  <button
+                    key={status}
+                    onClick={() => {
+                      setStatusFilter(status);
+                      setOpenDropdown(null);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors ${
+                      statusFilter === status ? 'text-blue-600 font-medium' : 'text-neutral-700'
+                    }`}
+                  >
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => setOpenDropdown(openDropdown === 'sentiment' ? null : 'sentiment')}
+              className="flex items-center gap-1 hover:text-neutral-900 transition-colors"
+            >
+              Sentiment
+              <Filter className={`w-3 h-3 ${sentimentFilter !== 'all' ? 'text-blue-600' : ''}`} />
+            </button>
+            {openDropdown === 'sentiment' && (
+              <div ref={dropdownRef} className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 z-50 min-w-[180px]">
+                <button
+                  onClick={() => {
+                    setSentimentFilter('all');
+                    setOpenDropdown(null);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors ${
+                    sentimentFilter === 'all' ? 'text-blue-600 font-medium' : 'text-neutral-700'
+                  }`}
+                >
+                  All Sentiments
+                </button>
+                {uniqueSentiments.map(sentiment => (
+                  <button
+                    key={sentiment}
+                    onClick={() => {
+                      setSentimentFilter(sentiment!);
+                      setOpenDropdown(null);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors ${
+                      sentimentFilter === sentiment ? 'text-blue-600 font-medium' : 'text-neutral-700'
+                    }`}
+                  >
+                    {sentiment!.charAt(0).toUpperCase() + sentiment!.slice(1)}
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    setSentimentFilter('none');
+                    setOpenDropdown(null);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors ${
+                    sentimentFilter === 'none' ? 'text-blue-600 font-medium' : 'text-neutral-700'
+                  }`}
+                >
+                  No Sentiment
+                </button>
+              </div>
+            )}
+          </div>
           <div></div>
         </div>
 
