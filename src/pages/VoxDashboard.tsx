@@ -11,6 +11,7 @@ interface VoxCall {
   time_dialed?: string;
   call_direction?: 'inbound' | 'outbound';
   call_duration: number;
+  call_status?: string;
   tools_used?: any;
   call_terminated_by?: string;
   keyword_extraction?: any;
@@ -91,6 +92,25 @@ const VoxDashboard: React.FC = () => {
         return 'text-gray-600';
       default:
         return 'text-gray-400';
+    }
+  };
+
+  const getStatusColor = (status?: string): string => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'failed':
+        return 'bg-red-100 text-red-800';
+      case 'no-answer':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'busy':
+        return 'bg-orange-100 text-orange-800';
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-800';
+      case 'queued':
+        return 'bg-blue-50 text-blue-700';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -191,6 +211,7 @@ const VoxDashboard: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">Caller Name</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">Phone Number</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">Duration</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">Sentiment</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider"></th>
                 </tr>
@@ -232,6 +253,15 @@ const VoxDashboard: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-900">
                         {formatDuration(call.call_duration)}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {call.call_status ? (
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(call.call_status)}`}>
+                            {call.call_status}
+                          </span>
+                        ) : (
+                          <span className="text-neutral-400 text-xs">N/A</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {call.sentiment ? (
                           <span className={`font-medium ${getSentimentColor(call.sentiment)}`}>
@@ -251,7 +281,7 @@ const VoxDashboard: React.FC = () => {
                     </tr>
                     {expandedCallId === call.id && (
                       <tr>
-                        <td colSpan={7} className="px-6 py-6 bg-neutral-50">
+                        <td colSpan={8} className="px-6 py-6 bg-neutral-50">
                           <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               {call.caller_email && (
