@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, User, MessageSquare, Tag } from 'lucide-react';
+import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, MessageSquare, Tag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall, VoxOutboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -85,27 +85,11 @@ const VoxCallLogs: React.FC = () => {
 
       if (inboundError) throw inboundError;
 
-      const { data: outboundCalls, error: outboundError } = await supabase
-        .from('vox_outbound_calls')
-        .select('*')
-        .in('agent_id', agentIds)
-        .eq('call_status', 'completed');
-
-      if (outboundError) throw outboundError;
-
-      const combinedInbound: CombinedCall[] = (inboundCalls || []).map(call => ({
+      const allCalls: CombinedCall[] = (inboundCalls || []).map(call => ({
         ...call,
         direction: (call.call_direction || 'inbound') as 'inbound' | 'outbound',
         source_table: 'vox_inbound_calls' as const
-      }));
-
-      const combinedOutbound: CombinedCall[] = (outboundCalls || []).map(call => ({
-        ...call,
-        direction: 'outbound' as const,
-        source_table: 'vox_outbound_calls' as const
-      }));
-
-      const allCalls = [...combinedInbound, ...combinedOutbound].sort(
+      })).sort(
         (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
       );
 
@@ -196,16 +180,15 @@ const VoxCallLogs: React.FC = () => {
   const totalMinutes = Math.floor(calls.reduce((sum, call) => sum + call.call_duration, 0) / 60);
   const totalCalls = calls.length;
   const inboundCount = calls.filter(c => c.direction === 'inbound').length;
-  const outboundCount = calls.filter(c => c.direction === 'outbound').length;
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-neutral-800 mb-2">Call Logs</h1>
-        <p className="text-neutral-600">Complete history of all inbound and outbound calls.</p>
+        <p className="text-neutral-600">Complete history of all inbound calls.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -233,23 +216,11 @@ const VoxCallLogs: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-neutral-600 mb-1">Outbound</p>
-              <p className="text-3xl font-bold text-neutral-900">{outboundCount.toLocaleString()}</p>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-              <ArrowUpRight className="w-6 h-6 text-orange-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
               <p className="text-sm font-medium text-neutral-600 mb-1">Total Minutes</p>
               <p className="text-3xl font-bold text-neutral-900">{totalMinutes.toLocaleString()}</p>
             </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Clock className="w-6 h-6 text-purple-600" />
+            <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
+              <Clock className="w-6 h-6 text-slate-600" />
             </div>
           </div>
         </div>
