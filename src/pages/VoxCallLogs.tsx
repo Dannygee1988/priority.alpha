@@ -137,6 +137,44 @@ const VoxCallLogs: React.FC = () => {
     });
   };
 
+  const formatTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+
+    if (dateOnly.getTime() === todayOnly.getTime()) {
+      return 'Today';
+    } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+  };
+
+  const getDateKey = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US');
+  };
+
   const getStatusColor = (status: string): string => {
     switch (status) {
       case 'completed':
@@ -198,6 +236,26 @@ const VoxCallLogs: React.FC = () => {
       return true;
     });
   }, [calls, hideVoicemail, sentimentFilter, statusFilter]);
+
+  const groupedCalls = useMemo(() => {
+    const groups: Record<string, CombinedCall[]> = {};
+
+    filteredCalls.forEach(call => {
+      const dateKey = getDateKey(call.started_at);
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(call);
+    });
+
+    const sortedGroups = Object.entries(groups).sort((a, b) => {
+      const dateA = new Date(a[1][0].started_at);
+      const dateB = new Date(b[1][0].started_at);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    return sortedGroups;
+  }, [filteredCalls]);
 
   if (loading) {
     return (
@@ -273,7 +331,7 @@ const VoxCallLogs: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
         <div className="grid grid-cols-[140px_180px_280px_160px_110px_110px_90px_120px_150px_70px] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
           <div>Direction</div>
-          <div>Date</div>
+          <div>Time</div>
           <div>Name/Subject</div>
           <div>Phone Number</div>
           <div className="text-left">Duration</div>
@@ -398,29 +456,37 @@ const VoxCallLogs: React.FC = () => {
               {calls.length === 0 ? 'No calls found. Call history will appear here.' : 'No calls match the selected filters.'}
             </div>
           ) : (
-            <div className="divide-y divide-neutral-200">
-              {filteredCalls.map((call) => (
-              <div key={call.id}>
-                <div
-                  onClick={() => toggleExpand(call.id)}
-                  className="grid grid-cols-[140px_180px_280px_160px_110px_110px_90px_120px_150px_70px] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-start"
-                >
-                  <div className="w-[140px]">
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                      call.direction === 'inbound'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-orange-100 text-orange-800'
-                    }`}>
-                      {call.direction === 'inbound' ? (
-                        <ArrowDownLeft className="w-3 h-3" />
-                      ) : (
-                        <ArrowUpRight className="w-3 h-3" />
-                      )}
-                      {call.direction}
-                    </span>
+            <div>
+              {groupedCalls.map(([dateKey, dateCalls]) => (
+                <div key={dateKey} className="mb-8">
+                  <div className="px-6 py-3 bg-neutral-100 border-b border-neutral-200">
+                    <h3 className="text-sm font-semibold text-neutral-700">
+                      {formatDate(dateCalls[0].started_at)}
+                    </h3>
                   </div>
-                  <div className="text-sm text-neutral-900 w-[180px] break-words">
-                    {formatDateTime(call.started_at)}
+                  <div className="divide-y divide-neutral-200">
+                    {dateCalls.map((call) => (
+                      <div key={call.id}>
+                        <div
+                          onClick={() => toggleExpand(call.id)}
+                          className="grid grid-cols-[140px_180px_280px_160px_110px_110px_90px_120px_150px_70px] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-start"
+                        >
+                          <div className="w-[140px]">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                              call.direction === 'inbound'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-orange-100 text-orange-800'
+                            }`}>
+                              {call.direction === 'inbound' ? (
+                                <ArrowDownLeft className="w-3 h-3" />
+                              ) : (
+                                <ArrowUpRight className="w-3 h-3" />
+                              )}
+                              {call.direction}
+                            </span>
+                          </div>
+                          <div className="text-sm text-neutral-900 w-[180px] break-words">
+                            {formatTime(call.started_at)}
                   </div>
                   <div className="text-sm text-neutral-700 w-[280px] break-words">
                     {call.source_table === 'vox_inbound_calls'
@@ -566,13 +632,16 @@ const VoxCallLogs: React.FC = () => {
                     )}
                   </div>
                 )}
-              </div>
-            ))}
-          </div>
-        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
 };
 
 export default VoxCallLogs;
