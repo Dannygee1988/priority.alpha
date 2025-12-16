@@ -26,6 +26,8 @@ interface CombinedCall {
   recording_url?: string;
   is_in_crm?: boolean;
   Subject?: string;
+  voicemail?: boolean;
+  agent_termination?: boolean;
   source_table: 'vox_inbound_calls' | 'vox_outbound_calls';
 }
 
@@ -254,12 +256,14 @@ const VoxCallLogs: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-        <div className="grid grid-cols-[100px_2fr_3fr_2fr_1.5fr_2fr_auto] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
+        <div className="grid grid-cols-[100px_2fr_3fr_2fr_1.5fr_100px_100px_2fr_auto] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
           <div>Direction</div>
           <div>Date</div>
           <div>Name/Subject</div>
           <div>Phone Number</div>
           <div className="text-left">Duration</div>
+          <div className="text-center">Voicemail</div>
+          <div className="text-center">Agent Ended</div>
           <div>Status</div>
           <div></div>
         </div>
@@ -274,7 +278,7 @@ const VoxCallLogs: React.FC = () => {
               <div key={call.id}>
                 <div
                   onClick={() => toggleExpand(call.id)}
-                  className="grid grid-cols-[100px_2fr_3fr_2fr_1.5fr_2fr_auto] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-center"
+                  className="grid grid-cols-[100px_2fr_3fr_2fr_1.5fr_100px_100px_2fr_auto] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-center"
                 >
                   <div>
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
@@ -303,6 +307,28 @@ const VoxCallLogs: React.FC = () => {
                   </div>
                   <div className="text-sm text-neutral-900">
                     {formatDuration(call.call_duration)}
+                  </div>
+                  <div className="text-center">
+                    {call.source_table === 'vox_inbound_calls' ? (
+                      call.voicemail ? (
+                        <span className="text-green-600 font-medium">Yes</span>
+                      ) : (
+                        <span className="text-neutral-400">No</span>
+                      )
+                    ) : (
+                      <span className="text-neutral-300">-</span>
+                    )}
+                  </div>
+                  <div className="text-center">
+                    {call.source_table === 'vox_inbound_calls' ? (
+                      call.agent_termination ? (
+                        <span className="text-green-600 font-medium">Yes</span>
+                      ) : (
+                        <span className="text-neutral-400">No</span>
+                      )
+                    ) : (
+                      <span className="text-neutral-300">-</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span
