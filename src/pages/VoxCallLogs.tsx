@@ -292,7 +292,7 @@ const VoxCallLogs: React.FC = () => {
                     }}
                     className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
                   />
-                  Hide Voicemail Calls
+                  Hide
                 </label>
               </div>
             )}
