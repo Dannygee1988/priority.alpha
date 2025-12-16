@@ -262,8 +262,8 @@ const VoxCallLogs: React.FC = () => {
           <div>Name/Subject</div>
           <div>Phone Number</div>
           <div className="text-left">Duration</div>
-          <div className="text-center">VM</div>
-          <div className="text-center">Agent</div>
+          <div className="text-center">Voicemail</div>
+          <div className="text-center">Hang up</div>
           <div>Status</div>
           <div></div>
         </div>
