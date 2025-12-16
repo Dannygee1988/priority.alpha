@@ -256,29 +256,30 @@ const VoxCallLogs: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-        <div className="grid grid-cols-[120px_160px_200px_140px_100px_100px_120px_180px_80px] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
-          <div>Direction</div>
-          <div>Date</div>
-          <div>Name/Subject</div>
-          <div>Phone Number</div>
-          <div className="text-left">Duration</div>
-          <div className="text-center">Voicemail</div>
-          <div className="text-center">Agent Ended</div>
-          <div>Status</div>
-          <div></div>
-        </div>
-
-        {calls.length === 0 ? (
-          <div className="px-6 py-12 text-center text-neutral-500">
-            No calls found. Call history will appear here.
+        <div className="overflow-x-auto">
+          <div className="grid grid-cols-[120px_160px_200px_140px_100px_100px_120px_180px_80px] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700 min-w-[1200px]">
+            <div>Direction</div>
+            <div>Date</div>
+            <div>Name/Subject</div>
+            <div>Phone Number</div>
+            <div className="text-left">Duration</div>
+            <div className="text-center">Voicemail</div>
+            <div className="text-center">Agent Ended</div>
+            <div>Status</div>
+            <div></div>
           </div>
-        ) : (
-          <div className="divide-y divide-neutral-200">
-            {calls.map((call) => (
+
+          {calls.length === 0 ? (
+            <div className="px-6 py-12 text-center text-neutral-500">
+              No calls found. Call history will appear here.
+            </div>
+          ) : (
+            <div className="divide-y divide-neutral-200">
+              {calls.map((call) => (
               <div key={call.id}>
                 <div
                   onClick={() => toggleExpand(call.id)}
-                  className="grid grid-cols-[120px_160px_200px_140px_100px_100px_120px_180px_80px] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-start"
+                  className="grid grid-cols-[120px_160px_200px_140px_100px_100px_120px_180px_80px] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-start min-w-[1200px]"
                 >
                   <div className="w-[120px]">
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
@@ -451,6 +452,7 @@ const VoxCallLogs: React.FC = () => {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );
