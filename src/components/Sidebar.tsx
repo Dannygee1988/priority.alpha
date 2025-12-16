@@ -77,6 +77,7 @@ const advisorSubmenu = [
 ];
 
 const voxSubmenu = [
+  { name: 'Dashboard', icon: LayoutDashboard, path: '/vox/dashboard' },
   { name: 'Outbound', icon: PhoneOutgoing, path: '/vox/outbound' },
   { name: 'Inbound', icon: PhoneIncoming, path: '/vox/inbound' },
   { name: 'Call Logs', icon: ListFilter, path: '/vox/call-logs' },

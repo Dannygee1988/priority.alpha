@@ -23,6 +23,7 @@ import VoxOutbound from './pages/VoxOutbound';
 import VoxInbound from './pages/VoxInbound';
 import VoxAnalytics from './pages/VoxAnalytics';
 import VoxCallLogs from './pages/VoxCallLogs';
+import VoxDashboard from './pages/VoxDashboard';
 import Onboarding from './pages/Onboarding';
 import AppLayout from './layouts/AppLayout';
 
@@ -54,6 +55,7 @@ function App() {
             <Route path="/social-media/gallery" element={<Gallery />} />
             <Route path="/hr/cv-library" element={<CVLibrary />} />
             <Route path="/finance/pr1bit" element={<Pr1Bit />} />
+            <Route path="/vox/dashboard" element={<VoxDashboard />} />
             <Route path="/vox/outbound" element={<VoxOutbound />} />
             <Route path="/vox/inbound" element={<VoxInbound />} />
             <Route path="/vox/analytics" element={<VoxAnalytics />} />
