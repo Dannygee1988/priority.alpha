@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, ChevronDown, ChevronUp, Clock, User, TrendingUp, MessageSquare, DollarSign, Tag, Settings, CheckCircle, Plus } from 'lucide-react';
+import { Phone, ChevronDown, ChevronUp, Clock, User, TrendingUp, MessageSquare, DollarSign, Tag, Settings, CheckCircle, Plus, Voicemail, PhoneOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -416,14 +416,28 @@ const VoxInbound: React.FC = () => {
                       </button>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                        call.call_status
-                      )}`}
-                    >
-                      {call.call_status.charAt(0).toUpperCase() + call.call_status.slice(1)}
-                    </span>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                          call.call_status
+                        )}`}
+                      >
+                        {call.call_status.charAt(0).toUpperCase() + call.call_status.slice(1)}
+                      </span>
+                      {call.voicemail && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800" title="Voicemail">
+                          <Voicemail className="w-3 h-3" />
+                          VM
+                        </span>
+                      )}
+                      {call.agent_termination && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800" title="Agent Terminated">
+                          <PhoneOff className="w-3 h-3" />
+                          AT
+                        </span>
+                      )}
+                    </div>
                     {call.sentiment_tags && call.sentiment_tags.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {call.sentiment_tags.map((tag, index) => (
@@ -489,6 +503,30 @@ const VoxInbound: React.FC = () => {
                                   {tag}
                                 </span>
                               ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {call.voicemail && (
+                          <div>
+                            <div className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
+                              <Voicemail className="w-4 h-4" />
+                              Voicemail
+                            </div>
+                            <div className="text-sm text-amber-700 font-medium">
+                              Call went to voicemail
+                            </div>
+                          </div>
+                        )}
+
+                        {call.agent_termination && (
+                          <div>
+                            <div className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-2">
+                              <PhoneOff className="w-4 h-4" />
+                              Agent Termination
+                            </div>
+                            <div className="text-sm text-red-700 font-medium">
+                              Call terminated by agent
                             </div>
                           </div>
                         )}
