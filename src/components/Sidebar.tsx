@@ -77,7 +77,7 @@ const advisorSubmenu = [
 ];
 
 const voxSubmenu = [
-  { name: 'Dashboard', icon: LayoutDashboard, path: '/vox/dashboard' },
+  { name: 'Dashboard', icon: LayoutDashboard, path: '/vox/dashboard', disabled: true },
   { name: 'Outbound', icon: PhoneOutgoing, path: '/vox/outbound' },
   { name: 'Inbound', icon: PhoneIncoming, path: '/vox/inbound' },
   { name: 'Call Logs', icon: ListFilter, path: '/vox/call-logs' },
@@ -213,16 +213,17 @@ const Sidebar: React.FC = () => {
     return null;
   };
 
-  const NavLink = ({ 
-    item, 
+  const NavLink = ({
+    item,
     isSubmenuItem = false,
     isNestedSubmenuItem = false
-  }: { 
-    item: { 
-      name: string; 
-      icon: any; 
-      path: string; 
+  }: {
+    item: {
+      name: string;
+      icon: any;
+      path: string;
       submenu?: any[];
+      disabled?: boolean;
     };
     isSubmenuItem?: boolean;
     isNestedSubmenuItem?: boolean;
@@ -231,23 +232,25 @@ const Sidebar: React.FC = () => {
     const hasSubmenu = item.submenu && item.submenu.length > 0;
     const isSubmenuExpanded = expandedSubmenu === item.name;
     const isNestedSubmenuExpanded = expandedNestedSubmenu === item.name;
-    
+
     // Check if this feature is locked
     const featureKey = getFeatureKeyFromPath(item.path);
     const isLocked = featureKey && isFeatureLocked(featureKey);
+    const isDisabled = item.disabled || isLocked;
 
     return (
       <div>
         <div
           className={`
             flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
-            ${isLocked ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}
-            ${isActive && !isLocked ? 'text-primary bg-primary/5' : isLocked ? 'text-neutral-400' : 'text-neutral-600 hover:text-primary hover:bg-primary/5'}
+            ${isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}
+            ${isActive && !isDisabled ? 'text-primary bg-primary/5' : isDisabled ? 'text-neutral-400' : 'text-neutral-600 hover:text-primary hover:bg-primary/5'}
             ${!isExpanded && 'justify-center'}
             ${isSubmenuItem && 'pl-6'}
             ${isNestedSubmenuItem && 'pl-9'}
           `}
           onClick={() => {
+            if (isDisabled) return;
             if (hasSubmenu) {
               isSubmenuItem ? toggleNestedSubmenu(item.name) : toggleSubmenu(item.name);
             } else {
