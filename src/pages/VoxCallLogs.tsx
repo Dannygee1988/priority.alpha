@@ -266,7 +266,7 @@ const VoxCallLogs: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
-        <div className="grid grid-cols-[140px_180px_280px_160px_110px_70px_90px_120px_150px_70px] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
+        <div className="grid grid-cols-[140px_180px_280px_160px_110px_110px_90px_120px_150px_70px] gap-4 px-6 py-4 bg-neutral-50 border-b border-neutral-200 text-sm font-medium text-neutral-700">
           <div>Direction</div>
           <div>Date</div>
           <div>Name/Subject</div>
@@ -398,7 +398,7 @@ const VoxCallLogs: React.FC = () => {
               <div key={call.id}>
                 <div
                   onClick={() => toggleExpand(call.id)}
-                  className="grid grid-cols-[140px_180px_280px_160px_110px_70px_90px_120px_150px_70px] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-start"
+                  className="grid grid-cols-[140px_180px_280px_160px_110px_110px_90px_120px_150px_70px] gap-4 px-6 py-4 hover:bg-neutral-50 cursor-pointer transition-colors items-start"
                 >
                   <div className="w-[140px]">
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
@@ -428,7 +428,7 @@ const VoxCallLogs: React.FC = () => {
                   <div className="text-sm text-neutral-900 w-[110px]">
                     {formatDuration(call.call_duration)}
                   </div>
-                  <div className="flex justify-center items-center w-[70px] pt-0.5">
+                  <div className="flex justify-center items-center w-[110px] pt-0.5">
                     <input
                       type="checkbox"
                       checked={call.voicemail || false}
