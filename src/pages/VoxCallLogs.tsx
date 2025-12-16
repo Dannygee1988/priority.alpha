@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, MessageSquare, Tag, Filter } from 'lucide-react';
+import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, MessageSquare, Tag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall, VoxOutboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -210,64 +210,45 @@ const VoxCallLogs: React.FC = () => {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-neutral-800">Call Logs</h1>
-      </div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-neutral-800 mb-4">Call Logs</h1>
+        <div className="flex items-center gap-4 flex-wrap">
+          <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={hideVoicemail}
+              onChange={(e) => setHideVoicemail(e.target.checked)}
+              className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+            />
+            Hide Voicemail
+          </label>
 
-      <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="w-5 h-5 text-neutral-600" />
-          <h2 className="text-lg font-semibold text-neutral-800">Filters</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={hideVoicemail}
-                onChange={(e) => setHideVoicemail(e.target.checked)}
-                className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
-              />
-              Hide Voicemail Calls
-            </label>
-          </div>
+          <select
+            value={sentimentFilter}
+            onChange={(e) => setSentimentFilter(e.target.value)}
+            className="px-3 py-1.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          >
+            <option value="all">All Sentiments</option>
+            {uniqueSentiments.map(sentiment => (
+              <option key={sentiment} value={sentiment}>
+                {sentiment!.charAt(0).toUpperCase() + sentiment!.slice(1)}
+              </option>
+            ))}
+            <option value="none">No Sentiment</option>
+          </select>
 
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Sentiment
-            </label>
-            <select
-              value={sentimentFilter}
-              onChange={(e) => setSentimentFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            >
-              <option value="all">All Sentiments</option>
-              {uniqueSentiments.map(sentiment => (
-                <option key={sentiment} value={sentiment}>
-                  {sentiment!.charAt(0).toUpperCase() + sentiment!.slice(1)}
-                </option>
-              ))}
-              <option value="none">No Sentiment</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Status
-            </label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            >
-              <option value="all">All Statuses</option>
-              {uniqueStatuses.map(status => (
-                <option key={status} value={status}>
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-1.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          >
+            <option value="all">All Statuses</option>
+            {uniqueStatuses.map(status => (
+              <option key={status} value={status}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
