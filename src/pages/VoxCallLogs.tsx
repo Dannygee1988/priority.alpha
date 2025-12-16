@@ -180,9 +180,14 @@ const VoxCallLogs: React.FC = () => {
       }
 
       if (sentimentFilter !== 'all') {
-        const callSentiment = call.sentiment || 'none';
-        if (callSentiment !== sentimentFilter) {
-          return false;
+        if (sentimentFilter === 'none') {
+          if (call.sentiment_tags && call.sentiment_tags.length > 0) {
+            return false;
+          }
+        } else {
+          if (!call.sentiment_tags || !call.sentiment_tags.includes(sentimentFilter)) {
+            return false;
+          }
         }
       }
 
@@ -219,7 +224,7 @@ const VoxCallLogs: React.FC = () => {
   const inboundCount = filteredCalls.filter(c => c.direction === 'inbound').length;
 
   const uniqueStatuses = Array.from(new Set(calls.map(c => c.call_status))).sort();
-  const uniqueSentiments = Array.from(new Set(calls.map(c => c.sentiment).filter(Boolean))).sort();
+  const sentimentOptions = ['Positive', 'Negative', 'Neutral'];
 
   return (
     <div>
@@ -357,18 +362,18 @@ const VoxCallLogs: React.FC = () => {
                 >
                   All Sentiments
                 </button>
-                {uniqueSentiments.map(sentiment => (
+                {sentimentOptions.map(sentiment => (
                   <button
                     key={sentiment}
                     onClick={() => {
-                      setSentimentFilter(sentiment!);
+                      setSentimentFilter(sentiment);
                       setOpenDropdown(null);
                     }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors ${
                       sentimentFilter === sentiment ? 'text-blue-600 font-medium' : 'text-neutral-700'
                     }`}
                   >
-                    {sentiment!.charAt(0).toUpperCase() + sentiment!.slice(1)}
+                    {sentiment}
                   </button>
                 ))}
                 <button
