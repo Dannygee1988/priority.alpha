@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
-import { Building2, Globe } from 'lucide-react';
+import { Building2, Globe, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Input from '../components/Input';
 
 const Onboarding: React.FC = () => {
   const [companyType, setCompanyType] = useState<'uk' | 'non-uk' | null>(null);
   const [companyName, setCompanyName] = useState('');
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-50">
       <div className="max-w-4xl w-full p-8">
         <div className="bg-white rounded-lg shadow-md p-8">
+          <button
+            onClick={() => navigate('/login')}
+            className="flex items-center gap-2 text-neutral-600 hover:text-neutral-800 transition-colors mb-6"
+          >
+            <ArrowLeft size={20} />
+            <span className="font-medium">Back to Sign In</span>
+          </button>
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-3">
