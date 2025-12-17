@@ -17,7 +17,6 @@ const Onboarding: React.FC = () => {
             className="flex items-center gap-2 text-neutral-600 hover:text-neutral-800 transition-colors mb-6"
           >
             <ArrowLeft size={20} />
-            <span className="font-medium">Back to Sign In</span>
           </button>
           <div className="space-y-6">
             <div>
