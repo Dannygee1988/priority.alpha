@@ -16,6 +16,7 @@ interface ContactData {
   postCode?: string;
   additionalInformation?: string;
   lastContacted?: string;
+  crmId?: string;
   isValid: boolean;
   error?: string;
 }
@@ -33,6 +34,7 @@ const VoxOutbound: React.FC = () => {
   const [currentPostCode, setCurrentPostCode] = useState('');
   const [currentAdditionalInfo, setCurrentAdditionalInfo] = useState('');
   const [currentLastContacted, setCurrentLastContacted] = useState('');
+  const [currentCrmId, setCurrentCrmId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [agentId, setAgentId] = useState<string>('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -213,6 +215,7 @@ const VoxOutbound: React.FC = () => {
       postCode: currentPostCode.trim() || undefined,
       additionalInformation: currentAdditionalInfo.trim() || undefined,
       lastContacted: currentLastContacted.trim() || undefined,
+      crmId: currentCrmId.trim() || undefined,
       isValid: validation.isValid,
       error: validation.error
     };
@@ -227,6 +230,7 @@ const VoxOutbound: React.FC = () => {
     setCurrentPostCode('');
     setCurrentAdditionalInfo('');
     setCurrentLastContacted('');
+    setCurrentCrmId('');
     setMessage(null);
   };
 
@@ -312,6 +316,7 @@ const VoxOutbound: React.FC = () => {
       const postCodeIndex = headers.findIndex(h => h.includes('postcode') || h.includes('post') || h.includes('zip'));
       const additionalInfoIndex = headers.findIndex(h => h.includes('additional') || h.includes('notes') || h.includes('info'));
       const lastContactedIndex = headers.findIndex(h => h.includes('last') && h.includes('contact'));
+      const crmIdIndex = headers.findIndex(h => h.includes('crm') && (h.includes('id') || h.includes('identifier')));
 
       const phoneNumber = phoneIndex >= 0 ? values[phoneIndex] : '';
       const firstName = firstNameIndex >= 0 ? values[firstNameIndex] : '';
@@ -335,6 +340,7 @@ const VoxOutbound: React.FC = () => {
         postCode: postCodeIndex >= 0 ? values[postCodeIndex] : undefined,
         additionalInformation: additionalInfoIndex >= 0 ? values[additionalInfoIndex] : undefined,
         lastContacted: lastContactedIndex >= 0 ? values[lastContactedIndex] : undefined,
+        crmId: crmIdIndex >= 0 ? values[crmIdIndex] : undefined,
         isValid: validation.isValid,
         error: validation.error
       });
@@ -483,6 +489,7 @@ const VoxOutbound: React.FC = () => {
           post_code: phone.postCode || null,
           reason_for_sale: phone.additionalInformation || null,
           last_contacted: lastContactedValue,
+          crm_id: phone.crmId || null,
           call_status: 'queued',
           call_duration: 0,
           cost: 0
@@ -563,6 +570,7 @@ const VoxOutbound: React.FC = () => {
           post_code: phone.postCode || null,
           reason_for_sale: phone.additionalInformation || null,
           last_contacted: lastContactedValue,
+          crm_id: phone.crmId || null,
           call_status: 'queued',
           call_duration: 0,
           cost: 0
@@ -729,7 +737,7 @@ const VoxOutbound: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Email Address
@@ -750,6 +758,18 @@ const VoxOutbound: React.FC = () => {
                     type="date"
                     value={currentLastContacted}
                     onChange={(e) => setCurrentLastContacted(e.target.value)}
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    CRM ID
+                  </label>
+                  <input
+                    type="text"
+                    value={currentCrmId}
+                    onChange={(e) => setCurrentCrmId(e.target.value)}
+                    placeholder="CRM-12345"
                     className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-800 focus:border-transparent"
                   />
                 </div>
@@ -849,7 +869,7 @@ const VoxOutbound: React.FC = () => {
                 <p className="text-sm text-blue-900 font-medium mb-2">CSV Format Guide:</p>
                 <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
                   <li>Required columns: phone_number, first_name, last_name, street</li>
-                  <li>Optional columns: email, city, postcode, additional_information, last_contacted</li>
+                  <li>Optional columns: email, city, postcode, additional_information, last_contacted, crm_id</li>
                   <li>Maximum 10 records per upload</li>
                   <li>Phone numbers should include country code (e.g., +447123456789)</li>
                 </ul>
