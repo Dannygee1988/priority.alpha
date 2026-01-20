@@ -982,7 +982,7 @@ const VoxOutbound: React.FC = () => {
                 >
                   <div className="flex items-center gap-4 flex-1">
                     <Phone className={`w-4 h-4 flex-shrink-0 ${phone.isValid ? 'text-green-600' : 'text-red-600'}`} />
-                    <div className="flex-1 grid grid-cols-5 gap-4">
+                    <div className="flex-1 grid grid-cols-6 gap-4">
                       <div className="min-w-0">
                         <span className="text-xs text-neutral-500 block">Phone</span>
                         <span className="font-mono text-sm text-neutral-800">{phone.number}</span>
@@ -1000,6 +1000,10 @@ const VoxOutbound: React.FC = () => {
                         <span className="text-sm text-neutral-800 truncate block">
                           {[phone.street, phone.city, phone.postCode].filter(Boolean).join(', ') || '-'}
                         </span>
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs text-neutral-500 block">CRM ID</span>
+                        <span className="text-sm text-neutral-800 truncate block">{phone.crmId || '-'}</span>
                       </div>
                       <div className="min-w-0">
                         <span className="text-xs text-neutral-500 block">Last Contacted</span>
