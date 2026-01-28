@@ -297,8 +297,8 @@ const VoxOutbound: React.FC = () => {
     const headers = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
     const dataLines = lines.slice(1);
 
-    if (dataLines.length > 10) {
-      setMessage({ type: 'error', text: 'Maximum of 10 records allowed. Please reduce the number of entries.' });
+    if (dataLines.length > 500) {
+      setMessage({ type: 'error', text: 'Maximum of 500 records allowed. Please reduce the number of entries.' });
       return;
     }
 
@@ -842,7 +842,7 @@ const VoxOutbound: React.FC = () => {
                 <Upload className="w-12 h-12 mx-auto text-neutral-400 mb-4" />
                 <h3 className="text-lg font-medium text-neutral-800 mb-2">Upload CSV File</h3>
                 <p className="text-sm text-neutral-600 mb-6">
-                  Upload a CSV file with up to 10 contacts. Required columns: phone_number, first_name, last_name, street
+                  Upload a CSV file with up to 500 contacts. Required columns: phone_number, first_name, last_name, street
                 </p>
                 <input
                   type="file"
@@ -870,7 +870,7 @@ const VoxOutbound: React.FC = () => {
                 <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
                   <li>Required columns: phone_number, first_name, last_name, street</li>
                   <li>Optional columns: email, city, postcode, additional_information, last_contacted, crm_id</li>
-                  <li>Maximum 10 records per upload</li>
+                  <li>Maximum 500 records per upload</li>
                   <li>Phone numbers should include country code (e.g., +447123456789)</li>
                 </ul>
               </div>
