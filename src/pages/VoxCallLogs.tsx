@@ -208,6 +208,18 @@ const VoxCallLogs: React.FC = () => {
     }
   };
 
+  const getSentimentTagColor = (tag: string): string => {
+    const lowerTag = tag.toLowerCase();
+    if (lowerTag === 'positive') {
+      return 'bg-green-100 text-green-800';
+    } else if (lowerTag === 'negative') {
+      return 'bg-red-100 text-red-800';
+    } else if (lowerTag === 'neutral') {
+      return 'bg-gray-100 text-gray-800';
+    }
+    return 'bg-blue-100 text-blue-800';
+  };
+
   const toggleExpand = (callId: string) => {
     setExpandedCallId(expandedCallId === callId ? null : callId);
   };
@@ -579,7 +591,7 @@ const VoxCallLogs: React.FC = () => {
                       call.sentiment_tags.map((tag, index) => (
                         <span
                           key={index}
-                          className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+                          className={`px-2 py-1 text-xs rounded-full ${getSentimentTagColor(tag)}`}
                         >
                           {tag}
                         </span>
@@ -622,7 +634,7 @@ const VoxCallLogs: React.FC = () => {
                               {call.sentiment_tags.map((tag, index) => (
                                 <span
                                   key={index}
-                                  className="inline-flex items-center px-2 py-1 rounded-md bg-blue-100 text-blue-800 text-xs font-medium"
+                                  className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${getSentimentTagColor(tag)}`}
                                 >
                                   {tag}
                                 </span>
