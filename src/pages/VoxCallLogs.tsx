@@ -613,13 +613,20 @@ const VoxCallLogs: React.FC = () => {
                       )}
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {call.sentiment && (
+                        {call.sentiment_tags && call.sentiment_tags.length > 0 && (
                           <div>
                             <div className="text-sm font-medium text-neutral-700 mb-2">
                               Sentiment
                             </div>
-                            <div className={`text-sm font-medium ${getSentimentColor(call.sentiment)}`}>
-                              {call.sentiment.charAt(0).toUpperCase() + call.sentiment.slice(1)}
+                            <div className="flex flex-wrap gap-2">
+                              {call.sentiment_tags.map((tag, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center px-2 py-1 rounded-md bg-blue-100 text-blue-800 text-xs font-medium"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
                             </div>
                           </div>
                         )}
