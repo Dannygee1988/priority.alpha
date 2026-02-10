@@ -54,7 +54,11 @@ const VoxCallLogs: React.FC = () => {
     if (user) {
       fetchAllCalls();
     }
-  }, [user, selectedMonth, selectedYear, currentPage]);
+  }, [user, selectedMonth, selectedYear, currentPage, hideVoicemail, directionFilter, sentimentFilter, statusFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [hideVoicemail, directionFilter, sentimentFilter, statusFilter]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -104,25 +108,71 @@ const VoxCallLogs: React.FC = () => {
       const startDate = new Date(selectedYear, selectedMonth, 1);
       const endDate = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
 
-      const { count } = await supabase
+      let countQuery = supabase
         .from('vox_inbound_calls')
         .select('*', { count: 'exact', head: true })
         .in('agent_id', agentIds)
-        .eq('call_status', 'completed')
         .gte('started_at', startDate.toISOString())
         .lte('started_at', endDate.toISOString());
+
+      if (statusFilter !== 'all') {
+        countQuery = countQuery.eq('call_status', statusFilter);
+      } else {
+        countQuery = countQuery.eq('call_status', 'completed');
+      }
+
+      if (hideVoicemail) {
+        countQuery = countQuery.or('voicemail.is.null,voicemail.eq.false');
+      }
+
+      if (directionFilter !== 'all') {
+        countQuery = countQuery.eq('call_direction', directionFilter);
+      }
+
+      if (sentimentFilter !== 'all') {
+        if (sentimentFilter === 'none') {
+          countQuery = countQuery.or('sentiment_tags.is.null,sentiment_tags.eq.{}');
+        } else {
+          countQuery = countQuery.contains('sentiment_tags', [sentimentFilter]);
+        }
+      }
+
+      const { count } = await countQuery;
 
       setTotalCalls(count || 0);
 
       const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
-      const { data: inboundCalls, error: inboundError } = await supabase
+      let dataQuery = supabase
         .from('vox_inbound_calls')
         .select('*')
         .in('agent_id', agentIds)
-        .eq('call_status', 'completed')
         .gte('started_at', startDate.toISOString())
-        .lte('started_at', endDate.toISOString())
+        .lte('started_at', endDate.toISOString());
+
+      if (statusFilter !== 'all') {
+        dataQuery = dataQuery.eq('call_status', statusFilter);
+      } else {
+        dataQuery = dataQuery.eq('call_status', 'completed');
+      }
+
+      if (hideVoicemail) {
+        dataQuery = dataQuery.or('voicemail.is.null,voicemail.eq.false');
+      }
+
+      if (directionFilter !== 'all') {
+        dataQuery = dataQuery.eq('call_direction', directionFilter);
+      }
+
+      if (sentimentFilter !== 'all') {
+        if (sentimentFilter === 'none') {
+          dataQuery = dataQuery.or('sentiment_tags.is.null,sentiment_tags.eq.{}');
+        } else {
+          dataQuery = dataQuery.contains('sentiment_tags', [sentimentFilter]);
+        }
+      }
+
+      const { data: inboundCalls, error: inboundError } = await dataQuery
         .order('started_at', { ascending: false })
         .range(offset, offset + ITEMS_PER_PAGE - 1);
 
@@ -261,39 +311,9 @@ const VoxCallLogs: React.FC = () => {
     return months;
   }, []);
 
-  const filteredCalls = useMemo(() => {
-    return calls.filter(call => {
-      if (hideVoicemail && call.voicemail) {
-        return false;
-      }
-
-      if (directionFilter !== 'all' && call.direction !== directionFilter) {
-        return false;
-      }
-
-      if (sentimentFilter !== 'all') {
-        if (sentimentFilter === 'none') {
-          if (call.sentiment_tags && call.sentiment_tags.length > 0) {
-            return false;
-          }
-        } else {
-          if (!call.sentiment_tags || !call.sentiment_tags.includes(sentimentFilter)) {
-            return false;
-          }
-        }
-      }
-
-      if (statusFilter !== 'all' && call.call_status !== statusFilter) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [calls, hideVoicemail, directionFilter, sentimentFilter, statusFilter]);
-
-  const totalMinutes = Math.floor(filteredCalls.reduce((sum, call) => sum + call.call_duration, 0) / 60);
-  const displayedCalls = filteredCalls.length;
-  const inboundCount = filteredCalls.filter(c => c.direction === 'inbound').length;
+  const totalMinutes = Math.floor(calls.reduce((sum, call) => sum + call.call_duration, 0) / 60);
+  const displayedCalls = calls.length;
+  const inboundCount = calls.filter(c => c.direction === 'inbound').length;
 
   const uniqueStatuses = Array.from(new Set(calls.map(c => c.call_status))).sort();
   const sentimentOptions = ['Positive', 'Negative', 'Neutral'];
@@ -578,13 +598,13 @@ const VoxCallLogs: React.FC = () => {
           <div></div>
         </div>
 
-          {filteredCalls.length === 0 ? (
+          {calls.length === 0 ? (
             <div className="px-6 py-12 text-center text-neutral-500">
-              {calls.length === 0 ? 'No calls found. Call history will appear here.' : 'No calls match the selected filters.'}
+              No calls match the selected filters.
             </div>
           ) : (
             <div className="divide-y divide-neutral-200">
-              {filteredCalls.map((call) => (
+              {calls.map((call) => (
                       <div key={call.id}>
                         <div
                           onClick={() => toggleExpand(call.id)}
@@ -763,7 +783,7 @@ const VoxCallLogs: React.FC = () => {
           </div>
         )}
 
-        {filteredCalls.length > 0 && totalPages > 1 && (
+        {calls.length > 0 && totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-4 bg-neutral-50 border-t border-neutral-200">
             <div className="text-sm text-neutral-600">
               Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalCalls)} of {totalCalls} calls
