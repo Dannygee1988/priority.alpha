@@ -249,6 +249,18 @@ const VoxCallLogs: React.FC = () => {
     setExpandedCallId(expandedCallId === callId ? null : callId);
   };
 
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const availableMonths = useMemo(() => {
+    const months = [];
+    const currentDate = new Date();
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      months.push({ month: date.getMonth(), year: date.getFullYear(), label: `${monthNames[date.getMonth()]} ${date.getFullYear()}` });
+    }
+    return months;
+  }, []);
+
   const filteredCalls = useMemo(() => {
     return calls.filter(call => {
       if (hideVoicemail && call.voicemail) {
@@ -279,26 +291,6 @@ const VoxCallLogs: React.FC = () => {
     });
   }, [calls, hideVoicemail, directionFilter, sentimentFilter, statusFilter]);
 
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-neutral-600">Loading call history...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-red-600">{error}</div>
-        </div>
-      </div>
-    );
-  }
-
   const totalMinutes = Math.floor(filteredCalls.reduce((sum, call) => sum + call.call_duration, 0) / 60);
   const displayedCalls = filteredCalls.length;
   const inboundCount = filteredCalls.filter(c => c.direction === 'inbound').length;
@@ -307,18 +299,6 @@ const VoxCallLogs: React.FC = () => {
   const sentimentOptions = ['Positive', 'Negative', 'Neutral'];
 
   const totalPages = Math.ceil(totalCalls / ITEMS_PER_PAGE);
-
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-  const availableMonths = useMemo(() => {
-    const months = [];
-    const currentDate = new Date();
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-      months.push({ month: date.getMonth(), year: date.getFullYear(), label: `${monthNames[date.getMonth()]} ${date.getFullYear()}` });
-    }
-    return months;
-  }, []);
 
   const handleMonthChange = (month: number, year: number) => {
     setSelectedMonth(month);
@@ -338,6 +318,26 @@ const VoxCallLogs: React.FC = () => {
       setCurrentPage(currentPage + 1);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-neutral-600">Loading call history...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-600">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
