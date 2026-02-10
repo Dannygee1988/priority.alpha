@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, MessageSquare, Tag, Filter } from 'lucide-react';
+import { Phone, ChevronDown, ChevronUp, ArrowDownLeft, ArrowUpRight, Clock, MessageSquare, Tag, Filter, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { VoxInboundCall, VoxOutboundCall } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -34,6 +34,7 @@ interface CombinedCall {
 const VoxCallLogs: React.FC = () => {
   const { user } = useAuth();
   const [calls, setCalls] = useState<CombinedCall[]>([]);
+  const [totalCalls, setTotalCalls] = useState(0);
   const [loading, setLoading] = useState(true);
   const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -42,13 +43,18 @@ const VoxCallLogs: React.FC = () => {
   const [sentimentFilter, setSentimentFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const ITEMS_PER_PAGE = 50;
 
   useEffect(() => {
     if (user) {
       fetchAllCalls();
     }
-  }, [user]);
+  }, [user, selectedMonth, selectedYear, currentPage]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -77,6 +83,7 @@ const VoxCallLogs: React.FC = () => {
 
       if (!userCompanies || userCompanies.length === 0) {
         setCalls([]);
+        setTotalCalls(0);
         setLoading(false);
         return;
       }
@@ -94,11 +101,30 @@ const VoxCallLogs: React.FC = () => {
         ?.map(c => c.vox_agent_id)
         .filter(id => id != null) || [];
 
+      const startDate = new Date(selectedYear, selectedMonth, 1);
+      const endDate = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+
+      const { count } = await supabase
+        .from('vox_inbound_calls')
+        .select('*', { count: 'exact', head: true })
+        .in('agent_id', agentIds)
+        .eq('call_status', 'completed')
+        .gte('started_at', startDate.toISOString())
+        .lte('started_at', endDate.toISOString());
+
+      setTotalCalls(count || 0);
+
+      const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
       const { data: inboundCalls, error: inboundError } = await supabase
         .from('vox_inbound_calls')
         .select('*')
         .in('agent_id', agentIds)
-        .eq('call_status', 'completed');
+        .eq('call_status', 'completed')
+        .gte('started_at', startDate.toISOString())
+        .lte('started_at', endDate.toISOString())
+        .order('started_at', { ascending: false })
+        .range(offset, offset + ITEMS_PER_PAGE - 1);
 
       if (inboundError) throw inboundError;
 
@@ -106,15 +132,14 @@ const VoxCallLogs: React.FC = () => {
         ...call,
         direction: (call.call_direction || 'inbound') as 'inbound' | 'outbound',
         source_table: 'vox_inbound_calls' as const
-      })).sort(
-        (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
-      );
+      }));
 
       setCalls(allCalls);
     } catch (error) {
       console.error('Error fetching calls:', error);
       setError('Failed to load call history. Please try again.');
       setCalls([]);
+      setTotalCalls(0);
     } finally {
       setLoading(false);
     }
@@ -254,26 +279,6 @@ const VoxCallLogs: React.FC = () => {
     });
   }, [calls, hideVoicemail, directionFilter, sentimentFilter, statusFilter]);
 
-  const groupedCalls = useMemo(() => {
-    const groups: Record<string, CombinedCall[]> = {};
-
-    filteredCalls.forEach(call => {
-      const dateKey = getDateKey(call.started_at);
-      if (!groups[dateKey]) {
-        groups[dateKey] = [];
-      }
-      groups[dateKey].push(call);
-    });
-
-    const sortedGroups = Object.entries(groups).sort((a, b) => {
-      const dateA = new Date(a[1][0].started_at);
-      const dateB = new Date(b[1][0].started_at);
-      return dateB.getTime() - dateA.getTime();
-    });
-
-    return sortedGroups;
-  }, [filteredCalls]);
-
   if (loading) {
     return (
       <div className="p-8">
@@ -295,23 +300,83 @@ const VoxCallLogs: React.FC = () => {
   }
 
   const totalMinutes = Math.floor(filteredCalls.reduce((sum, call) => sum + call.call_duration, 0) / 60);
-  const totalCalls = filteredCalls.length;
+  const displayedCalls = filteredCalls.length;
   const inboundCount = filteredCalls.filter(c => c.direction === 'inbound').length;
 
   const uniqueStatuses = Array.from(new Set(calls.map(c => c.call_status))).sort();
   const sentimentOptions = ['Positive', 'Negative', 'Neutral'];
 
+  const totalPages = Math.ceil(totalCalls / ITEMS_PER_PAGE);
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const availableMonths = useMemo(() => {
+    const months = [];
+    const currentDate = new Date();
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      months.push({ month: date.getMonth(), year: date.getFullYear(), label: `${monthNames[date.getMonth()]} ${date.getFullYear()}` });
+    }
+    return months;
+  }, []);
+
+  const handleMonthChange = (month: number, year: number) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
+    setCurrentPage(1);
+    setOpenDropdown(null);
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-8 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-neutral-800">Call Logs</h1>
+        <div className="relative">
+          <button
+            onClick={() => setOpenDropdown(openDropdown === 'month' ? null : 'month')}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+          >
+            <Calendar className="w-4 h-4 text-neutral-600" />
+            <span className="text-sm font-medium text-neutral-700">
+              {monthNames[selectedMonth]} {selectedYear}
+            </span>
+            <ChevronDown className="w-4 h-4 text-neutral-600" />
+          </button>
+          {openDropdown === 'month' && (
+            <div ref={dropdownRef} className="absolute top-full right-0 mt-2 bg-white rounded-lg shadow-lg border border-neutral-200 py-2 z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
+              {availableMonths.map(({ month, year, label }) => (
+                <button
+                  key={`${year}-${month}`}
+                  onClick={() => handleMonthChange(month, year)}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-neutral-50 transition-colors ${
+                    selectedMonth === month && selectedYear === year ? 'text-blue-600 font-medium bg-blue-50' : 'text-neutral-700'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-neutral-600 mb-1">Total Calls</p>
+              <p className="text-sm font-medium text-neutral-600 mb-1">Total Calls This Month</p>
               <p className="text-3xl font-bold text-neutral-900">{totalCalls.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -518,16 +583,8 @@ const VoxCallLogs: React.FC = () => {
               {calls.length === 0 ? 'No calls found. Call history will appear here.' : 'No calls match the selected filters.'}
             </div>
           ) : (
-            <div>
-              {groupedCalls.map(([dateKey, dateCalls]) => (
-                <div key={dateKey} className="mb-8">
-                  <div className="px-6 py-3 bg-neutral-100 border-b border-neutral-200">
-                    <h3 className="text-sm font-semibold text-neutral-700">
-                      {formatDate(dateCalls[0].started_at)}
-                    </h3>
-                  </div>
-                  <div className="divide-y divide-neutral-200">
-                    {dateCalls.map((call) => (
+            <div className="divide-y divide-neutral-200">
+              {filteredCalls.map((call) => (
                       <div key={call.id}>
                         <div
                           onClick={() => toggleExpand(call.id)}
@@ -701,16 +758,50 @@ const VoxCallLogs: React.FC = () => {
                     )}
                   </div>
                 )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {filteredCalls.length > 0 && totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 bg-neutral-50 border-t border-neutral-200">
+            <div className="text-sm text-neutral-600">
+              Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalCalls)} of {totalCalls} calls
             </div>
-          )}
-        </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                className={`flex items-center gap-1 px-4 py-2 rounded-lg border transition-colors ${
+                  currentPage === 1
+                    ? 'border-neutral-200 text-neutral-400 cursor-not-allowed'
+                    : 'border-neutral-300 text-neutral-700 hover:bg-neutral-100'
+                }`}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </button>
+              <div className="text-sm text-neutral-600">
+                Page {currentPage} of {totalPages}
+              </div>
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                className={`flex items-center gap-1 px-4 py-2 rounded-lg border transition-colors ${
+                  currentPage === totalPages
+                    ? 'border-neutral-200 text-neutral-400 cursor-not-allowed'
+                    : 'border-neutral-300 text-neutral-700 hover:bg-neutral-100'
+                }`}
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    );
+    </div>
+  );
 };
 
 export default VoxCallLogs;
