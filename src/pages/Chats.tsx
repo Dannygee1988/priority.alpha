@@ -77,6 +77,7 @@ const Chats: React.FC = () => {
     loadConversationStats();
     loadFavoritesFromLocalStorage();
     loadFlagsFromLocalStorage();
+    loadOpenAIThreads();
   }, [user]);
 
   const loadFavoritesFromLocalStorage = () => {
@@ -120,6 +121,103 @@ const Chats: React.FC = () => {
       setCompanyLogo(data?.logo_url || null);
     } catch (err) {
       console.error('Error loading company logo:', err);
+    }
+  };
+
+  const loadOpenAIThreads = async () => {
+    if (!user?.id) return;
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        console.warn('No company found for user');
+        return;
+      }
+
+      const { data: companyProfile } = await supabase
+        .from('company_profiles')
+        .select('gcp_id')
+        .eq('id', companyId)
+        .single();
+
+      const assistantId = companyProfile?.gcp_id || 'asst_pYeUm4osEdqgEUTI0t1Od7XZ';
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-assistant-threads`;
+      const headers = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ assistantId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch OpenAI threads');
+      }
+
+      const { threads } = await response.json();
+
+      for (const thread of threads) {
+        const { data: existingThread } = await supabase
+          .from('assistant_threads')
+          .select('id')
+          .eq('thread_id', thread.thread_id)
+          .single();
+
+        let threadDbId;
+        if (!existingThread) {
+          const { data: newThread, error: threadError } = await supabase
+            .from('assistant_threads')
+            .insert({
+              company_id: companyId,
+              thread_id: thread.thread_id,
+              assistant_id: assistantId,
+              metadata: thread.metadata,
+              created_at: thread.created_at,
+            })
+            .select('id')
+            .single();
+
+          if (threadError) {
+            console.error('Error inserting thread:', threadError);
+            continue;
+          }
+          threadDbId = newThread.id;
+        } else {
+          threadDbId = existingThread.id;
+        }
+
+        for (const message of thread.messages) {
+          const { data: existingMessage } = await supabase
+            .from('assistant_messages')
+            .select('id')
+            .eq('message_id', message.id)
+            .single();
+
+          if (!existingMessage) {
+            const { error: messageError } = await supabase
+              .from('assistant_messages')
+              .insert({
+                thread_id: threadDbId,
+                message_id: message.id,
+                role: message.role,
+                content: message.content,
+                created_at: message.created_at,
+              });
+
+            if (messageError) {
+              console.error('Error inserting message:', messageError);
+            }
+          }
+        }
+      }
+
+      await loadMessages();
+    } catch (err) {
+      console.error('Error loading OpenAI threads:', err);
     }
   };
 
@@ -217,21 +315,74 @@ const Chats: React.FC = () => {
 
       if (fetchError) throw fetchError;
 
-      // Map "Session Id" to session_id for compatibility
+      const { data: assistantThreads, error: threadsError } = await supabase
+        .from('assistant_threads')
+        .select(`
+          id,
+          thread_id,
+          assistant_id,
+          created_at,
+          assistant_messages (
+            id,
+            message_id,
+            role,
+            content,
+            created_at
+          )
+        `)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+      if (threadsError) {
+        console.error('Error fetching assistant threads:', threadsError);
+      }
+
+      let assistantMessagesFlat: ChatMessage[] = [];
+      if (assistantThreads && assistantThreads.length > 0) {
+        assistantMessagesFlat = assistantThreads.flatMap((thread: any) => {
+          const messages = thread.assistant_messages || [];
+          return messages.map((msg: any) => {
+            const content = Array.isArray(msg.content)
+              ? msg.content.map((c: any) => c.text?.value || '').join('\n')
+              : typeof msg.content === 'string'
+              ? msg.content
+              : '';
+
+            return {
+              id: msg.message_id,
+              conversation_id: thread.thread_id,
+              session_id: thread.thread_id,
+              role: msg.role === 'assistant' ? 'bot' : 'user',
+              content: content,
+              source: 'website' as const,
+              metadata: {},
+              created_at: msg.created_at,
+              subject: '',
+              sentiment_score: 0,
+              keywords: [],
+              email: '',
+              name: '',
+              'Ai response': msg.role === 'assistant' ? content : null,
+              'Topic': 'AI Assistant',
+            };
+          });
+        });
+      }
+
       const mappedData = (data || []).map(message => ({
         ...message,
         session_id: message['Session Id']
       }));
 
-      setMessages(mappedData);
+      const allMessages = [...mappedData, ...assistantMessagesFlat];
 
-      // Load favorite messages
+      setMessages(allMessages);
+
       const favorites = new Set(
         mappedData.filter(m => m.is_favorite).map(m => m.id)
       );
       setFavoriteMessages(favorites);
 
-      // Load flagged messages
       const flags = new Set(
         mappedData.filter(m => m.needs_review).map(m => m.id)
       );
