@@ -18,7 +18,10 @@ import Chats from './pages/Chats';
 import Gallery from './pages/Gallery';
 import CVLibrary from './pages/CVLibrary';
 import Pr1Bit from './pages/Pr1Bit';
+import Advisor from './pages/Advisor';
 import AdvisorCode from './pages/AdvisorCode';
+import AdvisorConfiguration from './pages/AdvisorConfiguration';
+import AdvisorAnalytics from './pages/AdvisorAnalytics';
 import VoxOutbound from './pages/VoxOutbound';
 import VoxInbound from './pages/VoxInbound';
 import VoxAnalytics from './pages/VoxAnalytics';
@@ -51,7 +54,10 @@ function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/gpt" element={<GPT />} />
             <Route path="/chats" element={<Chats />} />
+            <Route path="/advisor" element={<Advisor />} />
             <Route path="/advisor/code" element={<AdvisorCode />} />
+            <Route path="/advisor/configuration" element={<AdvisorConfiguration />} />
+            <Route path="/advisor/analytics" element={<AdvisorAnalytics />} />
             <Route path="/social-media/gallery" element={<Gallery />} />
             <Route path="/hr/cv-library" element={<CVLibrary />} />
             <Route path="/finance/pr1bit" element={<Pr1Bit />} />

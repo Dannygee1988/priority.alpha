@@ -71,6 +71,9 @@ const financeSubmenu = [
 ];
 
 const advisorSubmenu = [
+  { name: 'Chat', icon: Bot, path: '/advisor' },
+  { name: 'Configuration', icon: Settings, path: '/advisor/configuration' },
+  { name: 'Analytics', icon: BarChart3, path: '/advisor/analytics' },
   { name: 'GPT', icon: Bot, path: '/gpt' },
   { name: 'Chats', icon: MessagesSquare, path: '/chats' },
   { name: 'Code', icon: Code, path: '/advisor/code' },
