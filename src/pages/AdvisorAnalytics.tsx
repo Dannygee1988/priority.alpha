@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, MessageSquare, Search, AlertCircle, TrendingUp, FileText, Calendar } from 'lucide-react';
+import { BarChart3, MessageSquare, Search, AlertCircle, TrendingUp, FileText, Calendar, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
+import Button from '../components/Button';
 
 interface MessageAnalytics {
   id: string;
@@ -34,6 +35,8 @@ const AdvisorAnalytics: React.FC = () => {
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   const [totalMessages, setTotalMessages] = useState(0);
   const [messagesWithSources, setMessagesWithSources] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   useEffect(() => {
     loadAnalytics();
@@ -47,6 +50,113 @@ const AdvisorAnalytics: React.FC = () => {
     }
   }, [selectedConversation]);
 
+  const syncOpenAIThreads = async () => {
+    if (!user?.id) return;
+
+    try {
+      setSyncing(true);
+      setSyncStatus('Syncing messages from OpenAI...');
+
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) {
+        setSyncStatus('No company found');
+        return;
+      }
+
+      const { data: companyProfile } = await supabase
+        .from('company_profiles')
+        .select('gcp_id')
+        .eq('id', companyId)
+        .single();
+
+      const assistantId = companyProfile?.gcp_id || 'asst_pYeUm4osEdqgEUTI0t1Od7XZ';
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-assistant-threads`;
+      const headers = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ assistantId }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch OpenAI threads: ${errorText}`);
+      }
+
+      const { threads } = await response.json();
+      setSyncStatus(`Found ${threads?.length || 0} threads. Saving to database...`);
+
+      for (const thread of threads || []) {
+        const { data: existingThread } = await supabase
+          .from('assistant_threads')
+          .select('id')
+          .eq('thread_id', thread.thread_id)
+          .single();
+
+        let threadDbId;
+        if (!existingThread) {
+          const { data: newThread, error: threadError } = await supabase
+            .from('assistant_threads')
+            .insert({
+              company_id: companyId,
+              thread_id: thread.thread_id,
+              assistant_id: assistantId,
+              metadata: thread.metadata,
+              created_at: thread.created_at,
+            })
+            .select('id')
+            .single();
+
+          if (threadError) {
+            console.error('Error inserting thread:', threadError);
+            continue;
+          }
+          threadDbId = newThread.id;
+        } else {
+          threadDbId = existingThread.id;
+        }
+
+        for (const message of thread.messages || []) {
+          const { data: existingMessage } = await supabase
+            .from('assistant_messages')
+            .select('id')
+            .eq('message_id', message.id)
+            .single();
+
+          if (!existingMessage) {
+            const { error: messageError } = await supabase
+              .from('assistant_messages')
+              .insert({
+                thread_id: threadDbId,
+                message_id: message.id,
+                role: message.role,
+                content: message.content,
+                created_at: message.created_at,
+              });
+
+            if (messageError) {
+              console.error('Error inserting message:', messageError);
+            }
+          }
+        }
+      }
+
+      setSyncStatus('Sync complete!');
+      await loadAnalytics();
+    } catch (err) {
+      console.error('Error syncing OpenAI threads:', err);
+      setSyncStatus(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncStatus(null), 3000);
+    }
+  };
+
   const loadAnalytics = async () => {
     if (!user?.id) return;
 
@@ -55,14 +165,6 @@ const AdvisorAnalytics: React.FC = () => {
 
       const companyId = await getUserCompany(user.id);
       if (!companyId) return;
-
-      const { data: advisorMessages, error: messagesError } = await supabase
-        .from('advisor_messages')
-        .select('id, conversation_id, role, content, created_at, sources')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
-
-      if (messagesError) throw messagesError;
 
       const { data: assistantThreads, error: threadsError } = await supabase
         .from('assistant_threads')
@@ -108,18 +210,12 @@ const AdvisorAnalytics: React.FC = () => {
         });
       }
 
-      const allMessages = [...(advisorMessages || []), ...assistantMessagesFlat];
-
-      setTotalMessages(allMessages.length);
-
-      const withSources = allMessages.filter(m =>
-        m.role === 'assistant' && m.sources && Array.isArray(m.sources) && m.sources.length > 0
-      ).length;
-      setMessagesWithSources(withSources);
+      setTotalMessages(assistantMessagesFlat.length);
+      setMessagesWithSources(0);
 
       const conversationMap = new Map<string, Conversation>();
 
-      allMessages.forEach(msg => {
+      assistantMessagesFlat.forEach(msg => {
         if (!conversationMap.has(msg.conversation_id)) {
           conversationMap.set(msg.conversation_id, {
             id: msg.conversation_id,
@@ -153,15 +249,6 @@ const AdvisorAnalytics: React.FC = () => {
     try {
       const companyId = await getUserCompany(user.id);
       if (!companyId) return;
-
-      const { data: advisorMessages, error: advisorError } = await supabase
-        .from('advisor_messages')
-        .select('id, role, content, created_at, conversation_id, sources')
-        .eq('company_id', companyId)
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-
-      if (advisorError) throw advisorError;
 
       const { data: assistantThread, error: threadError } = await supabase
         .from('assistant_threads')
@@ -206,10 +293,7 @@ const AdvisorAnalytics: React.FC = () => {
         }).sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       }
 
-      const allMessages = [...(advisorMessages || []), ...assistantMessagesFlat]
-        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-
-      setMessages(allMessages);
+      setMessages(assistantMessagesFlat);
     } catch (err) {
       console.error('Error loading messages:', err);
     }
@@ -242,11 +326,25 @@ const AdvisorAnalytics: React.FC = () => {
     <div className="px-4 py-8 h-[calc(100vh-4rem)] animate-fade-in overflow-y-auto">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <div className="flex items-center mb-2">
-            <BarChart3 className="text-primary mr-3" size={24} />
-            <h1 className="text-2xl font-bold text-neutral-800">Advisor Analytics</h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <BarChart3 className="text-primary mr-3" size={24} />
+              <h1 className="text-2xl font-bold text-neutral-800">Advisor Analytics</h1>
+            </div>
+            <Button
+              onClick={syncOpenAIThreads}
+              disabled={syncing}
+              leftIcon={<RefreshCw size={18} className={syncing ? 'animate-spin' : ''} />}
+            >
+              {syncing ? 'Syncing...' : 'Sync Messages'}
+            </Button>
           </div>
-          <p className="text-neutral-500">View message details and response groundings</p>
+          <div className="flex items-center justify-between">
+            <p className="text-neutral-500">View OpenAI Assistant conversations from asst_pYeUm4osEdqgEUTI0t1Od7XZ</p>
+            {syncStatus && (
+              <p className="text-sm text-primary">{syncStatus}</p>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
