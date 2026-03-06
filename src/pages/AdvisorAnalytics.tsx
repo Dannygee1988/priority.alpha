@@ -50,107 +50,16 @@ const AdvisorAnalytics: React.FC = () => {
     }
   }, [selectedConversation]);
 
-  const syncOpenAIThreads = async () => {
-    if (!user?.id) return;
+  const syncMessages = async () => {
+    setSyncing(true);
+    setSyncStatus('Refreshing messages...');
 
     try {
-      setSyncing(true);
-      setSyncStatus('Syncing messages from OpenAI...');
-
-      const companyId = await getUserCompany(user.id);
-      if (!companyId) {
-        setSyncStatus('No company found');
-        return;
-      }
-
-      const { data: companyProfile } = await supabase
-        .from('company_profiles')
-        .select('gcp_id')
-        .eq('id', companyId)
-        .single();
-
-      const assistantId = companyProfile?.gcp_id || 'asst_pYeUm4osEdqgEUTI0t1Od7XZ';
-
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-assistant-threads`;
-      const headers = {
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      };
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ assistantId }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch OpenAI threads: ${errorText}`);
-      }
-
-      const { threads } = await response.json();
-      setSyncStatus(`Found ${threads?.length || 0} threads. Saving to database...`);
-
-      for (const thread of threads || []) {
-        const { data: existingThread } = await supabase
-          .from('assistant_threads')
-          .select('id')
-          .eq('thread_id', thread.thread_id)
-          .single();
-
-        let threadDbId;
-        if (!existingThread) {
-          const { data: newThread, error: threadError } = await supabase
-            .from('assistant_threads')
-            .insert({
-              company_id: companyId,
-              thread_id: thread.thread_id,
-              assistant_id: assistantId,
-              metadata: thread.metadata,
-              created_at: thread.created_at,
-            })
-            .select('id')
-            .single();
-
-          if (threadError) {
-            console.error('Error inserting thread:', threadError);
-            continue;
-          }
-          threadDbId = newThread.id;
-        } else {
-          threadDbId = existingThread.id;
-        }
-
-        for (const message of thread.messages || []) {
-          const { data: existingMessage } = await supabase
-            .from('assistant_messages')
-            .select('id')
-            .eq('message_id', message.id)
-            .single();
-
-          if (!existingMessage) {
-            const { error: messageError } = await supabase
-              .from('assistant_messages')
-              .insert({
-                thread_id: threadDbId,
-                message_id: message.id,
-                role: message.role,
-                content: message.content,
-                created_at: message.created_at,
-              });
-
-            if (messageError) {
-              console.error('Error inserting message:', messageError);
-            }
-          }
-        }
-      }
-
-      setSyncStatus('Sync complete!');
       await loadAnalytics();
+      setSyncStatus('Messages refreshed successfully');
     } catch (err) {
-      console.error('Error syncing OpenAI threads:', err);
-      setSyncStatus(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      console.error('Error refreshing messages:', err);
+      setSyncStatus('Error refreshing messages');
     } finally {
       setSyncing(false);
       setTimeout(() => setSyncStatus(null), 3000);
@@ -332,17 +241,19 @@ const AdvisorAnalytics: React.FC = () => {
               <h1 className="text-2xl font-bold text-neutral-800">Advisor Analytics</h1>
             </div>
             <Button
-              onClick={syncOpenAIThreads}
+              onClick={syncMessages}
               disabled={syncing}
               leftIcon={<RefreshCw size={18} className={syncing ? 'animate-spin' : ''} />}
             >
-              {syncing ? 'Syncing...' : 'Sync Messages'}
+              {syncing ? 'Refreshing...' : 'Refresh Messages'}
             </Button>
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-neutral-500">View OpenAI Assistant conversations from asst_pYeUm4osEdqgEUTI0t1Od7XZ</p>
+            <p className="text-neutral-500">View AI Assistant conversations and analytics</p>
             {syncStatus && (
-              <p className="text-sm text-primary">{syncStatus}</p>
+              <p className={`text-sm ${syncStatus.includes('Error') ? 'text-error-500' : 'text-success-500'}`}>
+                {syncStatus}
+              </p>
             )}
           </div>
         </div>
