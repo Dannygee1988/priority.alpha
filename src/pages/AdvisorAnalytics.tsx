@@ -56,7 +56,7 @@ const AdvisorAnalytics: React.FC = () => {
       const companyId = await getUserCompany(user.id);
       if (!companyId) return;
 
-      const { data: allMessages, error: messagesError } = await supabase
+      const { data: advisorMessages, error: messagesError } = await supabase
         .from('advisor_messages')
         .select('id, conversation_id, role, content, created_at, sources')
         .eq('company_id', companyId)
@@ -64,16 +64,62 @@ const AdvisorAnalytics: React.FC = () => {
 
       if (messagesError) throw messagesError;
 
-      setTotalMessages(allMessages?.length || 0);
+      const { data: assistantThreads, error: threadsError } = await supabase
+        .from('assistant_threads')
+        .select(`
+          id,
+          thread_id,
+          created_at,
+          assistant_messages (
+            id,
+            message_id,
+            role,
+            content,
+            created_at
+          )
+        `)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
 
-      const withSources = allMessages?.filter(m =>
+      if (threadsError) {
+        console.error('Error fetching assistant threads:', threadsError);
+      }
+
+      let assistantMessagesFlat: MessageAnalytics[] = [];
+      if (assistantThreads && assistantThreads.length > 0) {
+        assistantMessagesFlat = assistantThreads.flatMap((thread: any) => {
+          const messages = thread.assistant_messages || [];
+          return messages.map((msg: any) => {
+            const content = Array.isArray(msg.content)
+              ? msg.content.map((c: any) => c.text?.value || '').join('\n')
+              : typeof msg.content === 'string'
+              ? msg.content
+              : '';
+
+            return {
+              id: msg.message_id,
+              role: msg.role === 'assistant' ? 'assistant' : 'user',
+              content: content,
+              created_at: msg.created_at,
+              conversation_id: thread.thread_id,
+              sources: []
+            };
+          });
+        });
+      }
+
+      const allMessages = [...(advisorMessages || []), ...assistantMessagesFlat];
+
+      setTotalMessages(allMessages.length);
+
+      const withSources = allMessages.filter(m =>
         m.role === 'assistant' && m.sources && Array.isArray(m.sources) && m.sources.length > 0
-      ).length || 0;
+      ).length;
       setMessagesWithSources(withSources);
 
       const conversationMap = new Map<string, Conversation>();
 
-      allMessages?.forEach(msg => {
+      allMessages.forEach(msg => {
         if (!conversationMap.has(msg.conversation_id)) {
           conversationMap.set(msg.conversation_id, {
             id: msg.conversation_id,
@@ -108,16 +154,62 @@ const AdvisorAnalytics: React.FC = () => {
       const companyId = await getUserCompany(user.id);
       if (!companyId) return;
 
-      const { data, error } = await supabase
+      const { data: advisorMessages, error: advisorError } = await supabase
         .from('advisor_messages')
         .select('id, role, content, created_at, conversation_id, sources')
         .eq('company_id', companyId)
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (advisorError) throw advisorError;
 
-      setMessages(data || []);
+      const { data: assistantThread, error: threadError } = await supabase
+        .from('assistant_threads')
+        .select(`
+          id,
+          thread_id,
+          created_at,
+          assistant_messages (
+            id,
+            message_id,
+            role,
+            content,
+            created_at
+          )
+        `)
+        .eq('company_id', companyId)
+        .eq('thread_id', conversationId)
+        .maybeSingle();
+
+      if (threadError && threadError.code !== 'PGRST116') {
+        console.error('Error fetching assistant thread:', threadError);
+      }
+
+      let assistantMessagesFlat: MessageAnalytics[] = [];
+      if (assistantThread) {
+        const messages = assistantThread.assistant_messages || [];
+        assistantMessagesFlat = messages.map((msg: any) => {
+          const content = Array.isArray(msg.content)
+            ? msg.content.map((c: any) => c.text?.value || '').join('\n')
+            : typeof msg.content === 'string'
+            ? msg.content
+            : '';
+
+          return {
+            id: msg.message_id,
+            role: msg.role === 'assistant' ? 'assistant' : 'user',
+            content: content,
+            created_at: msg.created_at,
+            conversation_id: assistantThread.thread_id,
+            sources: []
+          };
+        }).sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      }
+
+      const allMessages = [...(advisorMessages || []), ...assistantMessagesFlat]
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+      setMessages(allMessages);
     } catch (err) {
       console.error('Error loading messages:', err);
     }
