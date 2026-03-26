@@ -298,6 +298,7 @@ const AdvisorAnalytics: React.FC = () => {
     try {
       let assistantMessagesFlat: MessageAnalytics[] = [];
 
+      // First, try to load from Firebase to get retrievedFiles
       if (firestoreInitialized && getFirestoreInstance()) {
         try {
           const companyId = await getUserCompany(user.id);
@@ -356,13 +357,24 @@ const AdvisorAnalytics: React.FC = () => {
             }
 
             if (msg.botReply) {
+              // Transform retrievedFiles to sources format
+              let sources = [];
+              if (msg.retrievedFiles && Array.isArray(msg.retrievedFiles)) {
+                sources = msg.retrievedFiles.map((file: any) => ({
+                  title: file.fileName || file.filename || 'Unknown file',
+                  similarity: file.score || 0
+                }));
+              } else if (msg.sources && Array.isArray(msg.sources)) {
+                sources = msg.sources;
+              }
+
               result.push({
                 id: `${msg.id}_bot`,
                 role: 'assistant',
                 content: msg.botReply,
                 created_at: timestamp,
                 conversation_id: conversationId,
-                sources: msg.sources || []
+                sources: sources
               });
             }
 
