@@ -433,13 +433,16 @@ const AdvisorAnalytics: React.FC = () => {
     try {
       const webhookUrl = 'https://n8n.srv997647.hstgr.cloud/webhook/cf20e176-ff5c-4d3b-a99d-7f756208ee92';
 
+      // Strip _bot or _user suffix from the message ID
+      const cleanMessageId = message.id.replace(/_(bot|user)$/, '');
+
       await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message_id: message.id,
+          message_id: cleanMessageId,
           role: message.role,
           content: message.content,
           created_at: message.created_at,
