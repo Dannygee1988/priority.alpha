@@ -12,6 +12,14 @@ interface ConfigurationSettings {
   css?: string;
   primary_color?: string;
   secondary_color?: string;
+  firebase_config?: {
+    apiKey: string;
+    authDomain: string;
+    projectId: string;
+    storageBucket: string;
+    messagingSenderId: string;
+    appId: string;
+  };
 }
 
 const DEFAULT_MIA_PROMPT = `Your goal is to act as Mia, the dedicated digital assistant for Leukemia Care UK. You provide accurate, empathetic, and strictly grounded information to patients, carers, and healthcare professionals. You must use the "data store" for every response to ensure that every piece of medical or support advice is verified and safe, helping users navigate the complexities of a blood cancer diagnosis with clarity and compassion.
@@ -52,7 +60,15 @@ const AdvisorConfiguration: React.FC = () => {
     top_p: 1,
     css: '',
     primary_color: '#060644',
-    secondary_color: '#F6CCE0'
+    secondary_color: '#F6CCE0',
+    firebase_config: {
+      apiKey: '',
+      authDomain: '',
+      projectId: '',
+      storageBucket: '',
+      messagingSenderId: '',
+      appId: ''
+    }
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -90,7 +106,15 @@ const AdvisorConfiguration: React.FC = () => {
           top_p: data.settings?.advisor_top_p ?? 1,
           css: data.settings?.advisor_css || '',
           primary_color: data.primary_color || '#060644',
-          secondary_color: data.secondary_color || '#F6CCE0'
+          secondary_color: data.secondary_color || '#F6CCE0',
+          firebase_config: data.settings?.firebase_config || {
+            apiKey: '',
+            authDomain: '',
+            projectId: '',
+            storageBucket: '',
+            messagingSenderId: '',
+            appId: ''
+          }
         });
       }
     } catch (err) {
@@ -121,7 +145,8 @@ const AdvisorConfiguration: React.FC = () => {
             advisor_prompt: settings.prompt,
             advisor_temperature: settings.temperature,
             advisor_top_p: settings.top_p,
-            advisor_css: settings.css
+            advisor_css: settings.css,
+            firebase_config: settings.firebase_config
           },
           primary_color: settings.primary_color,
           secondary_color: settings.secondary_color
@@ -286,6 +311,111 @@ const AdvisorConfiguration: React.FC = () => {
               <p className="text-xs text-neutral-500 mt-1">
                 Add custom styling for the advisor interface
               </p>
+            </div>
+
+            <div className="border-t border-neutral-200 pt-6">
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Firestore Configuration</h3>
+              <p className="text-sm text-neutral-600 mb-4">
+                Connect to your Firebase Firestore database to display conversation analytics
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    API Key
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.firebase_config?.apiKey || ''}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      firebase_config: { ...settings.firebase_config!, apiKey: e.target.value }
+                    })}
+                    placeholder="AIzaSy..."
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Auth Domain
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.firebase_config?.authDomain || ''}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      firebase_config: { ...settings.firebase_config!, authDomain: e.target.value }
+                    })}
+                    placeholder="your-app.firebaseapp.com"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Project ID
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.firebase_config?.projectId || ''}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      firebase_config: { ...settings.firebase_config!, projectId: e.target.value }
+                    })}
+                    placeholder="your-project-id"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Storage Bucket
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.firebase_config?.storageBucket || ''}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      firebase_config: { ...settings.firebase_config!, storageBucket: e.target.value }
+                    })}
+                    placeholder="your-app.appspot.com"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Messaging Sender ID
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.firebase_config?.messagingSenderId || ''}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      firebase_config: { ...settings.firebase_config!, messagingSenderId: e.target.value }
+                    })}
+                    placeholder="123456789012"
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    App ID
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.firebase_config?.appId || ''}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      firebase_config: { ...settings.firebase_config!, appId: e.target.value }
+                    })}
+                    placeholder="1:123456789012:web:abc..."
+                    className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end pt-4">

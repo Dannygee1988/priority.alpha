@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import Button from '../components/Button';
+import { initializeFirebase, getFirestoreInstance } from '../lib/firebase';
+import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore';
 
 interface MessageAnalytics {
   id: string;
@@ -37,9 +39,11 @@ const AdvisorAnalytics: React.FC = () => {
   const [messagesWithSources, setMessagesWithSources] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [firestoreInitialized, setFirestoreInitialized] = useState(false);
+  const [firestoreError, setFirestoreError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadAnalytics();
+    initializeFirestoreAndLoadAnalytics();
   }, [user]);
 
   useEffect(() => {
@@ -49,6 +53,40 @@ const AdvisorAnalytics: React.FC = () => {
       setMessages([]);
     }
   }, [selectedConversation]);
+
+  const initializeFirestoreAndLoadAnalytics = async () => {
+    if (!user?.id) return;
+
+    try {
+      const companyId = await getUserCompany(user.id);
+      if (!companyId) return;
+
+      const { data: companyProfile } = await supabase
+        .from('company_profiles')
+        .select('settings')
+        .eq('id', companyId)
+        .single();
+
+      const firebaseConfig = companyProfile?.settings?.firebase_config;
+
+      if (firebaseConfig) {
+        try {
+          initializeFirebase(firebaseConfig);
+          setFirestoreInitialized(true);
+          setFirestoreError(null);
+        } catch (err) {
+          console.error('Error initializing Firebase:', err);
+          setFirestoreError('Failed to connect to Firestore');
+        }
+      } else {
+        setFirestoreError('Firestore not configured');
+      }
+
+      await loadAnalytics();
+    } catch (err) {
+      console.error('Error initializing:', err);
+    }
+  };
 
   const syncMessages = async () => {
     setSyncing(true);
@@ -75,52 +113,87 @@ const AdvisorAnalytics: React.FC = () => {
       const companyId = await getUserCompany(user.id);
       if (!companyId) return;
 
-      const { data: assistantThreads, error: threadsError } = await supabase
-        .from('assistant_threads')
-        .select(`
-          id,
-          thread_id,
-          created_at,
-          assistant_messages (
-            id,
-            message_id,
-            role,
-            content,
-            created_at
-          )
-        `)
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
-
-      if (threadsError) {
-        console.error('Error fetching assistant threads:', threadsError);
-      }
-
       let assistantMessagesFlat: MessageAnalytics[] = [];
-      if (assistantThreads && assistantThreads.length > 0) {
-        assistantMessagesFlat = assistantThreads.flatMap((thread: any) => {
-          const messages = thread.assistant_messages || [];
-          return messages.map((msg: any) => {
-            const content = Array.isArray(msg.content)
-              ? msg.content.map((c: any) => c.text?.value || '').join('\n')
-              : typeof msg.content === 'string'
-              ? msg.content
-              : '';
 
-            return {
-              id: msg.message_id,
-              role: msg.role === 'assistant' ? 'assistant' : 'user',
-              content: content,
-              created_at: msg.created_at,
-              conversation_id: thread.thread_id,
-              sources: []
-            };
+      if (firestoreInitialized && getFirestoreInstance()) {
+        try {
+          const db = getFirestoreInstance()!;
+          const conversationsRef = collection(db, 'conversations');
+          const q = query(conversationsRef, orderBy('created_at', 'desc'), limit(100));
+          const querySnapshot = await getDocs(q);
+
+          const firestoreConversations: any[] = [];
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            firestoreConversations.push({
+              id: doc.id,
+              ...data,
+            });
           });
-        });
+
+          assistantMessagesFlat = firestoreConversations.flatMap((conv: any) => {
+            const messages = conv.messages || [];
+            return messages.map((msg: any, idx: number) => ({
+              id: `${conv.id}_${idx}`,
+              role: msg.role === 'model' ? 'assistant' : 'user',
+              content: msg.content || msg.text || '',
+              created_at: msg.timestamp?.toDate?.()?.toISOString() || conv.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
+              conversation_id: conv.id,
+              sources: msg.sources || []
+            }));
+          });
+        } catch (err) {
+          console.error('Error fetching from Firestore:', err);
+          setFirestoreError('Failed to fetch messages from Firestore');
+        }
+      } else {
+        const { data: assistantThreads, error: threadsError } = await supabase
+          .from('assistant_threads')
+          .select(`
+            id,
+            thread_id,
+            created_at,
+            assistant_messages (
+              id,
+              message_id,
+              role,
+              content,
+              created_at
+            )
+          `)
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: false });
+
+        if (threadsError) {
+          console.error('Error fetching assistant threads:', threadsError);
+        }
+
+        if (assistantThreads && assistantThreads.length > 0) {
+          assistantMessagesFlat = assistantThreads.flatMap((thread: any) => {
+            const messages = thread.assistant_messages || [];
+            return messages.map((msg: any) => {
+              const content = Array.isArray(msg.content)
+                ? msg.content.map((c: any) => c.text?.value || '').join('\n')
+                : typeof msg.content === 'string'
+                ? msg.content
+                : '';
+
+              return {
+                id: msg.message_id,
+                role: msg.role === 'assistant' ? 'assistant' : 'user',
+                content: content,
+                created_at: msg.created_at,
+                conversation_id: thread.thread_id,
+                sources: []
+              };
+            });
+          });
+        }
       }
 
       setTotalMessages(assistantMessagesFlat.length);
-      setMessagesWithSources(0);
+      const withSources = assistantMessagesFlat.filter(msg => msg.sources && msg.sources.length > 0).length;
+      setMessagesWithSources(withSources);
 
       const conversationMap = new Map<string, Conversation>();
 
@@ -156,50 +229,81 @@ const AdvisorAnalytics: React.FC = () => {
     if (!user?.id) return;
 
     try {
-      const companyId = await getUserCompany(user.id);
-      if (!companyId) return;
-
-      const { data: assistantThread, error: threadError } = await supabase
-        .from('assistant_threads')
-        .select(`
-          id,
-          thread_id,
-          created_at,
-          assistant_messages (
-            id,
-            message_id,
-            role,
-            content,
-            created_at
-          )
-        `)
-        .eq('company_id', companyId)
-        .eq('thread_id', conversationId)
-        .maybeSingle();
-
-      if (threadError && threadError.code !== 'PGRST116') {
-        console.error('Error fetching assistant thread:', threadError);
-      }
-
       let assistantMessagesFlat: MessageAnalytics[] = [];
-      if (assistantThread) {
-        const messages = assistantThread.assistant_messages || [];
-        assistantMessagesFlat = messages.map((msg: any) => {
-          const content = Array.isArray(msg.content)
-            ? msg.content.map((c: any) => c.text?.value || '').join('\n')
-            : typeof msg.content === 'string'
-            ? msg.content
-            : '';
 
-          return {
-            id: msg.message_id,
-            role: msg.role === 'assistant' ? 'assistant' : 'user',
-            content: content,
-            created_at: msg.created_at,
-            conversation_id: assistantThread.thread_id,
-            sources: []
-          };
-        }).sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      if (firestoreInitialized && getFirestoreInstance()) {
+        try {
+          const db = getFirestoreInstance()!;
+          const conversationsRef = collection(db, 'conversations');
+          const q = query(conversationsRef);
+          const querySnapshot = await getDocs(q);
+
+          let conversationData: any = null;
+          querySnapshot.forEach((doc) => {
+            if (doc.id === conversationId) {
+              conversationData = { id: doc.id, ...doc.data() };
+            }
+          });
+
+          if (conversationData) {
+            const messages = conversationData.messages || [];
+            assistantMessagesFlat = messages.map((msg: any, idx: number) => ({
+              id: `${conversationData.id}_${idx}`,
+              role: msg.role === 'model' ? 'assistant' : 'user',
+              content: msg.content || msg.text || '',
+              created_at: msg.timestamp?.toDate?.()?.toISOString() || conversationData.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
+              conversation_id: conversationData.id,
+              sources: msg.sources || []
+            })).sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          }
+        } catch (err) {
+          console.error('Error fetching conversation from Firestore:', err);
+        }
+      } else {
+        const companyId = await getUserCompany(user.id);
+        if (!companyId) return;
+
+        const { data: assistantThread, error: threadError } = await supabase
+          .from('assistant_threads')
+          .select(`
+            id,
+            thread_id,
+            created_at,
+            assistant_messages (
+              id,
+              message_id,
+              role,
+              content,
+              created_at
+            )
+          `)
+          .eq('company_id', companyId)
+          .eq('thread_id', conversationId)
+          .maybeSingle();
+
+        if (threadError && threadError.code !== 'PGRST116') {
+          console.error('Error fetching assistant thread:', threadError);
+        }
+
+        if (assistantThread) {
+          const messages = assistantThread.assistant_messages || [];
+          assistantMessagesFlat = messages.map((msg: any) => {
+            const content = Array.isArray(msg.content)
+              ? msg.content.map((c: any) => c.text?.value || '').join('\n')
+              : typeof msg.content === 'string'
+              ? msg.content
+              : '';
+
+            return {
+              id: msg.message_id,
+              role: msg.role === 'assistant' ? 'assistant' : 'user',
+              content: content,
+              created_at: msg.created_at,
+              conversation_id: assistantThread.thread_id,
+              sources: []
+            };
+          }).sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        }
       }
 
       setMessages(assistantMessagesFlat);
@@ -249,9 +353,21 @@ const AdvisorAnalytics: React.FC = () => {
             </Button>
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-neutral-500">View AI Assistant conversations and analytics</p>
+            <div className="flex items-center gap-4">
+              <p className="text-neutral-500">View AI Assistant conversations and analytics</p>
+              {firestoreInitialized && (
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                  Firestore Connected
+                </span>
+              )}
+              {firestoreError && (
+                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
+                  {firestoreError}
+                </span>
+              )}
+            </div>
             {syncStatus && (
-              <p className={`text-sm ${syncStatus.includes('Error') ? 'text-error-500' : 'text-success-500'}`}>
+              <p className={`text-sm ${syncStatus.includes('Error') ? 'text-red-500' : 'text-green-500'}`}>
                 {syncStatus}
               </p>
             )}
