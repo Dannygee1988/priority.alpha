@@ -149,16 +149,38 @@ const AdvisorAnalytics: React.FC = () => {
             });
           });
 
-          // Convert to flat message list
+          // Convert to flat message list - each document has both userMessage and botReply
           assistantMessagesFlat = Array.from(messagesByThread.entries()).flatMap(([threadId, messages]) => {
-            return messages.map((msg: any) => ({
-              id: msg.id,
-              role: msg.role === 'model' ? 'assistant' : 'user',
-              content: msg.content || msg.text || '',
-              created_at: msg.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
-              conversation_id: threadId,
-              sources: msg.sources || []
-            }));
+            return messages.flatMap((msg: any) => {
+              const timestamp = msg.timestamp?.toDate?.()?.toISOString() || new Date().toISOString();
+              const result: MessageAnalytics[] = [];
+
+              // Add user message
+              if (msg.userMessage) {
+                result.push({
+                  id: `${msg.id}_user`,
+                  role: 'user',
+                  content: msg.userMessage,
+                  created_at: timestamp,
+                  conversation_id: threadId,
+                  sources: []
+                });
+              }
+
+              // Add bot reply
+              if (msg.botReply) {
+                result.push({
+                  id: `${msg.id}_bot`,
+                  role: 'assistant',
+                  content: msg.botReply,
+                  created_at: timestamp,
+                  conversation_id: threadId,
+                  sources: msg.sources || []
+                });
+              }
+
+              return result;
+            });
           });
         } catch (err: any) {
           console.error('Error fetching from Firestore:', err);
@@ -275,20 +297,56 @@ const AdvisorAnalytics: React.FC = () => {
 
           const db = getFirestoreInstance()!;
           const messagesRef = collection(db, 'conversations', customerId, 'messages');
-          const q = query(messagesRef, where('threadId', '==', conversationId), orderBy('timestamp', 'asc'));
+          // Get all messages and filter in memory to avoid needing a Firestore index
+          const q = query(messagesRef, limit(500));
           const querySnapshot = await getDocs(q);
 
-          assistantMessagesFlat = [];
+          const conversationMessages: any[] = [];
           querySnapshot.forEach((doc) => {
             const data = doc.data();
-            assistantMessagesFlat.push({
-              id: doc.id,
-              role: data.role === 'model' ? 'assistant' : 'user',
-              content: data.content || data.text || '',
-              created_at: data.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
-              conversation_id: conversationId,
-              sources: data.sources || []
-            });
+            if (data.threadId === conversationId) {
+              conversationMessages.push({
+                id: doc.id,
+                ...data
+              });
+            }
+          });
+
+          // Sort by timestamp
+          conversationMessages.sort((a, b) => {
+            const timeA = a.timestamp?.toMillis?.() || 0;
+            const timeB = b.timestamp?.toMillis?.() || 0;
+            return timeA - timeB;
+          });
+
+          // Convert to message format
+          assistantMessagesFlat = conversationMessages.flatMap((msg: any) => {
+            const timestamp = msg.timestamp?.toDate?.()?.toISOString() || new Date().toISOString();
+            const result: MessageAnalytics[] = [];
+
+            if (msg.userMessage) {
+              result.push({
+                id: `${msg.id}_user`,
+                role: 'user',
+                content: msg.userMessage,
+                created_at: timestamp,
+                conversation_id: conversationId,
+                sources: []
+              });
+            }
+
+            if (msg.botReply) {
+              result.push({
+                id: `${msg.id}_bot`,
+                role: 'assistant',
+                content: msg.botReply,
+                created_at: timestamp,
+                conversation_id: conversationId,
+                sources: msg.sources || []
+              });
+            }
+
+            return result;
           });
         } catch (err) {
           console.error('Error fetching conversation from Firestore:', err);
