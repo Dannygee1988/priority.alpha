@@ -6,71 +6,20 @@ import { supabase } from '../lib/supabase';
 import Button from '../components/Button';
 
 interface ConfigurationSettings {
-  prompt?: string;
-  temperature?: number;
-  top_p?: number;
   primary_color?: string;
   secondary_color?: string;
-  assistant_id?: string;
 }
-
-interface AssistantConfig {
-  id: string;
-  name: string;
-  description: string;
-  instructions: string;
-  model: string;
-  tools: any[];
-  temperature: number;
-  top_p: number;
-}
-
-const DEFAULT_MIA_PROMPT = `Your goal is to act as Mia, the dedicated digital assistant for Leukemia Care UK. You provide accurate, empathetic, and strictly grounded information to patients, carers, and healthcare professionals. You must use the "data store" for every response to ensure that every piece of medical or support advice is verified and safe, helping users navigate the complexities of a blood cancer diagnosis with clarity and compassion.
-
-Instructions
-1. The "Data Store" First Mandate
-Mandatory Retrieval: You are prohibited from answering any factual or medical question from your internal training memory. You must call the data store tool for every query.
-
-Grounded Accuracy: If the data store does not return a specific answer, you must gracefully admit you do not have that information.
-
-Example: "I'm sorry, I couldn't find a specific answer to that in our current resources. To ensure you get the right advice, I recommend speaking with your consultant or calling our nurse-led helpline."
-
-2. Clinical Empathy & Tone
-Tone: Be warm, calm, and supportive. Avoid being overly clinical or cold, but never provide "false hope."
-
-Language: Use British English and inclusive terminology. Use "we" when referring to Leukemia Care services (e.g., "We offer financial support grants").
-
-Clarity: Leukemia involves complex terminology. If the data store provides a technical explanation, break it down into digestible points for the user.
-
-3. Safety & Emergency Protocols
-Emergency Redirection: If a user mentions symptoms that sound like an emergency (e.g., "I have a very high fever and I'm on chemotherapy"), prioritize advising them to contact their medical team immediately or call 999.
-
-No Prescriptions: You cannot tell a user to change their medication dosage. You may only report what the data store says about general side effects.
-
-4. Structuring Responses
-Scannability: Use bullet points for symptoms, treatment types, or lists of services.
-
-Next Steps: Always end a factual answer with a helpful next step, such as offering a link to a relevant PDF guide or the phone number for the Leukemia Care support line.
-
-5. Handling Sensitive Topics
-End of Life/Relapse: Handle these topics with the utmost sensitivity. Ensure your answers are pulled directly from the "data store" and emphasize the emotional support services available through Leukemia Care.`;
 
 const AdvisorConfiguration: React.FC = () => {
   const { user } = useAuth();
   const [settings, setSettings] = useState<ConfigurationSettings>({
-    prompt: DEFAULT_MIA_PROMPT,
-    temperature: 0.7,
-    top_p: 1,
     primary_color: '#060644',
-    secondary_color: '#F6CCE0',
-    assistant_id: ''
+    secondary_color: '#F6CCE0'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [assistantConfig, setAssistantConfig] = useState<AssistantConfig | null>(null);
-  const [fetchingAssistant, setFetchingAssistant] = useState(false);
 
   useEffect(() => {
     loadConfiguration();
@@ -87,84 +36,26 @@ const AdvisorConfiguration: React.FC = () => {
       if (!companyId) {
         throw new Error('No company found');
       }
-      console.log('User company ID:', companyId);
 
       const { data, error: fetchError } = await supabase
         .from('company_profiles')
-        .select('settings, primary_color, secondary_color, assistant_id')
+        .select('primary_color, secondary_color')
         .eq('id', companyId)
         .single();
 
       if (fetchError) throw fetchError;
 
       if (data) {
-        console.log('Raw data from database:', data);
-        console.log('Assistant ID from database:', data.assistant_id);
-
         setSettings({
-          prompt: data.settings?.advisor_prompt || DEFAULT_MIA_PROMPT,
-          temperature: data.settings?.advisor_temperature ?? 0.7,
-          top_p: data.settings?.advisor_top_p ?? 1,
           primary_color: data.primary_color || '#060644',
-          secondary_color: data.secondary_color || '#F6CCE0',
-          assistant_id: data.assistant_id || ''
+          secondary_color: data.secondary_color || '#F6CCE0'
         });
-
-        // If assistant_id exists, fetch the config automatically
-        if (data.assistant_id) {
-          console.log('Assistant ID exists, fetching config...');
-          fetchAssistantConfig(data.assistant_id);
-        } else {
-          console.log('No assistant ID found in database');
-        }
       }
     } catch (err) {
       console.error('Error loading configuration:', err);
       setError('Failed to load configuration');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchAssistantConfig = async (assistantId: string) => {
-    if (!assistantId) {
-      console.log('No assistant ID provided');
-      return;
-    }
-
-    try {
-      setFetchingAssistant(true);
-      setError(null);
-
-      console.log('Fetching assistant config for:', assistantId);
-
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-assistant-threads`;
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          assistantId,
-          action: 'getAssistantConfig'
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Assistant config fetch failed:', errorText);
-        throw new Error('Failed to fetch assistant configuration');
-      }
-
-      const config = await response.json();
-      console.log('Assistant config loaded:', config);
-      setAssistantConfig(config);
-    } catch (err) {
-      console.error('Error fetching assistant config:', err);
-      setError('Failed to fetch OpenAI assistant configuration');
-    } finally {
-      setFetchingAssistant(false);
     }
   };
 
@@ -181,37 +72,11 @@ const AdvisorConfiguration: React.FC = () => {
         throw new Error('No company found');
       }
 
-      // Update OpenAI assistant if config exists and instructions changed
-      if (assistantConfig && settings.assistant_id) {
-        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-assistant-threads`;
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            assistantId: settings.assistant_id,
-            action: 'updateAssistantConfig',
-            instructions: assistantConfig.instructions,
-            temperature: assistantConfig.temperature,
-            top_p: assistantConfig.top_p
-          }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Failed to update OpenAI assistant:', errorText);
-          throw new Error('Failed to update OpenAI assistant configuration');
-        }
-      }
-
       const { error: updateError } = await supabase
         .from('company_profiles')
         .update({
           primary_color: settings.primary_color,
-          secondary_color: settings.secondary_color,
-          assistant_id: settings.assistant_id
+          secondary_color: settings.secondary_color
         })
         .eq('id', companyId);
 
