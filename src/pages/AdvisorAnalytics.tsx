@@ -41,6 +41,7 @@ const AdvisorAnalytics: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [firestoreInitialized, setFirestoreInitialized] = useState(false);
   const [firestoreError, setFirestoreError] = useState<string | null>(null);
+  const [verifiedMessages, setVerifiedMessages] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     initializeFirestoreAndLoadAnalytics();
@@ -475,6 +476,9 @@ const AdvisorAnalytics: React.FC = () => {
           sources: message.sources,
         }),
       });
+
+      // Mark this message as verified
+      setVerifiedMessages(prev => new Set(prev).add(messageId));
     } catch (error) {
       console.error('Error sending webhook:', error);
     }
@@ -621,7 +625,7 @@ const AdvisorAnalytics: React.FC = () => {
                             {message.role.toUpperCase()}
                           </span>
                           <div className="flex items-center gap-2">
-                            {message.role === 'assistant' && (
+                            {message.role === 'assistant' && !verifiedMessages.has(message.id) && (
                               <button
                                 onClick={() => handleVerifySources(message.id)}
                                 className="flex items-center gap-1 text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors"
