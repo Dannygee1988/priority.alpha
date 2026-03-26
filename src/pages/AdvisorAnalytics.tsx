@@ -136,6 +136,7 @@ const AdvisorAnalytics: React.FC = () => {
 
           querySnapshot.forEach((doc) => {
             const data = doc.data();
+            console.log('Message document:', doc.id, 'Fields:', Object.keys(data), 'Data:', data);
             const threadId = data.threadId || data.thread_id || 'default';
 
             if (!messagesByThread.has(threadId)) {
