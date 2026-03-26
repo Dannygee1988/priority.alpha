@@ -4,8 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import Button from '../components/Button';
-import { initializeFirebase, getFirestoreInstance } from '../lib/firebase';
-import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore';
+import { initializeFirebase, getFirestoreInstance, isFirebaseConfigured } from '../lib/firebase';
+import { collection, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
 
 interface MessageAnalytics {
   id: string;
@@ -58,20 +58,9 @@ const AdvisorAnalytics: React.FC = () => {
     if (!user?.id) return;
 
     try {
-      const companyId = await getUserCompany(user.id);
-      if (!companyId) return;
-
-      const { data: companyProfile } = await supabase
-        .from('company_profiles')
-        .select('settings')
-        .eq('id', companyId)
-        .single();
-
-      const firebaseConfig = companyProfile?.settings?.firebase_config;
-
-      if (firebaseConfig) {
+      if (isFirebaseConfigured()) {
         try {
-          initializeFirebase(firebaseConfig);
+          initializeFirebase();
           setFirestoreInitialized(true);
           setFirestoreError(null);
         } catch (err) {
@@ -117,9 +106,27 @@ const AdvisorAnalytics: React.FC = () => {
 
       if (firestoreInitialized && getFirestoreInstance()) {
         try {
+          const { data: companyProfile } = await supabase
+            .from('company_profiles')
+            .select('firestore_customer_id')
+            .eq('id', companyId)
+            .single();
+
+          const customerId = companyProfile?.firestore_customer_id;
+
+          if (!customerId) {
+            setFirestoreError('Customer ID not configured');
+            return;
+          }
+
           const db = getFirestoreInstance()!;
           const conversationsRef = collection(db, 'conversations');
-          const q = query(conversationsRef, orderBy('created_at', 'desc'), limit(100));
+          const q = query(
+            conversationsRef,
+            where('customerId', '==', customerId),
+            orderBy('created_at', 'desc'),
+            limit(100)
+          );
           const querySnapshot = await getDocs(q);
 
           const firestoreConversations: any[] = [];
@@ -233,9 +240,24 @@ const AdvisorAnalytics: React.FC = () => {
 
       if (firestoreInitialized && getFirestoreInstance()) {
         try {
+          const companyId = await getUserCompany(user.id);
+          if (!companyId) return;
+
+          const { data: companyProfile } = await supabase
+            .from('company_profiles')
+            .select('firestore_customer_id')
+            .eq('id', companyId)
+            .single();
+
+          const customerId = companyProfile?.firestore_customer_id;
+
+          if (!customerId) {
+            return;
+          }
+
           const db = getFirestoreInstance()!;
           const conversationsRef = collection(db, 'conversations');
-          const q = query(conversationsRef);
+          const q = query(conversationsRef, where('customerId', '==', customerId));
           const querySnapshot = await getDocs(q);
 
           let conversationData: any = null;
