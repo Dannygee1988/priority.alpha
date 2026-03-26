@@ -9,10 +9,8 @@ interface ConfigurationSettings {
   prompt?: string;
   temperature?: number;
   top_p?: number;
-  css?: string;
   primary_color?: string;
   secondary_color?: string;
-  firestore_customer_id?: string;
   assistant_id?: string;
 }
 
@@ -63,10 +61,8 @@ const AdvisorConfiguration: React.FC = () => {
     prompt: DEFAULT_MIA_PROMPT,
     temperature: 0.7,
     top_p: 1,
-    css: '',
     primary_color: '#060644',
     secondary_color: '#F6CCE0',
-    firestore_customer_id: '',
     assistant_id: ''
   });
   const [loading, setLoading] = useState(true);
@@ -95,7 +91,7 @@ const AdvisorConfiguration: React.FC = () => {
 
       const { data, error: fetchError } = await supabase
         .from('company_profiles')
-        .select('settings, primary_color, secondary_color, firestore_customer_id, assistant_id')
+        .select('settings, primary_color, secondary_color, assistant_id')
         .eq('id', companyId)
         .single();
 
@@ -109,10 +105,8 @@ const AdvisorConfiguration: React.FC = () => {
           prompt: data.settings?.advisor_prompt || DEFAULT_MIA_PROMPT,
           temperature: data.settings?.advisor_temperature ?? 0.7,
           top_p: data.settings?.advisor_top_p ?? 1,
-          css: data.settings?.advisor_css || '',
           primary_color: data.primary_color || '#060644',
           secondary_color: data.secondary_color || '#F6CCE0',
-          firestore_customer_id: data.firestore_customer_id || '',
           assistant_id: data.assistant_id || ''
         });
 
@@ -215,12 +209,8 @@ const AdvisorConfiguration: React.FC = () => {
       const { error: updateError } = await supabase
         .from('company_profiles')
         .update({
-          settings: {
-            advisor_css: settings.css
-          },
           primary_color: settings.primary_color,
           secondary_color: settings.secondary_color,
-          firestore_customer_id: settings.firestore_customer_id,
           assistant_id: settings.assistant_id
         })
         .eq('id', companyId);
@@ -407,48 +397,6 @@ const AdvisorConfiguration: React.FC = () => {
                     className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary"
                   />
                 </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Custom CSS
-              </label>
-              <textarea
-                value={settings.css}
-                onChange={(e) => setSettings({ ...settings, css: e.target.value })}
-                placeholder="Enter custom CSS styles..."
-                className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary resize-none font-mono text-sm"
-                rows={8}
-              />
-              <p className="text-xs text-neutral-500 mt-1">
-                Add custom styling for the advisor interface
-              </p>
-            </div>
-
-            <div className="border-t border-neutral-200 pt-6">
-              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Firestore Integration</h3>
-              <p className="text-sm text-neutral-600 mb-4">
-                Enter your unique customer ID to display your Firestore conversation analytics
-              </p>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Firestore Customer ID
-                </label>
-                <input
-                  type="text"
-                  value={settings.firestore_customer_id || ''}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    firestore_customer_id: e.target.value
-                  })}
-                  placeholder="Enter your customer ID"
-                  className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
-                />
-                <p className="text-xs text-neutral-500 mt-1">
-                  This ID will be used to filter conversations from the shared Firestore database
-                </p>
               </div>
             </div>
 
