@@ -656,7 +656,7 @@ const AdvisorAnalytics: React.FC = () => {
                                     {source.title}
                                   </span>
                                   <span className="text-green-700 font-semibold ml-2">
-                                    {(source.similarity * 100).toFixed(1)}%
+                                    {source.similarity.toFixed(4)}
                                   </span>
                                 </div>
                               ))}
