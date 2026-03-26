@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Save, AlertCircle, RefreshCw } from 'lucide-react';
+import { Settings, Save, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
@@ -236,48 +236,20 @@ const AdvisorConfiguration: React.FC = () => {
               </div>
             )}
 
-            <div className="border-t border-neutral-200 pt-6">
-              <h3 className="text-lg font-semibold text-neutral-800 mb-4">OpenAI Assistant Integration</h3>
-              <p className="text-sm text-neutral-600 mb-4">
-                Connect to an existing OpenAI Assistant to view its configuration
-              </p>
+            {assistantConfig && (
+              <div className="border-t border-neutral-200 pt-6">
+                <h3 className="text-lg font-semibold text-neutral-800 mb-4">OpenAI Assistant Configuration</h3>
 
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Assistant ID
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="text"
-                    value={settings.assistant_id || ''}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      assistant_id: e.target.value
-                    })}
-                    placeholder="asst_..."
-                    className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
-                  />
-                  <Button
-                    onClick={() => fetchAssistantConfig(settings.assistant_id || '')}
-                    isLoading={fetchingAssistant}
-                    leftIcon={<RefreshCw size={18} />}
-                    disabled={!settings.assistant_id}
-                  >
-                    Fetch Config
-                  </Button>
-                </div>
-                <p className="text-xs text-neutral-500 mt-1">
-                  Enter your OpenAI Assistant ID to retrieve its system prompt and settings
-                </p>
-              </div>
-
-              {assistantConfig && (
-                <div className="mt-6 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
+                <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-200">
                   <h4 className="font-semibold text-neutral-800 mb-2">{assistantConfig.name}</h4>
                   {assistantConfig.description && (
                     <p className="text-sm text-neutral-600 mb-3">{assistantConfig.description}</p>
                   )}
                   <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-neutral-700">Assistant ID:</span>
+                      <span className="text-neutral-600 font-mono text-xs">{settings.assistant_id}</span>
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-neutral-700">Model:</span>
                       <span className="text-neutral-600">{assistantConfig.model}</span>
@@ -311,8 +283,8 @@ const AdvisorConfiguration: React.FC = () => {
                     />
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-2">
