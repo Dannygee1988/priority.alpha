@@ -617,38 +617,25 @@ const AdvisorAnalytics: React.FC = () => {
 
                         {message.role === 'assistant' && message.sources && message.sources.length > 0 && (
                           <div className="mt-3 pt-3 border-t border-neutral-200">
-                            <button
-                              onClick={() => setExpandedMessage(
-                                expandedMessage === message.id ? null : message.id
-                              )}
-                              className="flex items-center text-sm text-primary hover:text-primary-700 font-medium mb-2"
-                            >
-                              <TrendingUp size={14} className="mr-1" />
-                              {message.sources.length} Source{message.sources.length !== 1 ? 's' : ''} Used
-                            </button>
-
-                            {expandedMessage === message.id && (
-                              <div className="space-y-3 mt-3">
-                                {message.sources.map((source, index) => (
-                                  <div
-                                    key={index}
-                                    className="bg-white border border-neutral-200 rounded-lg p-3"
-                                  >
-                                    <div className="flex items-start justify-between mb-2">
-                                      <h4 className="text-sm font-semibold text-neutral-800">
-                                        {source.title}
-                                      </h4>
-                                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                                        {Math.round(source.similarity * 100)}% match
-                                      </span>
-                                    </div>
-                                    <p className="text-xs text-neutral-600 leading-relaxed">
-                                      {source.content}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                            <div className="flex items-center text-sm text-neutral-700 font-medium mb-2">
+                              <FileText size={14} className="mr-1" />
+                              Retrieved Files ({message.sources.length}):
+                            </div>
+                            <div className="space-y-1">
+                              {message.sources.map((source, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between text-xs bg-neutral-50 rounded px-3 py-2"
+                                >
+                                  <span className="text-neutral-700 font-medium">
+                                    {source.title}
+                                  </span>
+                                  <span className="text-green-700 font-semibold ml-2">
+                                    {(source.similarity * 100).toFixed(1)}%
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
 
