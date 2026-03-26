@@ -91,6 +91,7 @@ const AdvisorConfiguration: React.FC = () => {
       if (!companyId) {
         throw new Error('No company found');
       }
+      console.log('User company ID:', companyId);
 
       const { data, error: fetchError } = await supabase
         .from('company_profiles')
