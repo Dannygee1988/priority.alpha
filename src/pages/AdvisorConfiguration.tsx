@@ -101,6 +101,9 @@ const AdvisorConfiguration: React.FC = () => {
       if (fetchError) throw fetchError;
 
       if (data) {
+        console.log('Raw data from database:', data);
+        console.log('Assistant ID from database:', data.assistant_id);
+
         setSettings({
           prompt: data.settings?.advisor_prompt || DEFAULT_MIA_PROMPT,
           temperature: data.settings?.advisor_temperature ?? 0.7,
@@ -114,7 +117,10 @@ const AdvisorConfiguration: React.FC = () => {
 
         // If assistant_id exists, fetch the config automatically
         if (data.assistant_id) {
+          console.log('Assistant ID exists, fetching config...');
           fetchAssistantConfig(data.assistant_id);
+        } else {
+          console.log('No assistant ID found in database');
         }
       }
     } catch (err) {
