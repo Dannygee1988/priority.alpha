@@ -426,8 +426,33 @@ const AdvisorAnalytics: React.FC = () => {
     });
   };
 
-  const handleVerifySources = (messageId: string) => {
-    console.log('Verify sources for message:', messageId);
+  const handleVerifySources = async (messageId: string) => {
+    const message = messages.find(m => m.id === messageId);
+    if (!message) return;
+
+    try {
+      const webhookUrl = 'https://n8n.srv997647.hstgr.cloud/webhook/cf20e176-ff5c-4d3b-a99d-7f756208ee92';
+
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message_id: message.id,
+          role: message.role,
+          content: message.content,
+          created_at: message.created_at,
+          conversation_id: message.conversation_id,
+          sources: message.sources,
+        }),
+      });
+
+      alert('Sources verification request sent successfully!');
+    } catch (error) {
+      console.error('Error sending webhook:', error);
+      alert('Failed to send verification request. Please try again.');
+    }
   };
 
   if (loading) {
