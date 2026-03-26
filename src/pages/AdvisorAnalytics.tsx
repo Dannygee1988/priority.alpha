@@ -151,7 +151,14 @@ const AdvisorAnalytics: React.FC = () => {
 
           // Convert to flat message list - each document has both userMessage and botReply
           assistantMessagesFlat = Array.from(messagesByThread.entries()).flatMap(([threadId, messages]) => {
-            return messages.flatMap((msg: any) => {
+            // Sort messages chronologically within each thread
+            const sortedMessages = messages.sort((a, b) => {
+              const timeA = a.timestamp?.toMillis?.() || 0;
+              const timeB = b.timestamp?.toMillis?.() || 0;
+              return timeA - timeB;
+            });
+
+            return sortedMessages.flatMap((msg: any) => {
               const timestamp = msg.timestamp?.toDate?.()?.toISOString() || new Date().toISOString();
               const result: MessageAnalytics[] = [];
 
