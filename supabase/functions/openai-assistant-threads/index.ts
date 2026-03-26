@@ -8,7 +8,10 @@ const corsHeaders = {
 
 interface RequestBody {
   assistantId: string;
-  action?: 'getThreads' | 'getAssistantConfig';
+  action?: 'getThreads' | 'getAssistantConfig' | 'updateAssistantConfig';
+  instructions?: string;
+  temperature?: number;
+  top_p?: number;
 }
 
 Deno.serve(async (req: Request) => {
@@ -26,13 +29,62 @@ Deno.serve(async (req: Request) => {
       throw new Error("OPENAI_API_KEY is not configured");
     }
 
-    const { assistantId, action = 'getThreads' }: RequestBody = await req.json();
+    const { assistantId, action = 'getThreads', instructions, temperature, top_p }: RequestBody = await req.json();
 
     if (!assistantId) {
       return new Response(
         JSON.stringify({ error: "Assistant ID is required" }),
         {
           status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    // Handle updating assistant configuration
+    if (action === 'updateAssistantConfig') {
+      const updateBody: any = {};
+      if (instructions !== undefined) updateBody.instructions = instructions;
+      if (temperature !== undefined) updateBody.temperature = temperature;
+      if (top_p !== undefined) updateBody.top_p = top_p;
+
+      const updateResponse = await fetch(
+        `https://api.openai.com/v1/assistants/${assistantId}`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openaiApiKey}`,
+            "OpenAI-Beta": "assistants=v2",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updateBody),
+        }
+      );
+
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
+        throw new Error(`OpenAI API error: ${JSON.stringify(errorData)}`);
+      }
+
+      const updatedData = await updateResponse.json();
+
+      return new Response(
+        JSON.stringify({
+          id: updatedData.id,
+          name: updatedData.name,
+          description: updatedData.description,
+          instructions: updatedData.instructions,
+          model: updatedData.model,
+          tools: updatedData.tools,
+          metadata: updatedData.metadata,
+          temperature: updatedData.temperature,
+          top_p: updatedData.top_p,
+        }),
+        {
+          status: 200,
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json",

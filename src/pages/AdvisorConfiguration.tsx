@@ -180,13 +180,35 @@ const AdvisorConfiguration: React.FC = () => {
         throw new Error('No company found');
       }
 
+      // Update OpenAI assistant if config exists and instructions changed
+      if (assistantConfig && settings.assistant_id) {
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-assistant-threads`;
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            assistantId: settings.assistant_id,
+            action: 'updateAssistantConfig',
+            instructions: assistantConfig.instructions,
+            temperature: assistantConfig.temperature,
+            top_p: assistantConfig.top_p
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Failed to update OpenAI assistant:', errorText);
+          throw new Error('Failed to update OpenAI assistant configuration');
+        }
+      }
+
       const { error: updateError } = await supabase
         .from('company_profiles')
         .update({
           settings: {
-            advisor_prompt: settings.prompt,
-            advisor_temperature: settings.temperature,
-            advisor_top_p: settings.top_p,
             advisor_css: settings.css
           },
           primary_color: settings.primary_color,
@@ -245,108 +267,90 @@ const AdvisorConfiguration: React.FC = () => {
             )}
 
             {assistantConfig && (
-              <div className="border-t border-neutral-200 pt-6">
-                <h3 className="text-lg font-semibold text-neutral-800 mb-4">OpenAI Assistant Configuration</h3>
-
-                <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-200">
-                  <h4 className="font-semibold text-neutral-800 mb-2">{assistantConfig.name}</h4>
-                  {assistantConfig.description && (
-                    <p className="text-sm text-neutral-600 mb-3">{assistantConfig.description}</p>
-                  )}
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-neutral-700">Assistant ID:</span>
-                      <span className="text-neutral-600 font-mono text-xs">{settings.assistant_id}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-neutral-700">Model:</span>
-                      <span className="text-neutral-600">{assistantConfig.model}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-neutral-700">Temperature:</span>
-                      <span className="text-neutral-600">{assistantConfig.temperature}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-neutral-700">Top P:</span>
-                      <span className="text-neutral-600">{assistantConfig.top_p}</span>
-                    </div>
-                    {assistantConfig.tools && assistantConfig.tools.length > 0 && (
-                      <div className="flex items-start gap-2">
-                        <span className="font-medium text-neutral-700">Tools:</span>
-                        <span className="text-neutral-600">
-                          {assistantConfig.tools.map((t: any) => t.type).join(', ')}
-                        </span>
-                      </div>
+              <div>
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-neutral-800 mb-4">OpenAI Assistant Configuration</h3>
+                  <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-200">
+                    <h4 className="font-semibold text-neutral-800 mb-2">{assistantConfig.name}</h4>
+                    {assistantConfig.description && (
+                      <p className="text-sm text-neutral-600 mb-3">{assistantConfig.description}</p>
                     )}
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-neutral-700">Assistant ID:</span>
+                        <span className="text-neutral-600 font-mono text-xs">{settings.assistant_id}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-neutral-700">Model:</span>
+                        <span className="text-neutral-600">{assistantConfig.model}</span>
+                      </div>
+                      {assistantConfig.tools && assistantConfig.tools.length > 0 && (
+                        <div className="flex items-start gap-2">
+                          <span className="font-medium text-neutral-700">Tools:</span>
+                          <span className="text-neutral-600">
+                            {assistantConfig.tools.map((t: any) => t.type).join(', ')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="mt-4">
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    System Instructions
+                  </label>
+                  <textarea
+                    value={assistantConfig.instructions || ''}
+                    onChange={(e) => setAssistantConfig({ ...assistantConfig, instructions: e.target.value })}
+                    placeholder="Enter system instructions for the assistant..."
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary resize-none font-mono text-sm"
+                    rows={15}
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Define the behavior and personality of your AI assistant
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6 mt-6">
+                  <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      System Instructions
+                      Temperature
                     </label>
-                    <textarea
-                      value={assistantConfig.instructions || 'No instructions configured'}
-                      readOnly
-                      className="w-full px-4 py-3 border border-neutral-300 rounded-lg bg-white font-mono text-sm resize-none"
-                      rows={10}
+                    <input
+                      type="number"
+                      value={assistantConfig.temperature ?? 1}
+                      onChange={(e) => setAssistantConfig({ ...assistantConfig, temperature: parseFloat(e.target.value) })}
+                      min="0"
+                      max="2"
+                      step="0.1"
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary"
                     />
+                    <p className="text-xs text-neutral-500 mt-1">
+                      Controls randomness (0-2). Higher values make output more creative.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Top P
+                    </label>
+                    <input
+                      type="number"
+                      value={assistantConfig.top_p ?? 1}
+                      onChange={(e) => setAssistantConfig({ ...assistantConfig, top_p: parseFloat(e.target.value) })}
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary"
+                    />
+                    <p className="text-xs text-neutral-500 mt-1">
+                      Controls diversity (0-1). Lower values focus on likely tokens.
+                    </p>
                   </div>
                 </div>
               </div>
             )}
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Agent Prompt
-              </label>
-              <textarea
-                value={settings.prompt}
-                onChange={(e) => setSettings({ ...settings, prompt: e.target.value })}
-                placeholder="Enter custom system prompt for the advisor..."
-                className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary resize-none font-mono text-sm"
-                rows={12}
-              />
-              <p className="text-xs text-neutral-500 mt-1">
-                Define the behavior and personality of Mia, your AI advisor for Leukemia Care UK
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Temperature
-                </label>
-                <input
-                  type="number"
-                  value={settings.temperature}
-                  onChange={(e) => setSettings({ ...settings, temperature: parseFloat(e.target.value) })}
-                  min="0"
-                  max="2"
-                  step="0.1"
-                  className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary"
-                />
-                <p className="text-xs text-neutral-500 mt-1">
-                  Controls randomness (0-2). Higher values make output more creative.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Top P
-                </label>
-                <input
-                  type="number"
-                  value={settings.top_p}
-                  onChange={(e) => setSettings({ ...settings, top_p: parseFloat(e.target.value) })}
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary"
-                />
-                <p className="text-xs text-neutral-500 mt-1">
-                  Controls diversity (0-1). Lower values focus on likely tokens.
-                </p>
-              </div>
-            </div>
 
             <div className="grid grid-cols-2 gap-6">
               <div>
