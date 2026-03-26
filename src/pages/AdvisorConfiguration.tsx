@@ -126,11 +126,16 @@ const AdvisorConfiguration: React.FC = () => {
   };
 
   const fetchAssistantConfig = async (assistantId: string) => {
-    if (!assistantId) return;
+    if (!assistantId) {
+      console.log('No assistant ID provided');
+      return;
+    }
 
     try {
       setFetchingAssistant(true);
       setError(null);
+
+      console.log('Fetching assistant config for:', assistantId);
 
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-assistant-threads`;
       const response = await fetch(apiUrl, {
@@ -146,10 +151,13 @@ const AdvisorConfiguration: React.FC = () => {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Assistant config fetch failed:', errorText);
         throw new Error('Failed to fetch assistant configuration');
       }
 
       const config = await response.json();
+      console.log('Assistant config loaded:', config);
       setAssistantConfig(config);
     } catch (err) {
       console.error('Error fetching assistant config:', err);
