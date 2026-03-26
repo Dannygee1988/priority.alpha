@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface RequestBody {
   assistantId: string;
+  action?: 'getThreads' | 'getAssistantConfig';
 }
 
 Deno.serve(async (req: Request) => {
@@ -25,7 +26,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("OPENAI_API_KEY is not configured");
     }
 
-    const { assistantId }: RequestBody = await req.json();
+    const { assistantId, action = 'getThreads' }: RequestBody = await req.json();
 
     if (!assistantId) {
       return new Response(
@@ -40,6 +41,50 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Handle getting assistant configuration
+    if (action === 'getAssistantConfig') {
+      const assistantResponse = await fetch(
+        `https://api.openai.com/v1/assistants/${assistantId}`,
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${openaiApiKey}`,
+            "OpenAI-Beta": "assistants=v2",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!assistantResponse.ok) {
+        const errorData = await assistantResponse.json();
+        throw new Error(`OpenAI API error: ${JSON.stringify(errorData)}`);
+      }
+
+      const assistantData = await assistantResponse.json();
+
+      return new Response(
+        JSON.stringify({
+          id: assistantData.id,
+          name: assistantData.name,
+          description: assistantData.description,
+          instructions: assistantData.instructions,
+          model: assistantData.model,
+          tools: assistantData.tools,
+          metadata: assistantData.metadata,
+          temperature: assistantData.temperature,
+          top_p: assistantData.top_p,
+        }),
+        {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    // Handle getting threads (default action)
     const threadsResponse = await fetch(
       `https://api.openai.com/v1/threads`,
       {

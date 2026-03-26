@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Save, AlertCircle } from 'lucide-react';
+import { Settings, Save, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
@@ -13,6 +13,18 @@ interface ConfigurationSettings {
   primary_color?: string;
   secondary_color?: string;
   firestore_customer_id?: string;
+  assistant_id?: string;
+}
+
+interface AssistantConfig {
+  id: string;
+  name: string;
+  description: string;
+  instructions: string;
+  model: string;
+  tools: any[];
+  temperature: number;
+  top_p: number;
 }
 
 const DEFAULT_MIA_PROMPT = `Your goal is to act as Mia, the dedicated digital assistant for Leukemia Care UK. You provide accurate, empathetic, and strictly grounded information to patients, carers, and healthcare professionals. You must use the "data store" for every response to ensure that every piece of medical or support advice is verified and safe, helping users navigate the complexities of a blood cancer diagnosis with clarity and compassion.
@@ -54,12 +66,15 @@ const AdvisorConfiguration: React.FC = () => {
     css: '',
     primary_color: '#060644',
     secondary_color: '#F6CCE0',
-    firestore_customer_id: ''
+    firestore_customer_id: '',
+    assistant_id: ''
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [assistantConfig, setAssistantConfig] = useState<AssistantConfig | null>(null);
+  const [fetchingAssistant, setFetchingAssistant] = useState(false);
 
   useEffect(() => {
     loadConfiguration();
@@ -79,7 +94,7 @@ const AdvisorConfiguration: React.FC = () => {
 
       const { data, error: fetchError } = await supabase
         .from('company_profiles')
-        .select('settings, primary_color, secondary_color, firestore_customer_id')
+        .select('settings, primary_color, secondary_color, firestore_customer_id, assistant_id')
         .eq('id', companyId)
         .single();
 
@@ -93,14 +108,54 @@ const AdvisorConfiguration: React.FC = () => {
           css: data.settings?.advisor_css || '',
           primary_color: data.primary_color || '#060644',
           secondary_color: data.secondary_color || '#F6CCE0',
-          firestore_customer_id: data.firestore_customer_id || ''
+          firestore_customer_id: data.firestore_customer_id || '',
+          assistant_id: data.assistant_id || ''
         });
+
+        // If assistant_id exists, fetch the config automatically
+        if (data.assistant_id) {
+          fetchAssistantConfig(data.assistant_id);
+        }
       }
     } catch (err) {
       console.error('Error loading configuration:', err);
       setError('Failed to load configuration');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAssistantConfig = async (assistantId: string) => {
+    if (!assistantId) return;
+
+    try {
+      setFetchingAssistant(true);
+      setError(null);
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-assistant-threads`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          assistantId,
+          action: 'getAssistantConfig'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch assistant configuration');
+      }
+
+      const config = await response.json();
+      setAssistantConfig(config);
+    } catch (err) {
+      console.error('Error fetching assistant config:', err);
+      setError('Failed to fetch OpenAI assistant configuration');
+    } finally {
+      setFetchingAssistant(false);
     }
   };
 
@@ -179,6 +234,84 @@ const AdvisorConfiguration: React.FC = () => {
                 Configuration saved successfully
               </div>
             )}
+
+            <div className="border-t border-neutral-200 pt-6">
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">OpenAI Assistant Integration</h3>
+              <p className="text-sm text-neutral-600 mb-4">
+                Connect to an existing OpenAI Assistant to view its configuration
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Assistant ID
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={settings.assistant_id || ''}
+                    onChange={(e) => setSettings({
+                      ...settings,
+                      assistant_id: e.target.value
+                    })}
+                    placeholder="asst_..."
+                    className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-mono text-sm"
+                  />
+                  <Button
+                    onClick={() => fetchAssistantConfig(settings.assistant_id || '')}
+                    isLoading={fetchingAssistant}
+                    leftIcon={<RefreshCw size={18} />}
+                    disabled={!settings.assistant_id}
+                  >
+                    Fetch Config
+                  </Button>
+                </div>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Enter your OpenAI Assistant ID to retrieve its system prompt and settings
+                </p>
+              </div>
+
+              {assistantConfig && (
+                <div className="mt-6 p-4 bg-neutral-50 rounded-lg border border-neutral-200">
+                  <h4 className="font-semibold text-neutral-800 mb-2">{assistantConfig.name}</h4>
+                  {assistantConfig.description && (
+                    <p className="text-sm text-neutral-600 mb-3">{assistantConfig.description}</p>
+                  )}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-neutral-700">Model:</span>
+                      <span className="text-neutral-600">{assistantConfig.model}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-neutral-700">Temperature:</span>
+                      <span className="text-neutral-600">{assistantConfig.temperature}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-neutral-700">Top P:</span>
+                      <span className="text-neutral-600">{assistantConfig.top_p}</span>
+                    </div>
+                    {assistantConfig.tools && assistantConfig.tools.length > 0 && (
+                      <div className="flex items-start gap-2">
+                        <span className="font-medium text-neutral-700">Tools:</span>
+                        <span className="text-neutral-600">
+                          {assistantConfig.tools.map((t: any) => t.type).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      System Instructions
+                    </label>
+                    <textarea
+                      value={assistantConfig.instructions || 'No instructions configured'}
+                      readOnly
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-lg bg-white font-mono text-sm resize-none"
+                      rows={10}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-2">
