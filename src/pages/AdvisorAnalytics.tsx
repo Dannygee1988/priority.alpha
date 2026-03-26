@@ -182,7 +182,7 @@ const AdvisorAnalytics: React.FC = () => {
                   content: msg.botReply,
                   created_at: timestamp,
                   conversation_id: threadId,
-                  sources: msg.sources || []
+                  sources: msg.retrievedFiles || msg.sources || []
                 });
               }
 
