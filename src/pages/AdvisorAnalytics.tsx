@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, MessageSquare, Search, AlertCircle, TrendingUp, FileText, Calendar, RefreshCw } from 'lucide-react';
+import { BarChart3, MessageSquare, Search, AlertCircle, TrendingUp, FileText, Calendar, RefreshCw, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getUserCompany } from '../lib/api';
 import { supabase } from '../lib/supabase';
@@ -426,6 +426,10 @@ const AdvisorAnalytics: React.FC = () => {
     });
   };
 
+  const handleVerifySources = (messageId: string) => {
+    console.log('Verify sources for message:', messageId);
+  };
+
   if (loading) {
     return (
       <div className="px-4 py-8 h-[calc(100vh-4rem)] flex items-center justify-center">
@@ -566,9 +570,20 @@ const AdvisorAnalytics: React.FC = () => {
                           }`}>
                             {message.role.toUpperCase()}
                           </span>
-                          <span className="text-xs text-neutral-500">
-                            {formatDate(message.created_at)}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {message.role === 'assistant' && (
+                              <button
+                                onClick={() => handleVerifySources(message.id)}
+                                className="flex items-center gap-1 text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors"
+                              >
+                                <CheckCircle size={12} />
+                                Verify Sources
+                              </button>
+                            )}
+                            <span className="text-xs text-neutral-500">
+                              {formatDate(message.created_at)}
+                            </span>
+                          </div>
                         </div>
 
                         <p className="text-sm text-neutral-700 mb-3 whitespace-pre-wrap">
