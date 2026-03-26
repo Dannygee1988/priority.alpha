@@ -266,6 +266,15 @@ const AdvisorConfiguration: React.FC = () => {
               </div>
             )}
 
+            {/* Debug info */}
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+              <div><strong>Debug Info:</strong></div>
+              <div>Assistant ID: {settings.assistant_id || 'Not set'}</div>
+              <div>Fetching Assistant: {fetchingAssistant ? 'Yes' : 'No'}</div>
+              <div>Assistant Config Loaded: {assistantConfig ? 'Yes' : 'No'}</div>
+              {assistantConfig && <div>Assistant Name: {assistantConfig.name}</div>}
+            </div>
+
             {assistantConfig && (
               <div>
                 <div className="mb-6">
