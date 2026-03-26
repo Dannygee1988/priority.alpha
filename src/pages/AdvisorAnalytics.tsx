@@ -176,13 +176,25 @@ const AdvisorAnalytics: React.FC = () => {
 
               // Add bot reply
               if (msg.botReply) {
+                // Transform retrievedFiles to the expected sources format
+                let sources = [];
+                if (msg.retrievedFiles && Array.isArray(msg.retrievedFiles)) {
+                  console.log('Found retrievedFiles for message:', msg.id, msg.retrievedFiles);
+                  sources = msg.retrievedFiles.map((file: any) => ({
+                    title: file.filename || file.title || file.name || 'Unknown file',
+                    similarity: file.similarity || file.score || 0
+                  }));
+                } else if (msg.sources && Array.isArray(msg.sources)) {
+                  sources = msg.sources;
+                }
+
                 result.push({
                   id: `${msg.id}_bot`,
                   role: 'assistant',
                   content: msg.botReply,
                   created_at: timestamp,
                   conversation_id: threadId,
-                  sources: msg.retrievedFiles || msg.sources || []
+                  sources: sources
                 });
               }
 
