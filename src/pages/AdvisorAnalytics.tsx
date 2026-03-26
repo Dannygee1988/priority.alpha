@@ -121,6 +121,9 @@ const AdvisorAnalytics: React.FC = () => {
 
           const db = getFirestoreInstance()!;
           const conversationsRef = collection(db, 'conversations');
+
+          console.log('Querying Firestore for customerId:', customerId);
+
           const q = query(
             conversationsRef,
             where('customerId', '==', customerId),
@@ -128,6 +131,8 @@ const AdvisorAnalytics: React.FC = () => {
             limit(100)
           );
           const querySnapshot = await getDocs(q);
+
+          console.log('Firestore query returned:', querySnapshot.size, 'documents');
 
           const firestoreConversations: any[] = [];
           querySnapshot.forEach((doc) => {
@@ -149,9 +154,16 @@ const AdvisorAnalytics: React.FC = () => {
               sources: msg.sources || []
             }));
           });
-        } catch (err) {
+        } catch (err: any) {
           console.error('Error fetching from Firestore:', err);
-          setFirestoreError('Failed to fetch messages from Firestore');
+          const errorMessage = err?.message || 'Failed to fetch messages from Firestore';
+          setFirestoreError(errorMessage);
+          console.log('Full error details:', {
+            name: err?.name,
+            message: err?.message,
+            code: err?.code,
+            customerId
+          });
         }
       } else {
         const { data: assistantThreads, error: threadsError } = await supabase
