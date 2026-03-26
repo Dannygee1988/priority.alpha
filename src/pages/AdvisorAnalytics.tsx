@@ -181,9 +181,10 @@ const AdvisorAnalytics: React.FC = () => {
                 if (msg.retrievedFiles && Array.isArray(msg.retrievedFiles)) {
                   console.log('Found retrievedFiles for message:', msg.id, msg.retrievedFiles);
                   sources = msg.retrievedFiles.map((file: any) => ({
-                    title: file.filename || file.title || file.name || 'Unknown file',
-                    similarity: file.similarity || file.score || 0
+                    title: file.fileName || file.filename || file.title || file.name || 'Unknown file',
+                    similarity: file.score || file.similarity || 0
                   }));
+                  console.log('Transformed sources:', sources);
                 } else if (msg.sources && Array.isArray(msg.sources)) {
                   sources = msg.sources;
                 }
