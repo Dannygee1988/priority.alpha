@@ -125,6 +125,16 @@ const AdvisorAnalytics: React.FC = () => {
 
           console.log('Querying Firestore for customerId:', customerId);
 
+          // First, let's try to get all conversations to see what fields exist
+          const allConversationsQuery = query(conversationsRef, limit(5));
+          const allSnapshot = await getDocs(allConversationsQuery);
+
+          console.log('Sample conversations to check field names:', allSnapshot.size, 'documents');
+          allSnapshot.forEach((doc) => {
+            console.log('Document ID:', doc.id);
+            console.log('Document data:', doc.data());
+          });
+
           const q = query(
             conversationsRef,
             where('customerId', '==', customerId),
