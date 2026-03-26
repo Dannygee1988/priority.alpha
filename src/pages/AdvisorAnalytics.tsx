@@ -121,47 +121,41 @@ const AdvisorAnalytics: React.FC = () => {
           }
 
           const db = getFirestoreInstance()!;
-          const conversationsRef = collection(db, 'conversations');
 
           console.log('Querying Firestore for customerId:', customerId);
 
-          // First, let's try to get all conversations to see what fields exist
-          const allConversationsQuery = query(conversationsRef, limit(5));
-          const allSnapshot = await getDocs(allConversationsQuery);
-
-          console.log('Sample conversations to check field names:', allSnapshot.size, 'documents');
-          allSnapshot.forEach((doc) => {
-            console.log('Document ID:', doc.id);
-            console.log('Document data:', doc.data());
-          });
-
-          const q = query(
-            conversationsRef,
-            where('customerId', '==', customerId),
-            orderBy('created_at', 'desc'),
-            limit(100)
-          );
+          // The structure is: conversations/{customerId}/messages/{messageId}
+          const messagesRef = collection(db, 'conversations', customerId, 'messages');
+          const q = query(messagesRef, orderBy('timestamp', 'desc'), limit(500));
           const querySnapshot = await getDocs(q);
 
-          console.log('Firestore query returned:', querySnapshot.size, 'documents');
+          console.log('Firestore query returned:', querySnapshot.size, 'messages');
 
-          const firestoreConversations: any[] = [];
+          // Group messages by conversation/thread
+          const messagesByThread = new Map<string, any[]>();
+
           querySnapshot.forEach((doc) => {
             const data = doc.data();
-            firestoreConversations.push({
+            const threadId = data.threadId || data.thread_id || 'default';
+
+            if (!messagesByThread.has(threadId)) {
+              messagesByThread.set(threadId, []);
+            }
+
+            messagesByThread.get(threadId)!.push({
               id: doc.id,
               ...data,
             });
           });
 
-          assistantMessagesFlat = firestoreConversations.flatMap((conv: any) => {
-            const messages = conv.messages || [];
-            return messages.map((msg: any, idx: number) => ({
-              id: `${conv.id}_${idx}`,
+          // Convert to flat message list
+          assistantMessagesFlat = Array.from(messagesByThread.entries()).flatMap(([threadId, messages]) => {
+            return messages.map((msg: any) => ({
+              id: msg.id,
               role: msg.role === 'model' ? 'assistant' : 'user',
               content: msg.content || msg.text || '',
-              created_at: msg.timestamp?.toDate?.()?.toISOString() || conv.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
-              conversation_id: conv.id,
+              created_at: msg.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
+              conversation_id: threadId,
               sources: msg.sources || []
             }));
           });
@@ -279,28 +273,22 @@ const AdvisorAnalytics: React.FC = () => {
           }
 
           const db = getFirestoreInstance()!;
-          const conversationsRef = collection(db, 'conversations');
-          const q = query(conversationsRef, where('customerId', '==', customerId));
+          const messagesRef = collection(db, 'conversations', customerId, 'messages');
+          const q = query(messagesRef, where('threadId', '==', conversationId), orderBy('timestamp', 'asc'));
           const querySnapshot = await getDocs(q);
 
-          let conversationData: any = null;
+          assistantMessagesFlat = [];
           querySnapshot.forEach((doc) => {
-            if (doc.id === conversationId) {
-              conversationData = { id: doc.id, ...doc.data() };
-            }
+            const data = doc.data();
+            assistantMessagesFlat.push({
+              id: doc.id,
+              role: data.role === 'model' ? 'assistant' : 'user',
+              content: data.content || data.text || '',
+              created_at: data.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
+              conversation_id: conversationId,
+              sources: data.sources || []
+            });
           });
-
-          if (conversationData) {
-            const messages = conversationData.messages || [];
-            assistantMessagesFlat = messages.map((msg: any, idx: number) => ({
-              id: `${conversationData.id}_${idx}`,
-              role: msg.role === 'model' ? 'assistant' : 'user',
-              content: msg.content || msg.text || '',
-              created_at: msg.timestamp?.toDate?.()?.toISOString() || conversationData.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
-              conversation_id: conversationData.id,
-              sources: msg.sources || []
-            })).sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-          }
         } catch (err) {
           console.error('Error fetching conversation from Firestore:', err);
         }
