@@ -183,7 +183,8 @@ const AdvisorConfiguration: React.FC = () => {
           },
           primary_color: settings.primary_color,
           secondary_color: settings.secondary_color,
-          firestore_customer_id: settings.firestore_customer_id
+          firestore_customer_id: settings.firestore_customer_id,
+          assistant_id: settings.assistant_id
         })
         .eq('id', companyId);
 
