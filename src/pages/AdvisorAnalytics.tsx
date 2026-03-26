@@ -452,19 +452,7 @@ const AdvisorAnalytics: React.FC = () => {
             </Button>
           </div>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <p className="text-neutral-500">View AI Assistant conversations and analytics</p>
-              {firestoreInitialized && (
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                  Firestore Connected
-                </span>
-              )}
-              {firestoreError && (
-                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
-                  {firestoreError}
-                </span>
-              )}
-            </div>
+            <p className="text-neutral-500">View AI Assistant conversations and analytics</p>
             {syncStatus && (
               <p className={`text-sm ${syncStatus.includes('Error') ? 'text-red-500' : 'text-green-500'}`}>
                 {syncStatus}
