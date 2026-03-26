@@ -447,11 +447,8 @@ const AdvisorAnalytics: React.FC = () => {
           sources: message.sources,
         }),
       });
-
-      alert('Sources verification request sent successfully!');
     } catch (error) {
       console.error('Error sending webhook:', error);
-      alert('Failed to send verification request. Please try again.');
     }
   };
 
