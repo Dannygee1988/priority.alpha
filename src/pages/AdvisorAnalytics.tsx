@@ -103,6 +103,7 @@ const AdvisorAnalytics: React.FC = () => {
       if (!companyId) return;
 
       let assistantMessagesFlat: MessageAnalytics[] = [];
+      let customerId: string | undefined;
 
       if (firestoreInitialized && getFirestoreInstance()) {
         try {
@@ -112,7 +113,7 @@ const AdvisorAnalytics: React.FC = () => {
             .eq('id', companyId)
             .single();
 
-          const customerId = companyProfile?.firestore_customer_id;
+          customerId = companyProfile?.firestore_customer_id;
 
           if (!customerId) {
             setFirestoreError('Customer ID not configured');
@@ -162,7 +163,7 @@ const AdvisorAnalytics: React.FC = () => {
             name: err?.name,
             message: err?.message,
             code: err?.code,
-            customerId
+            customerId: customerId || 'not set'
           });
         }
       } else {
